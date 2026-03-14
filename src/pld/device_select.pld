@@ -1,0 +1,83 @@
+Name     DEVICE_SELECT;
+PartNo   0002;
+Date     2026-03-10;
+Revision 03;
+Designer Hamilton;
+Device   g20v8;
+
+/* =========================================================
+   DEVICE_SELECT
+
+   Generates 16-byte I/O slot numbers.
+
+   Address range:
+     E000-E0FF
+
+   Slots:
+     E000-E00F   SLOT0
+     E010-E01F   SLOT1
+     E020-E02F   SLOT2
+     E030-E03F   SLOT3
+     E040-E04F   SLOT4
+     E050-E05F   SLOT5
+     E060-E06F   SLOT6
+     E070-E07F   SLOT7
+
+   A7=1 (E080-E0FF) disables slot decoder.
+   ========================================================= */
+
+/* ------------ Inputs ------------ */
+
+PIN 1 = IO_CS_N;
+PIN 2 = R_W;
+
+PIN 3 = A7;
+PIN 4 = A6;
+PIN 5 = A5;
+PIN 6 = A4;
+
+/* ------------ Outputs ------------ */
+
+PIN 12 = DEV0;
+PIN 13 = DEV1;
+PIN 14 = DEV2;
+PIN 15 = SLOT_EN_N;
+
+PIN 16 = IO_RD_N;
+PIN 17 = IO_WR_N;
+
+PIN 18 = LOW_IO_N;   /* debug */
+PIN 19 = IO_ANY_N;   /* debug */
+
+/* ------------ Internal nodes ------------ */
+
+IOACT = !IO_CS_N;
+
+/* lower half of IO page */
+
+LOWIO = IOACT & !A7;
+
+/* read/write strobes */
+
+IORDSEL = LOWIO & R_W;
+IOWRSEL = LOWIO & !R_W;
+
+/* ------------ Slot code ------------ */
+
+DEV0 = A4;
+DEV1 = A5;
+DEV2 = A6;
+
+/* enable 74138 */
+
+SLOT_EN_N = !LOWIO;
+
+/* IO strobes */
+
+IO_RD_N = !IORDSEL;
+IO_WR_N = !IOWRSEL;
+
+/* debug */
+
+LOW_IO_N = !LOWIO;
+IO_ANY_N = !IOACT;

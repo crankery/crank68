@@ -1,0 +1,542 @@
+Sections:
+00: "org0001:e000" (E000-E000)
+01: "org0002:e100" (E100-E1CB)
+02: "org0003:fff8" (FFF8-0)
+
+
+Source: "bios.asm"
+                        	     1: ; bios.asm
+                        	     2: ;
+                        	     3: ; simple framework BIOS for a homebrew 6800 system
+                        	     4: ;
+                        	     5: ; memory map:
+                        	     6: ;   $0000-$dfff   ram
+                        	     7: ;   $e000-$e0ff   i/o
+                        	     8: ;   $e100-$ffff   rom
+                        	     9: ;
+                        	    10: ; calling convention:
+                        	    11: ;
+                        	    12: ;   jsr bios_entry
+                        	    13: ;   fcb bios_cmd_xxx
+                        	    14: ;   ...inline args if needed...
+                        	    15: ;
+                        	    16: ; examples:
+                        	    17: ;
+                        	    18: ;   jsr bios_entry
+                        	    19: ;   fcb bios_cmd_putc
+                        	    20: ;   fcb 'a'
+                        	    21: ;
+                        	    22: ;   jsr bios_entry
+                        	    23: ;   fcb bios_cmd_puts
+                        	    24: ;   fcb 'h','e','l','l','o',13,10,0
+                        	    25: ;
+                        	    26: ; dispatcher behavior:
+                        	    27: ;   - briefly masks irq
+                        	    28: ;   - pulls caller return address
+                        	    29: ;   - reads command / inline args from caller stream
+                        	    30: ;   - computes corrected return address
+                        	    31: ;   - pushes corrected return address back
+                        	    32: ;   - restores prior irq mask state
+                        	    33: ;   - performs service
+                        	    34: ;   - rts back to caller after inline data
+                        	    35: ;
+                        	    36: ; notes:
+                        	    37: ;   - assumes nmi is unused
+                        	    38: ;   - assumes irq handlers are conventional and well-behaved
+                        	    39: ;   - many routines are placeholders
+                        	    40: 
+                        	    41: ; ------------------------------------------------------------
+                        	    42: ; hardware definitions
+                        	    43: ; ------------------------------------------------------------
+                        	    44: 
+                        	    45:     org $e000
+                        	    46: 
+                        	    47: latch_reg       equ $e000
+                        	    48: 
+                        	    49: ; adjust these for your actual acia map
+                        	    50: acia0_data      equ $e010
+                        	    51: acia0_status    equ $e011
+                        	    52: acia0_cmd       equ $e012
+                        	    53: acia0_ctrl      equ $e013
+                        	    54: 
+                        	    55: acia_tdre_mask  equ $02
+                        	    56: acia_rdrf_mask  equ $01
+                        	    57: 
+                        	    58: rom_base        equ $e100
+                        	    59: 
+                        	    60: ; ------------------------------------------------------------
+                        	    61: ; zero page / low ram workspace
+                        	    62: ; ------------------------------------------------------------
+                        	    63: 
+                        	    64: bios_ptr        equ $0000    ; 16-bit pointer into inline parameter stream
+                        	    65: bios_tmp        equ $0002    ; 16-bit scratch
+                        	    66: bios_saved_cc   equ $0004    ; saved cc on entry
+                        	    67: bios_saved_a    equ $0005    ; scratch
+                        	    68: bios_saved_b    equ $0006    ; scratch
+                        	    69: bios_saved_x    equ $0007    ; 16-bit scratch
+                        	    70: 
+                        	    71: ; optional user-visible vectors / jump table in ram
+                        	    72: vec_conout      equ $0010
+                        	    73: vec_conin       equ $0012
+                        	    74: vec_puts        equ $0014
+                        	    75: vec_crlf        equ $0016
+                        	    76: vec_warmstart   equ $0018
+                        	    77: 
+                        	    78: ; ------------------------------------------------------------
+                        	    79: ; bios command numbers
+                        	    80: ; ------------------------------------------------------------
+                        	    81: 
+                        	    82: cmd_putc       equ $01
+                        	    83: cmd_puts       equ $02
+                        	    84: cmd_crlf       equ $03
+                        	    85: cmd_getc       equ $04
+                        	    86: cmd_ws         equ $05
+                        	    87: 
+                        	    88: ; ------------------------------------------------------------
+                        	    89: ; rom starts here
+                        	    90: ; ------------------------------------------------------------
+                        	    91: 
+                        	    92: ; ------------------------------------------------------------
+                        	    93: ; rom identification / version
+                        	    94: ; ------------------------------------------------------------
+                        	    95: 
+                        	    96: ; bios_id:
+                        	    97: ;         fcb 'd','h','6','8','0','0'
+                        	    98: 
+                        	    99: ; bios_version:
+                        	   100: ;         fcb 0
+                        	   101: ;         fcb 1
+                        	   102: 
+                        	   103: ; ------------------------------------------------------------
+                        	   104: ; cold reset entry
+                        	   105: ; ------------------------------------------------------------
+                        	   106: 
+                        	   107:         org $e100
+                        	   108: 
+                        	   109: reset:
+                        	   110: ; establish a simple initial stack
+                        	   111: ; adjust later if you prefer high ram
+01:E100 8E00FF          	   112:         lds #$00ff
+                        	   113: 
+                        	   114: ; clear condition codes
+01:E103 4F              	   115:         clra
+01:E104 06              	   116:         tap
+                        	   117: 
+                        	   118: ; initialize latch / bank register to known state
+01:E105 B7E000          	   119:         staa latch_reg
+                        	   120: 
+                        	   121: ; install optional ram vectors
+                        	   122: ;        jsr init_vectors
+                        	   123: 
+                        	   124: ; initialize console / serial hardware
+01:E108 BDE19B          	   125:         jsr acia0_init
+                        	   126: 
+                        	   127: ; simple banner using inline-dispatch interface
+01:E10B BDE122          	   128:         jsr bios_main
+01:E10E 02              	   129:         byte cmd_puts
+01:E10F 68              	   130:         byte 'h','e','l','l','o',' ','w','o','r','l','d',13,10,0
+01:E110 65
+01:E111 6C
+01:E112 6C
+01:E113 6F
+01:E114 20
+01:E115 77
+01:E116 6F
+01:E117 72
+01:E118 6C
+01:E119 64
+01:E11A 0D
+01:E11B 0A
+01:E11C 00
+                        	   131: 
+                        	   132: ; hand off to monitor / shell / idle loop
+01:E11D BDE199          	   133:         jsr warmstart
+                        	   134: 
+                        	   135: halt:
+01:E120 20FE            	   136:         bra halt
+                        	   137: 
+                        	   138: ; ------------------------------------------------------------
+                        	   139: ; bios dispatcher
+                        	   140: ; ------------------------------------------------------------
+                        	   141: 
+                        	   142: bios_main:
+                        	   143: ; preserve caller interrupt state
+01:E122 07              	   144:         tpa
+01:E123 9704            	   145:         staa bios_saved_cc
+                        	   146: 
+                        	   147: ; mask irq before stack surgery
+01:E125 0F              	   148:         sei
+                        	   149: 
+                        	   150: ; pull caller return address into bios_ptr
+                        	   151: ; on 6800, low byte is on top of stack for rts return
+01:E126 32              	   152:         pula
+01:E127 33              	   153:         pulb
+                        	   154: 
+                        	   155: ; save pointer = address of first inline byte
+01:E128 9701            	   156:         staa bios_ptr+1
+01:E12A D700            	   157:         stab bios_ptr
+                        	   158: 
+                        	   159: ; read command byte
+01:E12C DE00            	   160:         ldx bios_ptr
+01:E12E A600            	   161:         ldaa 0,x
+01:E130 08              	   162:         inx
+01:E131 DF00            	   163:         stx bios_ptr
+                        	   164: 
+                        	   165: ; dispatch on command in a
+01:E133 8101            	   166:         cmpa #cmd_putc
+01:E135 2719            	   167:         beq bios_putc
+                        	   168: 
+01:E137 8102            	   169:         cmpa #cmd_puts
+01:E139 2721            	   170:         beq bios_puts
+                        	   171: 
+01:E13B 8103            	   172:         cmpa #cmd_crlf
+01:E13D 272E            	   173:         beq bios_crlf
+                        	   174: 
+01:E13F 8104            	   175:         cmpa #cmd_getc
+01:E141 2733            	   176:         beq bios_getc
+                        	   177: 
+01:E143 8105            	   178:         cmpa #cmd_ws
+01:E145 2603            	   179:         bne bios_unknown
+01:E147 7EE17F          	   180:         jmp bios_ws
+                        	   181: 
+                        	   182: ; unknown command: skip just the command byte
+                        	   183: ; and return after it
+                        	   184: bios_unknown:
+01:E14A DE00            	   185:         ldx bios_ptr
+01:E14C BDE187          	   186:         jsr bios_rts
+01:E14F 39              	   187:         rts
+                        	   188: 
+                        	   189: ; ------------------------------------------------------------
+                        	   190: ; command handlers
+                        	   191: ; each one must leave X pointing to the first byte
+                        	   192: ; AFTER its inline arguments before calling
+                        	   193: ; bios_rts
+                        	   194: ; ------------------------------------------------------------
+                        	   195: 
+                        	   196: bios_putc:
+                        	   197: ; inline format:
+                        	   198: ;   fcb bios_cmd_putc
+                        	   199: ;   fcb char
+                        	   200: 
+01:E150 DE00            	   201:         ldx bios_ptr
+01:E152 A600            	   202:         ldaa 0,x
+01:E154 08              	   203:         inx
+                        	   204: 
+                        	   205: ; fix return address and restore irq state
+01:E155 BDE187          	   206:         jsr bios_rts
+                        	   207: 
+                        	   208: ; output character in A
+01:E158 BDE19C          	   209:         jsr conout_impl
+01:E15B 39              	   210:         rts
+                        	   211: 
+                        	   212: bios_puts:
+                        	   213: ; inline format:
+                        	   214: ;   fcb bios_cmd_puts
+                        	   215: ;   fcb 'h','e','l','l','o',0
+                        	   216: ;
+                        	   217: ; on entry bios_ptr points to first char
+                        	   218: 
+01:E15C DE00            	   219:         ldx bios_ptr
+01:E15E DF02            	   220:         stx bios_tmp
+                        	   221: 
+                        	   222: bios_puts_scan:
+01:E160 A600            	   223:         ldaa 0,x
+01:E162 08              	   224:         inx
+01:E163 2702            	   225:         beq lputs_scanned
+01:E165 20F9            	   226:         bra bios_puts_scan
+                        	   227: 
+                        	   228: ; X now points just past terminating zero
+                        	   229: ; print from saved starting pointer
+                        	   230: 
+                        	   231: lputs_scanned:
+01:E167 DE02            	   232:         ldx bios_tmp
+01:E169 BDE1B2          	   233:         jsr puts_x_impl
+01:E16C 39              	   234:         rts
+                        	   235: 
+                        	   236: bios_crlf:
+                        	   237: ; inline format:
+                        	   238: ;   fcb bios_cmd_crlf
+                        	   239: ;   no args
+                        	   240: 
+01:E16D DE00            	   241:         ldx bios_ptr
+01:E16F BDE187          	   242:         jsr bios_rts
+01:E172 BDE1BD          	   243:         jsr crlf_impl
+01:E175 39              	   244:         rts
+                        	   245: 
+                        	   246: bios_getc:
+                        	   247: ; inline format:
+                        	   248: ;   fcb bios_cmd_getc
+                        	   249: ;   no inline args
+                        	   250: ;
+                        	   251: ; return value in A
+                        	   252: 
+01:E176 DE00            	   253:         ldx bios_ptr
+01:E178 BDE187          	   254:         jsr bios_rts
+01:E17B BDE1A7          	   255:         jsr conin_impl
+01:E17E 39              	   256:         rts
+                        	   257: 
+                        	   258: bios_ws:
+                        	   259: ; inline format:
+                        	   260: ;   fcb bios_cmd_warmstart
+                        	   261: ;   no args
+                        	   262: 
+01:E17F DE00            	   263:         ldx bios_ptr
+01:E181 BDE187          	   264:         jsr bios_rts
+01:E184 7EE199          	   265:         jmp warmstart
+                        	   266: 
+                        	   267: ; ------------------------------------------------------------
+                        	   268: ; helper: fix caller return address and restore irq mask state
+                        	   269: ;
+                        	   270: ; entry:
+                        	   271: ;   X = address to resume at after rts
+                        	   272: ;   bios_saved_cc contains caller's original cc
+                        	   273: ;
+                        	   274: ; exit:
+                        	   275: ;   corrected return address pushed for rts
+                        	   276: ;   irq mask restored to original state
+                        	   277: ; ------------------------------------------------------------
+                        	   278: 
+                        	   279: bios_rts:
+                        	   280: ; push corrected return address for rts
+                        	   281: ; rts expects low then high on stack after pops,
+                        	   282: ; so match normal 6800 convention here
+                        	   283: 
+                        	   284: ; fill this in however you like if you want a helper
+                        	   285: ; implementation without a TFR instruction, since 6800
+                        	   286: ; does not have TFR.
+                        	   287: ;
+                        	   288: ; easiest is just:
+                        	   289: ;   stx bios_tmp
+                        	   290: ;   ldaa bios_tmp+1
+                        	   291: ;   ldab bios_tmp
+                        	   292: ;
+01:E187 DF02            	   293:         stx bios_tmp
+01:E189 9603            	   294:         ldaa bios_tmp+1
+01:E18B D602            	   295:         ldab bios_tmp
+01:E18D 37              	   296:         pshb
+01:E18E 36              	   297:         psha
+                        	   298: 
+                        	   299: ; restore original interrupt mask state
+                        	   300: ; simplest safe method: inspect saved cc and either
+                        	   301: ; leave irq masked or unmask it
+01:E18F 9604            	   302:         ldaa bios_saved_cc
+01:E191 8410            	   303:         anda #$10            ; isolate I bit
+01:E193 2602            	   304:         bne bios_sei
+                        	   305: 
+                        	   306: bios_cli:
+01:E195 0E              	   307:         cli
+01:E196 39              	   308:         rts
+                        	   309: 
+                        	   310: bios_sei:
+01:E197 0F              	   311:         sei
+01:E198 39              	   312:         rts
+                        	   313: 
+                        	   314: ; ------------------------------------------------------------
+                        	   315: ; initialization helpers
+                        	   316: ; ------------------------------------------------------------
+                        	   317: 
+                        	   318: ; init_vectors:
+                        	   319: ;         ldx #bios_rom_putc
+                        	   320: ;         stx vec_conout
+                        	   321: 
+                        	   322: ;         ldx #bios_rom_getc
+                        	   323: ;         stx vec_conin
+                        	   324: 
+                        	   325: ;         ldx #bios_rom_puts_x
+                        	   326: ;         stx vec_puts
+                        	   327: 
+                        	   328: ;         ldx #bios_rom_crlf
+                        	   329: ;         stx vec_crlf
+                        	   330: 
+                        	   331: ;         ldx #bios_rom_warmstart
+                        	   332: ;         stx vec_warmstart
+                        	   333: ;         rts
+                        	   334: 
+                        	   335: ; ------------------------------------------------------------
+                        	   336: ; warm start / monitor entry
+                        	   337: ; ------------------------------------------------------------
+                        	   338: 
+                        	   339: warmstart:
+                        	   340: ; placeholder
+                        	   341: ; replace this with monitor entry, shell, scheduler, etc.
+                        	   342: warmstart_loop:
+01:E199 20FE            	   343:         bra warmstart_loop
+                        	   344: 
+                        	   345: ; ------------------------------------------------------------
+                        	   346: ; console / acia support
+                        	   347: ; ------------------------------------------------------------
+                        	   348: 
+                        	   349: acia0_init:
+                        	   350: ; placeholder
+                        	   351: ;
+                        	   352: ; fill in for your actual acia and clock
+                        	   353: ; example tasks:
+                        	   354: ;   - master reset
+                        	   355: ;   - set divider
+                        	   356: ;   - set 8n1
+                        	   357: ;   - enable tx/rx
+01:E19B 39              	   358:         rts
+                        	   359: 
+                        	   360: conout_impl:
+                        	   361: ; entry: A = character to send
+                        	   362: 
+                        	   363: conout_wait:
+                        	   364: ; placeholder status poll
+                        	   365: ; if you want fake-emulator output via $e000 instead,
+                        	   366: ; you could simply:
+                        	   367: ;   staa latch_reg
+                        	   368: ;   rts
+                        	   369: ;
+01:E19C F6E011          	   370:         ldab acia0_status
+01:E19F C402            	   371:         andb #acia_tdre_mask
+01:E1A1 27F9            	   372:         beq conout_wait
+                        	   373: 
+01:E1A3 B7E010          	   374:         staa acia0_data
+01:E1A6 39              	   375:         rts
+                        	   376: 
+                        	   377: conin_impl:
+                        	   378: ; return received character in A
+                        	   379: conin_wait:
+01:E1A7 F6E011          	   380:         ldab acia0_status
+01:E1AA C401            	   381:         andb #acia_rdrf_mask
+01:E1AC 27F9            	   382:         beq conin_wait
+                        	   383: 
+01:E1AE B6E010          	   384:         ldaa acia0_data
+01:E1B1 39              	   385:         rts
+                        	   386: 
+                        	   387: puts_x_impl:
+                        	   388: ; entry: X points to null-terminated string
+                        	   389: puts_x_loop:
+01:E1B2 A600            	   390:         ldaa 0,x
+01:E1B4 2706            	   391:         beq puts_x_done
+01:E1B6 BDE19C          	   392:         jsr conout_impl
+01:E1B9 08              	   393:         inx
+01:E1BA 20F6            	   394:         bra puts_x_loop
+                        	   395: 
+                        	   396: puts_x_done:
+01:E1BC 39              	   397:         rts
+                        	   398: 
+                        	   399: crlf_impl:
+01:E1BD 860D            	   400:         ldaa #13
+01:E1BF BDE19C          	   401:         jsr conout_impl
+01:E1C2 860A            	   402:         ldaa #10
+01:E1C4 BDE19C          	   403:         jsr conout_impl
+01:E1C7 39              	   404:         rts
+                        	   405: 
+                        	   406: ; ------------------------------------------------------------
+                        	   407: ; interrupt handlers
+                        	   408: ; ------------------------------------------------------------
+                        	   409: 
+                        	   410: irq_handler:
+                        	   411: ; placeholder irq service
+01:E1C8 3B              	   412:         rti
+                        	   413: 
+                        	   414: swi_handler:
+                        	   415: ; placeholder software interrupt service
+01:E1C9 3B              	   416:         rti
+                        	   417: 
+                        	   418: nmi_handler:
+                        	   419: ; nmi unused for now
+01:E1CA 3B              	   420:         rti
+                        	   421: 
+                        	   422: ; ------------------------------------------------------------
+                        	   423: ; vectors
+                        	   424: ; 6800 fixed vectors:
+                        	   425: ;   $fff8 irq
+                        	   426: ;   $fffa swi
+                        	   427: ;   $fffc nmi
+                        	   428: ;   $fffe reset
+                        	   429: ; ------------------------------------------------------------
+                        	   430: 
+                        	   431:         org $fff8
+02:FFF8 E1C8            	   432:         fdb irq_handler
+02:FFFA E1C9            	   433:         fdb swi_handler
+02:FFFC E1CA            	   434:         fdb nmi_handler
+02:FFFE E100            	   435:         fdb reset
+
+
+Symbols by name:
+acia0_data                       E:E010
+acia0_init                       A:E19B
+acia0_status                     E:E011
+acia_rdrf_mask                   E:0001
+acia_tdre_mask                   E:0002
+bios_cli                         A:E195
+bios_crlf                        A:E16D
+bios_getc                        A:E176
+bios_main                        A:E122
+bios_ptr                         E:0000
+bios_putc                        A:E150
+bios_puts                        A:E15C
+bios_puts_scan                   A:E160
+bios_rts                         A:E187
+bios_saved_cc                    E:0004
+bios_sei                         A:E197
+bios_tmp                         E:0002
+bios_unknown                     A:E14A
+bios_ws                          A:E17F
+cmd_crlf                         E:0003
+cmd_getc                         E:0004
+cmd_putc                         E:0001
+cmd_puts                         E:0002
+cmd_ws                           E:0005
+conin_impl                       A:E1A7
+conin_wait                       A:E1A7
+conout_impl                      A:E19C
+conout_wait                      A:E19C
+crlf_impl                        A:E1BD
+halt                             A:E120
+irq_handler                      A:E1C8
+latch_reg                        E:E000
+lputs_scanned                    A:E167
+nmi_handler                      A:E1CA
+puts_x_done                      A:E1BC
+puts_x_impl                      A:E1B2
+puts_x_loop                      A:E1B2
+reset                            A:E100
+swi_handler                      A:E1C9
+warmstart                        A:E199
+warmstart_loop                   A:E199
+
+Symbols by value:
+0000 bios_ptr
+0001 acia_rdrf_mask
+0001 cmd_putc
+0002 cmd_puts
+0002 bios_tmp
+0002 acia_tdre_mask
+0003 cmd_crlf
+0004 bios_saved_cc
+0004 cmd_getc
+0005 cmd_ws
+E000 latch_reg
+E010 acia0_data
+E011 acia0_status
+E100 reset
+E120 halt
+E122 bios_main
+E14A bios_unknown
+E150 bios_putc
+E15C bios_puts
+E160 bios_puts_scan
+E167 lputs_scanned
+E16D bios_crlf
+E176 bios_getc
+E17F bios_ws
+E187 bios_rts
+E195 bios_cli
+E197 bios_sei
+E199 warmstart
+E199 warmstart_loop
+E19B acia0_init
+E19C conout_wait
+E19C conout_impl
+E1A7 conin_impl
+E1A7 conin_wait
+E1B2 puts_x_loop
+E1B2 puts_x_impl
+E1BC puts_x_done
+E1BD crlf_impl
+E1C8 irq_handler
+E1C9 swi_handler
+E1CA nmi_handler
