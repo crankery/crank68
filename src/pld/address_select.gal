@@ -1,0 +1,95 @@
+Device   g20v8;
+Name     ADDRESS_SELECT;
+PartNo   0001;
+Date     2026-03-10;
+Revision 03;
+Designer Hamilton;
+
+/* =========================================================
+   ADDRESS_SELECT
+
+   MC6800 memory map decode
+
+     0000-BFFF  RAM
+     C000-DFFF  FRAM
+     E000-E0FF  I/O page
+     E100-FFFF  ROM
+
+   Inputs
+     A15..A8
+     PHI2
+     VMA
+     R_W
+
+   Outputs (active low)
+     RAM_CS_N
+     FRAM_CS_N
+     ROM_CS_N
+     IO_CS_N
+     RD_N
+     WR_N
+   ========================================================= */
+
+/* ------------ Inputs ------------ */
+
+PIN 1  = A15;
+PIN 2  = A14;
+PIN 3  = A13;
+PIN 4  = A12;
+PIN 5  = A11;
+PIN 6  = A10;
+PIN 7  = A9;
+PIN 8  = PHI2;
+PIN 9  = VMA;
+
+PIN 11 = A8;
+PIN 12 = R_W;
+
+/* ------------ Outputs ------------ */
+
+PIN 13 = WR_N;
+PIN 14 = RD_N;
+PIN 15 = IO_CS_N;
+PIN 16 = ROM_CS_N;
+PIN 17 = FRAM_CS_N;
+PIN 18 = RAM_CS_N;
+PIN 19 = MEM_TOP_N;
+
+/* ------------ Internal nodes ------------ */
+
+BUSOK = VMA & PHI2;
+
+/* RAM: 0000-BFFF */
+RAMSEL  = BUSOK & !(A15 & A14);
+
+/* FRAM: C000-DFFF */
+FRAMSEL = BUSOK & A15 & A14 & !A13;
+
+/* IO: E000-E0FF */
+IOSEL = BUSOK &
+        A15 & A14 & A13 &
+        !A12 & !A11 & !A10 & !A9 & !A8;
+
+/* ROM: E100-FFFF */
+ROMSEL = BUSOK &
+         A15 & A14 & A13 &
+         (A12 # A11 # A10 # A9 # A8);
+
+MEMTOP = BUSOK & A15 & A14 & A13;
+
+/* Read/write strobes */
+
+RDSEL = BUSOK & R_W;
+WRSEL = BUSOK & !R_W;
+
+/* ------------ Outputs ------------ */
+
+RAM_CS_N  = !RAMSEL;
+FRAM_CS_N = !FRAMSEL;
+IO_CS_N   = !IOSEL;
+ROM_CS_N  = !ROMSEL;
+
+RD_N = !RDSEL;
+WR_N = !WRSEL;
+
+MEM_TOP_N = !MEMTOP;

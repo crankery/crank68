@@ -1,0 +1,3 @@
+[submodule "src/pld/galasm"]
+	path = src/pld/galasm
+	url = git@github.com:daveho/GALasm.git
