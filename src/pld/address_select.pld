@@ -1,9 +1,9 @@
+Device   g22v10;
 Name     ADDRESS_SELECT;
 PartNo   0001;
 Date     2026-03-10;
 Revision 03;
 Designer Hamilton;
-Device   g20v8;
 
 /* =========================================================
    ADDRESS_SELECT

@@ -1,9 +1,9 @@
+Device   g20v8;
 Name     DEVICE_SELECT;
 PartNo   0002;
 Date     2026-03-10;
 Revision 03;
-Designer Hamilton;
-Device   g20v8;
+Designer Dave Hamilton;
 
 /* =========================================================
    DEVICE_SELECT
