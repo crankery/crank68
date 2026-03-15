@@ -1,3 +1,6 @@
 [submodule "src/pld/galasm"]
 	path = src/pld/galasm
 	url = git@github.com:daveho/GALasm.git
+[submodule "src/emu/mikbug"]
+	path = src/emu/mikbug
+	url = git@github.com:crsjones/MIKBUG2.git

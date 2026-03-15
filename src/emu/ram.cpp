@@ -1,23 +1,19 @@
 #include "ram.h"
 
-bool Ram::read(uint16_t addr, uint8_t &value) const
+uint8_t Ram::read(uint16_t addr) const
 {
     if (addr >= StartAddress && addr <= EndAddress)
     {
-        value = memory_[addr - StartAddress];
-        return true;
+        return memory_[addr - StartAddress];
     }
 
-    return false;
+    return 0xff;
 }
 
-bool Ram::write(uint16_t addr, uint8_t value)
+void Ram::write(uint16_t addr, uint8_t value)
 {
     if (addr >= StartAddress && addr <= EndAddress)
     {
         memory_[addr - StartAddress] = value;
-        return true;
     }
-
-    return false;
 }

@@ -16,8 +16,8 @@ public:
         memory_.fill(0xa5);
     }
 
-    bool read(uint16_t addr, uint8_t &value) const;
-    bool write(uint16_t addr, uint8_t value);
+    virtual uint8_t read(uint16_t addr) const override;
+    virtual void write(uint16_t addr, uint8_t value) override;
 
 protected:
     virtual uint16_t size() const override
@@ -27,4 +27,4 @@ protected:
 
 private:
     std::array<uint8_t, Ram::EndAddress - Ram::StartAddress + 1> memory_;
-}
+};

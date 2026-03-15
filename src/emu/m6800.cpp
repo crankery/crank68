@@ -2,12 +2,9 @@
 #include <sstream>
 #include <iomanip>
 
-M6800::M6800(ReadFn read_fn, WriteFn write_fn)
-    : read_(std::move(read_fn)), write_(std::move(write_fn)) {}
-
 uint8_t M6800::read8(uint16_t addr) const
 {
-    return read_(addr);
+    return machine_.read(addr);
 }
 
 uint16_t M6800::read16(uint16_t addr) const
@@ -19,7 +16,7 @@ uint16_t M6800::read16(uint16_t addr) const
 
 void M6800::write8(uint16_t addr, uint8_t value)
 {
-    write_(addr, value);
+    machine_.write(addr, value);
 }
 
 void M6800::write16(uint16_t addr, uint16_t value)
@@ -421,6 +418,70 @@ void M6800::step()
         uint8_t zp = fetch8();
         push16(s_.pc);
         s_.pc = zp;
+        break;
+    }
+
+    case 0x32:
+    { // pula
+        uint8_t a = pop8();
+        s_.a = a;
+        set_nz8(s_.a);
+        set_flag(V, false);
+        break;
+    }
+
+    case 0x33:
+    { // pulb
+        uint8_t b = pop8();
+        s_.b = b;
+        set_nz8(s_.b);
+        set_flag(V, false);
+        break;
+    }
+
+    case 0x36:
+    {
+        // PUSH A
+        push8(s_.a);
+    }
+
+    case 0x37:
+    {
+        // PUSH B
+        push8(s_.b);
+    }
+
+    case 0xa6:
+    {
+        // LDAA (dir,X)
+        uint8_t off = fetch8();
+        uint16_t addr = static_cast<uint16_t>(s_.x + off);
+        s_.a = read8(addr);
+        set_nz8(s_.a);
+        set_flag(V, false);
+        break;
+    }
+
+    case 0xdf:
+    {
+        // STX (dir,X)
+        uint8_t off = fetch8();
+        uint16_t addr = static_cast<uint16_t>(s_.x + off);
+        write8(addr, s_.x & 0xFF);
+        write8(static_cast<uint16_t>(addr + 1), s_.x >> 8);
+        set_nz16(s_.x);
+        set_flag(V, false);
+        break;
+    }
+
+    case 0x81:
+    {
+        // CMPA immediate
+        uint8_t v = fetch8();
+        uint8_t r = sub8(s_.a, v);
+        set_flag(Z, r == 0);
+        set_flag(N, (r & 0x80) != 0);
+        set_flag(V, (((s_.a ^ v) & (s_.a ^ r)) & 0x80) != 0);
         break;
     }
 

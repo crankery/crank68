@@ -1,24 +1,18 @@
 
 #include "memoryIO.h"
 
-MemoryIO::read(uint16_t addr, uint8_t &value) const
+uint8_t MemoryIO::read(uint16_t addr) const
 {
-    if (addr >= StartAddress && addr <= EndAddress)
-    {
-        value = 0; // For simplicity, we return 0 for all IO reads in this toy emulator
-        return true;
-    }
+    // if (addr >= StartAddress && addr <= EndAddress)
+    // {
+    // }
 
-    return false;
+    return 0xff; // For simplicity, we return 0xff for all IO reads in this toy emulator
 }
 
-MemoryIO::write(uint16_t addr, uint8_t value)
+void MemoryIO::write(uint16_t addr, uint8_t value)
 {
-    if (addr >= StartAddress && addr <= EndAddress)
-    {
-        // For simplicity, we ignore all IO writes in this toy emulator
-        return true;
-    }
-
-    return false;
+    // if (addr >= StartAddress && addr <= EndAddress)
+    // {
+    // }
 }

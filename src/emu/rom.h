@@ -18,12 +18,11 @@ public:
 
     Rom() : Mem()
     {
-        memory_.fill(0x5a);
+        memory_.fill(0xff);
     }
 
-    bool read(uint16_t addr, uint8_t &value) const;
-    bool write(uint16_t addr, uint8_t value);
-
+    virtual uint8_t read(uint16_t addr) const override;
+    virtual void write(uint16_t addr, uint8_t value) override;
     bool load(const char *path, uint16_t offset = 0);
 
 protected:
@@ -34,4 +33,4 @@ protected:
 
 private:
     std::array<uint8_t, Rom::EndAddress - Rom::StartAddress + 1> memory_;
-}
+};

@@ -5,12 +5,13 @@
 #include <stdexcept>
 #include <string>
 
-class M6800 {
-public:
-    using ReadFn  = std::function<uint8_t(uint16_t)>;
-    using WriteFn = std::function<void(uint16_t, uint8_t)>;
+#include "machine.h"
 
-    enum CC : uint8_t {
+class M6800
+{
+public:
+    enum CC : uint8_t
+    {
         C = 0x01, // Carry
         V = 0x02, // Overflow
         Z = 0x04, // Zero
@@ -19,34 +20,42 @@ public:
         H = 0x20  // Half-carry
     };
 
-    struct State {
-        uint8_t  a = 0;
-        uint8_t  b = 0;
+    struct State
+    {
+        uint8_t a = 0;
+        uint8_t b = 0;
         uint16_t x = 0;
         uint16_t sp = 0;
         uint16_t pc = 0;
-        uint8_t  cc = 0;
+        uint8_t cc = 0;
     };
 
-    M6800(ReadFn read_fn, WriteFn write_fn);
+    M6800()
+    {
+    }
 
     void reset();
     void step();
 
-    const State& state() const { return s_; }
-    State& state() { return s_; }
+    const State &state() const { return s_; }
+    State &state() { return s_; }
+
+    bool loadRom(const char *path, uint16_t offset = 0)
+    {
+        return machine_.loadRom(path, offset);
+    }
+
+    uint8_t read8(uint16_t addr) const;
 
 private:
     State s_;
-    ReadFn read_;
-    WriteFn write_;
+    Machine machine_;
 
-    uint8_t  fetch8();
+    uint8_t fetch8();
     uint16_t fetch16();
-    uint8_t  read8(uint16_t addr) const;
     uint16_t read16(uint16_t addr) const;
-    void     write8(uint16_t addr, uint8_t value);
-    void     write16(uint16_t addr, uint16_t value);
+    void write8(uint16_t addr, uint8_t value);
+    void write16(uint16_t addr, uint16_t value);
 
     void push8(uint8_t v);
     void push16(uint16_t v);
