@@ -1,31 +1,36 @@
+BUILD_DIR = build
+
 # Compiler
 CXX = g++
 
 # Compiler flags
-CXXFLAGS = -std=c++17 -Wall -O2 -Imame
+CXXFLAGS = -std=c++17 -Wall -O2 -Imame -g
 
 # Target executable
-TARGET = emu
+TARGET = $(BUILD_DIR)/emu
 
 # Source files (all .cpp in current directory)
 SRCS = $(wildcard *.cpp)
 
 # Object files
-OBJS = $(SRCS:.cpp=.o)
+OBJS = $(SRCS:%.cpp=$(BUILD_DIR)/%.o)
 
 # Default target
 all: $(TARGET)
 
-# Link
+# Links
 $(TARGET): $(OBJS)
-	$(CXX) $(OBJS) -o $(TARGET)
+	$(CXX) $(CXXFLAGS) $(OBJS) -o $@
 
 # Compile
-%.o: %.cpp
+${BUILD_DIR}/%.o: %.cpp | ${BUILD_DIR}
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 # Clean build files
 clean:
-	rm -f $(OBJS) $(TARGET)
+	rm -rf $(BUILD_DIR)
+
+$(BUILD_DIR):
+	mkdir -p $(BUILD_DIR)
 
 .PHONY: all clean

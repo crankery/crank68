@@ -2,6 +2,162 @@
 #include <sstream>
 #include <iomanip>
 
+static M6800::MethodPtr op_dispatch[] = {};
+//     &M6800::op_aba,
+//     &M6800::op_abx,
+//     &M6800::op_adca,
+//     &M6800::op_adcb,
+//     &M6800::op_adda,
+//     &M6800::op_addb,
+//     &M6800::op_addd,
+//     &M6800::op_aim,
+//     &M6800::op_anda,
+//     &M6800::op_andb,
+//     &M6800::op_asl,
+//     &M6800::op_asla,
+//     &M6800::op_aslb,
+//     &M6800::op_asld,
+//     &M6800::op_asr,
+//     &M6800::op_asra,
+//     &M6800::op_asrb,
+//     &M6800::op_bcc,
+//     &M6800::op_bcs,
+//     &M6800::op_beq,
+//     &M6800::op_bge,
+//     &M6800::op_bgt,
+//     &M6800::op_bhi,
+//     &M6800::op_bita,
+//     &M6800::op_bitb,
+//     &M6800::op_ble,
+//     &M6800::op_bls,
+//     &M6800::op_blt,
+//     &M6800::op_bmi,
+//     &M6800::op_bne,
+//     &M6800::op_bpl,
+//     &M6800::op_bra,
+//     &M6800::op_brn,
+//     &M6800::op_bsr,
+//     &M6800::op_bvc,
+//     &M6800::op_bvs,
+//     &M6800::op_cba,
+//     &M6800::op_clc,
+//     &M6800::op_cli,
+//     &M6800::op_clr,
+//     &M6800::op_clra,
+//     &M6800::op_clrb,
+//     &M6800::op_clv,
+//     &M6800::op_cmpa,
+//     &M6800::op_cmpb,
+//     &M6800::op_cmpx,
+//     &M6800::op_com,
+//     &M6800::op_coma,
+//     &M6800::op_comb,
+//     &M6800::op_daa,
+//     &M6800::op_dec,
+//     &M6800::op_deca,
+//     &M6800::op_decb,
+//     &M6800::op_des,
+//     &M6800::op_dex,
+//     &M6800::op_eim,
+//     &M6800::op_eora,
+//     &M6800::op_eorb,
+//     &M6800::op_ill,
+//     &M6800::op_inc,
+//     &M6800::op_inca,
+//     &M6800::op_incb,
+//     &M6800::op_ins,
+//     &M6800::op_inx,
+//     &M6800::op_jmp,
+//     &M6800::op_jsr,
+//     &M6800::op_lda,
+//     &M6800::op_ldb,
+//     &M6800::op_ldd,
+//     &M6800::op_lds,
+//     &M6800::op_ldx,
+//     &M6800::op_lsr,
+//     &M6800::op_lsra,
+//     &M6800::op_lsrb,
+//     &M6800::op_lsrd,
+//     &M6800::op_mul,
+//     &M6800::op_neg,
+//     &M6800::op_nega,
+//     &M6800::op_negb,
+//     &M6800::op_nop,
+//     &M6800::op_oim,
+//     &M6800::op_ora,
+//     &M6800::op_orb,
+//     &M6800::op_psha,
+//     &M6800::op_pshb,
+//     &M6800::op_pshx,
+//     &M6800::op_pula,
+//     &M6800::op_pulb,
+//     &M6800::op_pulx,
+//     &M6800::op_rol,
+//     &M6800::op_rola,
+//     &M6800::op_rolb,
+//     &M6800::op_ror,
+//     &M6800::op_rora,
+//     &M6800::op_rorb,
+//     &M6800::op_rti,
+//     &M6800::op_rts,
+//     &M6800::op_sba,
+//     &M6800::op_sbca,
+//     &M6800::op_sbcb,
+//     &M6800::op_sec,
+//     &M6800::op_sev,
+//     &M6800::op_sta,
+//     &M6800::op_stb,
+//     &M6800::op_sei,
+//     &M6800::op_sts,
+//     &M6800::op_stx,
+//     &M6800::op_suba,
+//     &M6800::op_subb,
+//     &M6800::op_subd,
+//     &M6800::op_swi,
+//     &M6800::op_wai,
+//     &M6800::op_tab,
+//     &M6800::op_tap,
+//     &M6800::op_tba,
+//     &M6800::op_tim,
+//     &M6800::op_tpa,
+//     &M6800::op_tst,
+//     &M6800::op_tsta,
+//     &M6800::op_tstb,
+//     &M6800::op_tsx,
+//     &M6800::op_txs,
+//     &M6800::op_asx1,
+//     &M6800::op_asx2,
+//     &M6800::op_xgdx,
+//     &M6800::op_addx,
+//     &M6800::op_adcx,
+//     &M6800::op_bitx,
+//     &M6800::op_slp};
+
+void M6800::step()
+{
+    uint8_t op = fetch8();
+
+    op_names op_name = static_cast<op_names>(op_table[op][0]);
+    addr_mode addr_mode = static_cast<M6800::addr_mode>(op_table[op][1]);
+
+    MethodPtr operation = operations[op_name];
+
+    if (operation)
+    {
+        MethodPtr method = operations[op_name];
+        if ((this->*method)(op, op_name, addr_mode))
+        {
+            return;
+        }
+    }
+    else
+    {
+        printf("not hit %02x\n", op_name);
+    }
+
+    unimplemented(op);
+}
+
 uint8_t M6800::read8(uint16_t addr) const
 {
     return machine_.read(addr);
@@ -133,359 +289,4 @@ void M6800::reset()
         << " at PC=0x"
         << std::setw(4) << static_cast<int>(s_.pc - 1);
     throw std::runtime_error(oss.str());
-}
-
-void M6800::step()
-{
-    uint8_t op = fetch8();
-
-    switch (op)
-    {
-    case 0x01: // NOP
-        break;
-
-    case 0x06: // TAP
-        s_.cc = s_.a;
-        break;
-
-    case 0x07: // TPA
-        s_.a = s_.cc;
-        set_nz8(s_.a);
-        break;
-
-    case 0x08: // INX
-        s_.x++;
-        set_flag(Z, s_.x == 0);
-        break;
-
-    case 0x09: // DEX
-        s_.x--;
-        set_flag(Z, s_.x == 0);
-        break;
-
-    case 0x0A: // CLV
-        set_flag(V, false);
-        break;
-
-    case 0x0C: // CLC
-        set_flag(C, false);
-        break;
-
-    case 0x0D: // SEC
-        set_flag(C, true);
-        break;
-
-    case 0x0E: // CLI
-        set_flag(I, false);
-        break;
-
-    case 0x0F: // SEI
-        set_flag(I, true);
-        break;
-
-    case 0x20:
-    { // BRA rel8
-        int8_t off = static_cast<int8_t>(fetch8());
-        s_.pc = static_cast<uint16_t>(s_.pc + off);
-        break;
-    }
-
-    case 0x26:
-    { // BNE rel8
-        int8_t off = static_cast<int8_t>(fetch8());
-        if (!get_flag(Z))
-            s_.pc = static_cast<uint16_t>(s_.pc + off);
-        break;
-    }
-
-    case 0x27:
-    { // BEQ rel8
-        int8_t off = static_cast<int8_t>(fetch8());
-        if (get_flag(Z))
-            s_.pc = static_cast<uint16_t>(s_.pc + off);
-        break;
-    }
-
-    case 0x39: // RTS
-        s_.pc = pop16();
-        break;
-
-    case 0x3B: // RTI
-        s_.cc = pop8();
-        s_.b = pop8();
-        s_.a = pop8();
-        s_.x = pop16();
-        s_.pc = pop16();
-        break;
-
-    case 0x3F: // SWI
-        push16(s_.pc);
-        push16(s_.x);
-        push8(s_.a);
-        push8(s_.b);
-        push8(s_.cc);
-        set_flag(I, true);
-        s_.pc = read16(0xFFFA);
-        break;
-
-    case 0x4A: // DECA
-        s_.a = sub8(s_.a, 1);
-        break;
-
-    case 0x4C: // INCA
-        s_.a = add8(s_.a, 1);
-        break;
-
-    case 0x4D: // TSTA
-        set_nz8(s_.a);
-        set_flag(V, false);
-        break;
-
-    case 0x4F: // CLRA
-        s_.a = 0;
-        set_flag(N, false);
-        set_flag(Z, true);
-        set_flag(V, false);
-        set_flag(C, false);
-        break;
-
-    case 0x5A: // DECB
-        s_.b = sub8(s_.b, 1);
-        break;
-
-    case 0x5C: // INCB
-        s_.b = add8(s_.b, 1);
-        break;
-
-    case 0x5D: // TSTB
-        set_nz8(s_.b);
-        set_flag(V, false);
-        break;
-
-    case 0x5F: // CLRB
-        s_.b = 0;
-        set_flag(N, false);
-        set_flag(Z, true);
-        set_flag(V, false);
-        set_flag(C, false);
-        break;
-
-    case 0x7E:
-    { // JMP extended
-        s_.pc = fetch16();
-        break;
-    }
-
-    case 0x8B:
-    { // ADDA #imm
-        uint8_t v = fetch8();
-        s_.a = add8(s_.a, v);
-        break;
-    }
-
-    case 0x86:
-    { // LDAA #imm
-        s_.a = fetch8();
-        set_nz8(s_.a);
-        set_flag(V, false);
-        break;
-    }
-
-    case 0x96:
-    { // LDAA direct
-        uint8_t zp = fetch8();
-        s_.a = read8(zp);
-        set_nz8(s_.a);
-        set_flag(V, false);
-        break;
-    }
-
-    case 0xB6:
-    { // LDAA extended
-        uint16_t addr = fetch16();
-        s_.a = read8(addr);
-        set_nz8(s_.a);
-        set_flag(V, false);
-        break;
-    }
-
-    case 0x97:
-    { // STAA direct
-        uint8_t zp = fetch8();
-        write8(zp, s_.a);
-        set_nz8(s_.a);
-        set_flag(V, false);
-        break;
-    }
-
-    case 0xB7:
-    { // STAA extended
-        uint16_t addr = fetch16();
-        write8(addr, s_.a);
-        set_nz8(s_.a);
-        set_flag(V, false);
-        break;
-    }
-
-    case 0xC6:
-    { // LDAB #imm
-        s_.b = fetch8();
-        set_nz8(s_.b);
-        set_flag(V, false);
-        break;
-    }
-
-    case 0xD6:
-    { // LDAB direct
-        uint8_t zp = fetch8();
-        s_.b = read8(zp);
-        set_nz8(s_.b);
-        set_flag(V, false);
-        break;
-    }
-
-    case 0xF6:
-    { // LDAB extended
-        uint16_t addr = fetch16();
-        s_.b = read8(addr);
-        set_nz8(s_.b);
-        set_flag(V, false);
-        break;
-    }
-
-    case 0xD7:
-    { // STAB direct
-        uint8_t zp = fetch8();
-        write8(zp, s_.b);
-        set_nz8(s_.b);
-        set_flag(V, false);
-        break;
-    }
-
-    case 0xF7:
-    { // STAB extended
-        uint16_t addr = fetch16();
-        write8(addr, s_.b);
-        set_nz8(s_.b);
-        set_flag(V, false);
-        break;
-    }
-
-    case 0x8E:
-    { // LDS #imm
-        s_.sp = fetch16();
-        set_nz16(s_.sp);
-        set_flag(V, false);
-        break;
-    }
-
-    case 0xCE:
-    { // LDX #imm
-        s_.x = fetch16();
-        set_nz16(s_.x);
-        set_flag(V, false);
-        break;
-    }
-
-    case 0xDE:
-    { // LDX direct
-        uint8_t zp = fetch8();
-        s_.x = read16(zp);
-        set_nz16(s_.x);
-        set_flag(V, false);
-        break;
-    }
-
-    case 0xFE:
-    { // LDX extended
-        uint16_t addr = fetch16();
-        s_.x = read16(addr);
-        set_nz16(s_.x);
-        set_flag(V, false);
-        break;
-    }
-
-    case 0xBD:
-    { // JSR extended
-        uint16_t addr = fetch16();
-        push16(s_.pc);
-        s_.pc = addr;
-        break;
-    }
-
-    case 0x9D:
-    { // JSR direct
-        uint8_t zp = fetch8();
-        push16(s_.pc);
-        s_.pc = zp;
-        break;
-    }
-
-    case 0x32:
-    { // pula
-        uint8_t a = pop8();
-        s_.a = a;
-        set_nz8(s_.a);
-        set_flag(V, false);
-        break;
-    }
-
-    case 0x33:
-    { // pulb
-        uint8_t b = pop8();
-        s_.b = b;
-        set_nz8(s_.b);
-        set_flag(V, false);
-        break;
-    }
-
-    case 0x36:
-    {
-        // PUSH A
-        push8(s_.a);
-    }
-
-    case 0x37:
-    {
-        // PUSH B
-        push8(s_.b);
-    }
-
-    case 0xa6:
-    {
-        // LDAA (dir,X)
-        uint8_t off = fetch8();
-        uint16_t addr = static_cast<uint16_t>(s_.x + off);
-        s_.a = read8(addr);
-        set_nz8(s_.a);
-        set_flag(V, false);
-        break;
-    }
-
-    case 0xdf:
-    {
-        // STX (dir,X)
-        uint8_t off = fetch8();
-        uint16_t addr = static_cast<uint16_t>(s_.x + off);
-        write8(addr, s_.x & 0xFF);
-        write8(static_cast<uint16_t>(addr + 1), s_.x >> 8);
-        set_nz16(s_.x);
-        set_flag(V, false);
-        break;
-    }
-
-    case 0x81:
-    {
-        // CMPA immediate
-        uint8_t v = fetch8();
-        uint8_t r = sub8(s_.a, v);
-        set_flag(Z, r == 0);
-        set_flag(N, (r & 0x80) != 0);
-        set_flag(V, (((s_.a ^ v) & (s_.a ^ r)) & 0x80) != 0);
-        break;
-    }
-
-    default:
-        unimplemented(op);
-    }
 }
