@@ -118,7 +118,6 @@ bool M6800::op_cli(uint8_t opcode, op_names op, addr_mode mode)
     switch (mode)
     {
     case addr_mode::inh:
-        printf("cli inh");
         set_flag(I, false);
         return true;
     default:

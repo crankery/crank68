@@ -108,8 +108,8 @@ cmd_ws         equ $05
 
 reset:
 ; establish a simple initial stack
-; adjust later if you prefer high ram
-        lds #$00ff
+; end of RAM
+        lds #$bfff
 
 ; clear condition codes
         clra

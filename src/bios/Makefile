@@ -1,11 +1,12 @@
 SHELL := /bin/bash
 
-TOOLS_DIR := tools
-VASM_DIR := $(TOOLS_DIR)/vasm
-VASM := $(VASM_DIR)/vasm6800_oldstyle
+VASM_DIR := vasm
+TOOLS_DIR := ../bin
+VASM := $(VASM_DIR)/${TOOLS_DIR}/vasm6800_oldstyle
+VASM_MOT := $(VASM_DIR)/${TOOLS_DIR}/vasm6800_mot
 
-SRC := bios.asm
-OUT_BIN := bios.bin
+BIOS_SRC := bios.asm
+BIOS_OUT_BIN := bios.bin
 
 .PHONY: all clean tools
 
@@ -19,13 +20,6 @@ tools: $(VASM)
 
 # Build vasm if missing
 $(VASM):
-	mkdir -p $(TOOLS_DIR)
-	cd $(TOOLS_DIR) && \
-	if [ ! -d vasm ]; then \
-		wget http://sun.hasenbraten.de/vasm/release/vasm.tar.gz && \
-		tar -xf vasm.tar.gz && \
-		rm -f vasm.tar.gz; \
-	fi
 	$(MAKE) -C $(VASM_DIR) CPU=6800 SYNTAX=oldstyle
 
 clean:
