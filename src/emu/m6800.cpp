@@ -2,160 +2,111 @@
 #include <sstream>
 #include <iomanip>
 
-static M6800::MethodPtr op_dispatch[] = {};
-//     &M6800::op_aba,
-//     &M6800::op_abx,
-//     &M6800::op_adca,
-//     &M6800::op_adcb,
-//     &M6800::op_adda,
-//     &M6800::op_addb,
-//     &M6800::op_addd,
-//     &M6800::op_aim,
-//     &M6800::op_anda,
-//     &M6800::op_andb,
-//     &M6800::op_asl,
-//     &M6800::op_asla,
-//     &M6800::op_aslb,
-//     &M6800::op_asld,
-//     &M6800::op_asr,
-//     &M6800::op_asra,
-//     &M6800::op_asrb,
-//     &M6800::op_bcc,
-//     &M6800::op_bcs,
-//     &M6800::op_beq,
-//     &M6800::op_bge,
-//     &M6800::op_bgt,
-//     &M6800::op_bhi,
-//     &M6800::op_bita,
-//     &M6800::op_bitb,
-//     &M6800::op_ble,
-//     &M6800::op_bls,
-//     &M6800::op_blt,
-//     &M6800::op_bmi,
-//     &M6800::op_bne,
-//     &M6800::op_bpl,
-//     &M6800::op_bra,
-//     &M6800::op_brn,
-//     &M6800::op_bsr,
-//     &M6800::op_bvc,
-//     &M6800::op_bvs,
-//     &M6800::op_cba,
-//     &M6800::op_clc,
-//     &M6800::op_cli,
-//     &M6800::op_clr,
-//     &M6800::op_clra,
-//     &M6800::op_clrb,
-//     &M6800::op_clv,
-//     &M6800::op_cmpa,
-//     &M6800::op_cmpb,
-//     &M6800::op_cmpx,
-//     &M6800::op_com,
-//     &M6800::op_coma,
-//     &M6800::op_comb,
-//     &M6800::op_daa,
-//     &M6800::op_dec,
-//     &M6800::op_deca,
-//     &M6800::op_decb,
-//     &M6800::op_des,
-//     &M6800::op_dex,
-//     &M6800::op_eim,
-//     &M6800::op_eora,
-//     &M6800::op_eorb,
-//     &M6800::op_ill,
-//     &M6800::op_inc,
-//     &M6800::op_inca,
-//     &M6800::op_incb,
-//     &M6800::op_ins,
-//     &M6800::op_inx,
-//     &M6800::op_jmp,
-//     &M6800::op_jsr,
-//     &M6800::op_lda,
-//     &M6800::op_ldb,
-//     &M6800::op_ldd,
-//     &M6800::op_lds,
-//     &M6800::op_ldx,
-//     &M6800::op_lsr,
-//     &M6800::op_lsra,
-//     &M6800::op_lsrb,
-//     &M6800::op_lsrd,
-//     &M6800::op_mul,
-//     &M6800::op_neg,
-//     &M6800::op_nega,
-//     &M6800::op_negb,
-//     &M6800::op_nop,
-//     &M6800::op_oim,
-//     &M6800::op_ora,
-//     &M6800::op_orb,
-//     &M6800::op_psha,
-//     &M6800::op_pshb,
-//     &M6800::op_pshx,
-//     &M6800::op_pula,
-//     &M6800::op_pulb,
-//     &M6800::op_pulx,
-//     &M6800::op_rol,
-//     &M6800::op_rola,
-//     &M6800::op_rolb,
-//     &M6800::op_ror,
-//     &M6800::op_rora,
-//     &M6800::op_rorb,
-//     &M6800::op_rti,
-//     &M6800::op_rts,
-//     &M6800::op_sba,
-//     &M6800::op_sbca,
-//     &M6800::op_sbcb,
-//     &M6800::op_sec,
-//     &M6800::op_sev,
-//     &M6800::op_sta,
-//     &M6800::op_stb,
-//     &M6800::op_sei,
-//     &M6800::op_sts,
-//     &M6800::op_stx,
-//     &M6800::op_suba,
-//     &M6800::op_subb,
-//     &M6800::op_subd,
-//     &M6800::op_swi,
-//     &M6800::op_wai,
-//     &M6800::op_tab,
-//     &M6800::op_tap,
-//     &M6800::op_tba,
-//     &M6800::op_tim,
-//     &M6800::op_tpa,
-//     &M6800::op_tst,
-//     &M6800::op_tsta,
-//     &M6800::op_tstb,
-//     &M6800::op_tsx,
-//     &M6800::op_txs,
-//     &M6800::op_asx1,
-//     &M6800::op_asx2,
-//     &M6800::op_xgdx,
-//     &M6800::op_addx,
-//     &M6800::op_adcx,
-//     &M6800::op_bitx,
-//     &M6800::op_slp};
+#include "m6800.h"
 
 void M6800::step()
 {
     uint8_t op = fetch8();
 
-    op_names op_name = static_cast<op_names>(op_table[op][0]);
-    addr_mode addr_mode = static_cast<M6800::addr_mode>(op_table[op][1]);
+    op_names op_name = m6800_op_table[op].op_name;
+    addr_mode addr_mode = m6800_op_table[op].addr_mode;
 
-    MethodPtr operation = operations[op_name];
-
-    if (operation)
+    bool result = false;
+    switch (op_name)
     {
-        MethodPtr method = operations[op_name];
-        if ((this->*method)(op, op_name, addr_mode))
-        {
-            return;
-        }
-    }
-    else
-    {
-        printf("not hit %02x\n", op_name);
+    case op_names::lds:
+        result = op_lds(op, op_name, addr_mode);
+        break;
+    case op_names::clra:
+        result = op_clra(op, op_name, addr_mode);
+        break;
+    case op_names::tab:
+        result = op_tab(op, op_name, addr_mode);
+    default:
+        result = false;
     }
 
-    unimplemented(op);
+    if (!result)
+    {
+        unimplemented(op);
+    }
+}
+
+void M6800::disassemble(char *result, size_t result_size, uint16_t pc, uint8_t op, uint8_t b0, uint8_t b1)
+{
+    const char *op_name = m6800_op_table[op].op_name_s;
+    addr_mode addr_mode = m6800_op_table[op].addr_mode;
+
+    char buf2[256];
+
+    memset(buf2, 0, sizeof(buf2));
+    memset(result, 0, result_size);
+
+    switch (addr_mode)
+    {
+    case rel: /* relative */
+        snprintf(buf2, sizeof(buf2), "%s $%04x", op_name, pc + ((int8_t)b0) + 2);
+        snprintf(result, result_size, "%02x %02x     %s", op, b0, buf2);
+        break;
+    case imb: /* immediate (byte) */
+        snprintf(buf2, sizeof(buf2), "%s #$%02x", op_name, (uint8_t)b0);
+        snprintf(result, result_size, "%02x %02x    %s", op, b0, buf2);
+        break;
+    case imw: /* immediate (word) */
+        snprintf(buf2, sizeof(buf2), "%s #$%04x", op_name, (uint16_t)(b1 | (b0 << 8)));
+        snprintf(result, result_size, "%02x %02x %02x %s", op, b0, b1, buf2);
+        break;
+    case idx: /* indexed + byte offset */
+        snprintf(buf2, sizeof(buf2), "%s $%02x,x", op_name, (uint8_t)b0);
+        snprintf(result, result_size, "%02x %02x    %s", op, b0, buf2);
+        break;
+    case dir: /* direct address */
+        snprintf(buf2, sizeof(buf2), "%s $%02x", op_name, (uint8_t)b0);
+        snprintf(result, result_size, "%02x %02x    %s", op, b1, buf2);
+        break;
+    case ext: /* extended address */
+        snprintf(buf2, sizeof(buf2), "%s $%04x", op_name, (uint16_t)(b0 | (b1 << 8)));
+        snprintf(result, result_size, "%02x %02x %02x %s", op, b0, b1, buf2);
+        break;
+    case inh: /* inherent */
+        snprintf(buf2, sizeof(buf2), "%s", op_name);
+        snprintf(result, result_size, "%02x       %s", op, buf2);
+        break;
+    default:
+        std::cerr << "disassemble default code=0x%02x, op_name=%s addr_mode=%02x\n"
+                  << op << op_name << addr_mode;
+    }
+
+    // Pad with spaces
+    int len = strlen(result);
+    memset(result + len, ' ', result_size - strlen(result));
+    result[20] = '\0';
+}
+
+void M6800::dump_state(const M6800 &cpu)
+{
+    char dasm[256];
+    const auto &s = cpu.state();
+
+    disassemble(dasm, sizeof(dasm), s.pc, cpu.read8(s.pc), cpu.read8(s.pc + 1), cpu.read8(s.pc + 2));
+
+    char cc[7];
+    snprintf(cc, sizeof(cc), "%s%s%s%s%s%s",
+             s.cc & C ? "C" : " ",
+             s.cc & V ? "V" : " ",
+             s.cc & Z ? "Z" : " ",
+             s.cc & N ? "N" : " ",
+             s.cc & I ? "I" : " ",
+             s.cc & H ? "H" : " ");
+    std::cout
+        << std::hex << std::setw(4) << std::setfill('0') << s.pc << ": "
+        << dasm
+        << " A=" << std::setw(2) << static_cast<int>(s.a)
+        << " B=" << std::setw(2) << static_cast<int>(s.b)
+        << " X=" << std::setw(4) << s.x
+        << " SP=" << std::setw(4) << s.sp
+        << " " << cc
+        << std::endl;
 }
 
 uint8_t M6800::read8(uint16_t addr) const
@@ -284,7 +235,7 @@ void M6800::reset()
 {
     std::ostringstream oss;
     oss << "Unimplemented opcode 0x"
-        << std::hex << std::uppercase << std::setw(2) << std::setfill('0')
+        << std::hex << std::setw(2) << std::setfill('0')
         << static_cast<int>(opcode)
         << " at PC=0x"
         << std::setw(4) << static_cast<int>(s_.pc - 1);
