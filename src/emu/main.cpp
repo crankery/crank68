@@ -37,14 +37,12 @@ int main(int argc, char **argv)
     {
         while (true)
         {
-            cpu.dump_state(cpu);
             cpu.step();
         }
     }
     catch (const std::exception &e)
     {
         std::cerr << "CPU stopped: " << e.what() << '\n';
-        cpu.dump_state(cpu);
         return 1;
     }
 

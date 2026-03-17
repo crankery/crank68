@@ -1,112 +1,81 @@
-#include "m6800.h"
 #include <sstream>
 #include <iomanip>
 
 #include "m6800.h"
 
-void M6800::step()
+void M6800::trace()
 {
-    uint8_t op = fetch8();
+    uint16_t pc = s_.pc;
+    uint8_t op = read8(pc);
+    OpInfo op_info = m6800_op_table[op];
+    const char *op_name_s = op_info.op_name_s;
+    addr_mode addr_mode = op_info.addr_mode;
 
-    op_names op_name = m6800_op_table[op].op_name;
-    addr_mode addr_mode = m6800_op_table[op].addr_mode;
+    int argc =
+        addr_mode == rel ? 1 : addr_mode == imb ? 1
+                           : addr_mode == imw   ? 2
+                           : addr_mode == idx   ? 1
+                           : addr_mode == dir   ? 1
+                           : addr_mode == ext   ? 2
+                                                : 0;
 
-    bool result = false;
-    switch (op_name)
+    char args[10];
+    if (argc == 0)
     {
-    case op_names::lds:
-        result = op_lds(op, op_name, addr_mode);
-        break;
-    case op_names::clra:
-        result = op_clra(op, op_name, addr_mode);
-        break;
-    case op_names::tab:
-        result = op_tab(op, op_name, addr_mode);
-    default:
-        result = false;
+        args[0] = '\0';
+    }
+    else if (argc == 1)
+    {
+        snprintf(args, sizeof(args), "%02x", read8(pc + 1));
+    }
+    else
+    {
+        snprintf(args, sizeof(args), "%02x %02x", read8(pc + 1), read8(pc + 2));
     }
 
-    if (!result)
-    {
-        unimplemented(op);
-    }
-}
-
-void M6800::disassemble(char *result, size_t result_size, uint16_t pc, uint8_t op, uint8_t b0, uint8_t b1)
-{
-    const char *op_name = m6800_op_table[op].op_name_s;
-    addr_mode addr_mode = m6800_op_table[op].addr_mode;
-
-    char buf2[256];
-
-    memset(buf2, 0, sizeof(buf2));
-    memset(result, 0, result_size);
-
+    char op_formatted[16];
     switch (addr_mode)
     {
-    case rel: /* relative */
-        snprintf(buf2, sizeof(buf2), "%s $%04x", op_name, pc + ((int8_t)b0) + 2);
-        snprintf(result, result_size, "%02x %02x     %s", op, b0, buf2);
+    case inh:
+        snprintf(op_formatted, sizeof(op_formatted), "%s", op_name_s);
         break;
-    case imb: /* immediate (byte) */
-        snprintf(buf2, sizeof(buf2), "%s #$%02x", op_name, (uint8_t)b0);
-        snprintf(result, result_size, "%02x %02x    %s", op, b0, buf2);
+    case imb:
+        snprintf(op_formatted, sizeof(op_formatted), "%s #$%02x", op_name_s, read8(pc + 1));
         break;
-    case imw: /* immediate (word) */
-        snprintf(buf2, sizeof(buf2), "%s #$%04x", op_name, (uint16_t)(b1 | (b0 << 8)));
-        snprintf(result, result_size, "%02x %02x %02x %s", op, b0, b1, buf2);
+    case imw:
+        snprintf(op_formatted, sizeof(op_formatted), "%s #$%04x", op_name_s, (read8(pc + 1) << 8) | read8(pc + 2));
         break;
-    case idx: /* indexed + byte offset */
-        snprintf(buf2, sizeof(buf2), "%s $%02x,x", op_name, (uint8_t)b0);
-        snprintf(result, result_size, "%02x %02x    %s", op, b0, buf2);
+    case idx:
+        snprintf(op_formatted, sizeof(op_formatted), "%s $%02x, x", op_name_s, read8(pc + 1));
         break;
-    case dir: /* direct address */
-        snprintf(buf2, sizeof(buf2), "%s $%02x", op_name, (uint8_t)b0);
-        snprintf(result, result_size, "%02x %02x    %s", op, b1, buf2);
+    case dir:
+        snprintf(op_formatted, sizeof(op_formatted), "%s $%02x", op_name_s, read8(pc + 1));
         break;
-    case ext: /* extended address */
-        snprintf(buf2, sizeof(buf2), "%s $%04x", op_name, (uint16_t)(b0 | (b1 << 8)));
-        snprintf(result, result_size, "%02x %02x %02x %s", op, b0, b1, buf2);
+    case ext:
+        snprintf(op_formatted, sizeof(op_formatted), "%s $%04x", op_name_s, (read8(pc + 1) << 8) | read8(pc + 2));
         break;
-    case inh: /* inherent */
-        snprintf(buf2, sizeof(buf2), "%s", op_name);
-        snprintf(result, result_size, "%02x       %s", op, buf2);
+    case rel:
+        snprintf(op_formatted, sizeof(op_formatted), "%s [$%04x] ", op_name_s, pc + 2 + ((int8_t)read8(pc + 1)));
         break;
     default:
-        std::cerr << "disassemble default code=0x%02x, op_name=%s addr_mode=%02x\n"
-                  << op << op_name << addr_mode;
+        break;
     }
 
-    // Pad with spaces
-    int len = strlen(result);
-    memset(result + len, ' ', result_size - strlen(result));
-    result[20] = '\0';
-}
-
-void M6800::dump_state(const M6800 &cpu)
-{
-    char dasm[256];
-    const auto &s = cpu.state();
-
-    disassemble(dasm, sizeof(dasm), s.pc, cpu.read8(s.pc), cpu.read8(s.pc + 1), cpu.read8(s.pc + 2));
-
-    char cc[7];
-    snprintf(cc, sizeof(cc), "%s%s%s%s%s%s",
-             s.cc & C ? "C" : " ",
-             s.cc & V ? "V" : " ",
-             s.cc & Z ? "Z" : " ",
-             s.cc & N ? "N" : " ",
-             s.cc & I ? "I" : " ",
-             s.cc & H ? "H" : " ");
-    std::cout
-        << std::hex << std::setw(4) << std::setfill('0') << s.pc << ": "
-        << dasm
-        << " A=" << std::setw(2) << static_cast<int>(s.a)
-        << " B=" << std::setw(2) << static_cast<int>(s.b)
-        << " X=" << std::setw(4) << s.x
-        << " SP=" << std::setw(4) << s.sp
-        << " " << cc
-        << std::endl;
+    printf("%04x: %02x %-8s %-12s | %c%c%c%c%c%c | a=%02x b=%02x x=%04x sp=%04x\n",
+           pc,
+           op,
+           args,
+           op_formatted,
+           s_.cc & C ? 'C' : ' ',
+           s_.cc & V ? 'V' : ' ',
+           s_.cc & Z ? 'Z' : ' ',
+           s_.cc & N ? 'N' : ' ',
+           s_.cc & I ? 'I' : ' ',
+           s_.cc & H ? 'H' : ' ',
+           s_.a,
+           s_.b,
+           s_.x,
+           s_.sp);
 }
 
 uint8_t M6800::read8(uint16_t addr) const
@@ -233,11 +202,6 @@ void M6800::reset()
 
 [[noreturn]] void M6800::unimplemented(uint8_t opcode) const
 {
-    std::ostringstream oss;
-    oss << "Unimplemented opcode 0x"
-        << std::hex << std::setw(2) << std::setfill('0')
-        << static_cast<int>(opcode)
-        << " at PC=0x"
-        << std::setw(4) << static_cast<int>(s_.pc - 1);
-    throw std::runtime_error(oss.str());
+    fprintf(stderr, "---\n\n failure: unimplemented opcode 0x%02x at 0x%04x\n\n---\n", opcode, s_.pc - 1);
+    exit(-1);
 }

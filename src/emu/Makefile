@@ -25,7 +25,7 @@ $(M6800_DEFS_H) $(M6800_DEFS_CPP): $(GENERATOR) $(M6800_OPS_CSV)
 $(M6800_DEFS_CPP:.cpp=.o): $(M6800_DEFS_CPP) $(M6800_DEFS_H)
 
 # Source files (all .cpp in current directory)
-SRCS = $(wildcard *.cpp) $(M6800_DEFS_CPP)
+SRCS = $(wildcard *.cpp)
 
 # Object files
 OBJS = $(SRCS:%.cpp=$(BUILD_DIR)/%.o)

@@ -50,15 +50,13 @@ public:
     uint8_t read8(uint16_t addr) const;
     uint16_t read16(uint16_t addr) const;
 
-    static void dump_state(const M6800 &cpu);
-    static void disassemble(char *result, size_t result_size, uint16_t pc, uint8_t code, uint8_t b0, uint8_t b1);
+    // static void disassemble(char *result, size_t result_size, uint16_t pc, uint8_t code, uint8_t b0, uint8_t b1);
 
 private:
-    // static const char *const op_name_str[];
-    // static const uint8_t op_table[0x100][2];
-
     State s_;
     Machine machine_;
+
+    void trace();
 
     uint8_t fetch8();
     uint16_t fetch16();
@@ -81,7 +79,7 @@ private:
 
     // operations
     bool op_adda(uint8_t opcode, op_names op, addr_mode mode);
-
+    bool op_anda(uint8_t opcode, op_names op, addr_mode mode);
     bool op_clc(uint8_t opcode, op_names op, addr_mode mode);
     bool op_cli(uint8_t opcode, op_names op, addr_mode mode);
     bool op_clra(uint8_t opcode, op_names op, addr_mode mode);
@@ -139,7 +137,6 @@ private:
     // bool op_addb(uint8_t opcode, op_names op, addr_mode mode);
     // bool op_addd(uint8_t opcode, op_names op, addr_mode mode);
     // bool op_aim(uint8_t opcode, op_names op, addr_mode mode);
-    // bool op_anda(uint8_t opcode, op_names op, addr_mode mode);
     // bool op_andb(uint8_t opcode, op_names op, addr_mode mode);
     // bool op_asl(uint8_t opcode, op_names op, addr_mode mode);
     // bool op_asla(uint8_t opcode, op_names op, addr_mode mode);
