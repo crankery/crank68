@@ -7,3 +7,4 @@
 [submodule "src/tools/vasm"]
 	path = src/tools/vasm
 	url = git@github.com:dbuchwald/vasm.git
+	ignore = dirty
