@@ -5,13 +5,14 @@
 
 #include "mem.h"
 
-static const uint16_t StartAddress = 0xC000;
-static const uint16_t EndAddress = 0xDFFF;
-
-class BankedMemory : Mem
+class BankedMemory : public Mem
 {
 public:
-    BankedMemory() : Mem(StartAddress, EndAddress)
+    static const uint16_t StartAddress = 0xC000;
+    static const uint16_t EndAddress = 0xDFFF;
+
+    BankedMemory()
+        : Mem(StartAddress, EndAddress)
     {
     }
 

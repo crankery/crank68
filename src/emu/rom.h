@@ -10,12 +10,12 @@
 
 #include "mem.h"
 
-static const uint16_t StartAddress = 0xE100;
-static const uint16_t EndAddress = 0xFFFF;
-
-class Rom : Mem
+class Rom : public Mem
 {
 public:
+    static const uint16_t StartAddress = 0xE100;
+    static const uint16_t EndAddress = 0xFFFF;
+
     Rom() : Mem(StartAddress, EndAddress)
     {
         memory_.reserve(size());

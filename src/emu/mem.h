@@ -16,12 +16,22 @@ public:
     virtual uint8_t read(uint16_t addr) const = 0;
     virtual void write(uint16_t addr, uint8_t value) = 0;
 
-protected:
-    uint16_t size()
+    uint16_t getStartAddress() const
+    {
+        return startAddress_;
+    }
+
+    uint16_t getEndAddress() const
+    {
+        return endAddress_;
+    }
+
+    uint16_t size() const
     {
         return endAddress_ - startAddress_ + 1;
     }
 
+protected:
     uint16_t startAddress_;
     uint16_t endAddress_;
 };

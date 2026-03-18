@@ -5,11 +5,14 @@
 
 #include "mem.h"
 
-class Ram : Mem
+class Ram : public Mem
 {
 public:
-    Ram(uint16_t startAddress, uint16_t endAddress)
-        : Mem(startAddress, endAddress)
+    static const uint16_t StartAddress = 0x0000;
+    static const uint16_t EndAddress = 0xbfff;
+
+    Ram()
+        : Mem(StartAddress, EndAddress)
     {
         memory_.reserve(size());
     }

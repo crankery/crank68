@@ -10,7 +10,7 @@ uint8_t Acia::in(uint8_t addr) const
     case 0:
     {
         // status register
-        StatusByte sb;
+        Acia::StatusByte sb;
         sb.rdrf = 0;  // receiver buffer is full <-- this one needs to be twiddled
         sb.tdre = 1;  //  transmit buffer is empty
         sb.dcd_n = 0; // data carrier detected

@@ -1,16 +1,17 @@
 #pragma once
 
 #include <cstdint>
+#include <array>
 
 #include "mem.h"
 #include "memoryIODevice.h"
 
-static const uint16_t StartAddress = 0xE000;
-static const uint16_t EndAddress = 0xE0FF;
-
-class MemoryIO : Mem
+class MemoryIO : public Mem
 {
 public:
+    static const uint16_t StartAddress = 0xE000;
+    static const uint16_t EndAddress = 0xE0FF;
+
     MemoryIO()
         : Mem(StartAddress, EndAddress)
     {
@@ -30,6 +31,8 @@ public:
         {
             devices_[baseAddress + i] = device;
         }
+
+        return true;
     }
 
     virtual uint8_t read(uint16_t addr) const override
@@ -73,7 +76,5 @@ public:
     }
 
 private:
-    // MemoryIODevice getDevice(address)
-
     std::array<MemoryIODevice *, 0x100> devices_;
 };

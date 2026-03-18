@@ -5,7 +5,7 @@
 
 static const uint8_t AciaRegisterCount = 2;
 
-class Acia : MemoryIODevice
+class Acia : public MemoryIODevice
 {
 public:
     // control register - 0bITTWWWDD
@@ -85,6 +85,6 @@ public:
 private:
     ControlByte oldControl;
     StatusByte oldStatus;
-    uint8_t oldReceive = 0;
-    uint8_t oldTransmit = 0;
+    // uint8_t oldReceive = 0;
+    // uint8_t oldTransmit = 0;
 };
