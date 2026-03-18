@@ -14,7 +14,7 @@ public:
     Ram()
         : Mem(StartAddress, EndAddress)
     {
-        memory_.reserve(size());
+        memory_.resize(size());
     }
 
     virtual uint8_t read(uint16_t addr) const override;
