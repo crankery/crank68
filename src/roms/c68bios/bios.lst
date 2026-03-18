@@ -108,9 +108,9 @@ F00:0107               org $e100
 F00:0108       
 F00:0109       reset:
 F00:0110       ; establish a simple initial stack
-F00:0111       ; adjust later if you prefer high ram
-F00:0112               lds #$00ff
-               S02:FFFFFFFFFFFFE100:  8E 00 FF
+F00:0111       ; end of RAM
+F00:0112               lds #$bfff
+               S02:FFFFFFFFFFFFE100:  8E BF FF
 F00:0113       
 F00:0114       ; clear condition codes
 F00:0115               clra

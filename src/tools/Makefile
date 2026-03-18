@@ -1,0 +1,40 @@
+BIN_DIR := bin
+VASM_DIR := vasm
+VASM_OLDSTYLE := vasm6800_oldstyle
+VASM_MOT := vasm6800_mot
+
+TARGET_VASM_OLDSTYLE := $(BIN_DIR)/$(VASM_OLDSTYLE)
+TARGET_VASM_MOT := $(BIN_DIR)/$(VASM_MOT)
+
+VASM_OLDSTYLE_OUT := $(VASM_DIR)/$(VASM_OLDSTYLE)
+VASM_MOT_OUT := $(VASM_DIR)/$(VASM_MOT)
+
+tools: $(TARGET_VASM_OLDSTYLE) $(TARGET_VASM_MOT) 
+
+all: tools
+
+$(TARGET_VASM_OLDSTYLE): $(VASM_OLDSTYLE) $(BIN_DIR)
+	cp $(VASM_OLDSTYLE_OUT) $(TARGET_VASM_OLDSTYLE) 
+
+$(TARGET_VASM_MOT): $(VASM_MOT) $(BIN_DIR)
+	cp $(VASM_MOT_OUT) $(TARGET_VASM_MOT)
+
+$(VASM_OLDSTYLE):
+	$(MAKE) -C $(VASM_DIR) CPU=6800 SYNTAX=oldstyle
+
+$(VASM_MOT):
+	$(MAKE) -C $(VASM_DIR) CPU=6800 SYNTAX=mot
+	
+$(BIN_DIR):
+	mkdir -p $(BIN_DIR)
+
+clean: clean_bin clean_vasm
+
+clean_bin:
+	rm -rf $(TARGET_VASM_OLDSTYLE) $(TARGET_VASM_MOT)
+
+clean_vasm:
+	$(MAKE) -C $(VASM_DIR) clean
+
+.PHONY: all clean tools
+

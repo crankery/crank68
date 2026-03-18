@@ -5,8 +5,13 @@
 * BY CRAIG JONES,RAY BELLIS
 *
 
-* !    NAM    MIKBUG
-* !      TTL    2.0 WITH AUDIO CASSETTE
+* jdh: changed minimally to build with vasm6800_mot
+* todo: 
+* - remove audio cassette stuff
+* - 
+
+*     NAM    MIKBUG
+*     TTL    2.0 WITH AUDIO CASSETTE
 *     REV  0
 *     COPYRIGHT (C)  1977  BY MOTOROLA INC.
 *
@@ -33,8 +38,14 @@
 *     E  EXORTAPE CASSETTE INTERFACE
 *
 *      OPT    S,O,LLEN=80,CREF
-ACIAS  EQU    $8008
-ACIAD  EQU    $8009
+
+* <jdh - change the acia addresses to match target system
+* ACIAS  EQU    $8008
+* ACIAD  EQU    $8009
+ACIAS  EQU    $E010
+ACIAD  EQU    $E020
+* jdh>
+
 SWI    EQU    $3F      SWI OP CODE
 *
 BASORG EQU    $F800
@@ -1728,49 +1739,75 @@ DIVOV2 INS
 *
 * RAM - LOCATIONS DEVOTED TO VARIABLE INFORMATION
 *
-*
-       ORG    $A000    START OF RAM .
+
+* <jdh - our ram starts at 0x000
+*       ORG    $A000    START OF RAM .
+*       ORG    $0000    START OF RAM .
+* jdh>
+
 NBRBPT EQU    8        # OF BREAKPOINTS SUPPORTED
 *
 * THE FOLLOWING ARE INITIALIZED AT START
 *
-IOV    ds    2        I/O INTERRUPT POINTER
-BEGA   ds    2        BEGIN ADDRESS PRINT/PUNCH
-ENDA   ds    2        END ADDRESS PRINT/PUNCH
-NIO    ds    2        NMI INTERRUPT POINTER
-SP     ds    2        USER STACK POINTER
-SWI1   ds    2        LEVEL 1 SWI VECTOR
-SWI2   ds    2        LEVEL 2 SWI VECTOR
-BRINS  ds    8        STORAGE FOR CONDITIONAL BRANCH
+* <jdh change these to simple equs
+* IOV    ds    2        I/O INTERRUPT POINTER
+* BEGA   ds    2        BEGIN ADDRESS PRINT/PUNCH
+* ENDA   ds    2        END ADDRESS PRINT/PUNCH
+* NIO    ds    2        NMI INTERRUPT POINTER
+* SP     ds    2        USER STACK POINTER
+* SWI1   ds    2        LEVEL 1 SWI VECTOR
+* SWI2   ds    2        LEVEL 2 SWI VECTOR
+* BRINS  ds    8        STORAGE FOR CONDITIONAL BRANCH
+RAMST  EQU    $0000
+IOV    EQU    RAMST        I/O INTERRUPT POINTER
+BEGA   EQU    IOV+2        BEGIN ADDRESS PRINT/PUNCH
+ENDA   EQU    BEGA+2        END ADDRESS PRINT/PUNCH
+NIO    EQU    ENDA+2        NMI INTERRUPT POINTER
+SP     EQU    NIO+2        USER STACK POINTER
+SWI1   EQU    SP+2        LEVEL 1 SWI VECTOR
+SWI2   EQU    SWI1+2        LEVEL 2 SWI VECTOR
+BRINS  EQU    SWI2+2       STORAGE FOR CONDITIONAL BRANCH
 *                            ROUTINE
-BRANEN EQU    *        END OF BRANCH ROUTINE + 1
+BRANEN EQU    BRINS+8        END OF BRANCH ROUTINE + 1
 *
 * THE FOLLOWING ARE INITIALIZED TO ZERO AT START
 *
 *
-OUTSW  ds    1        OUTPUT SWITCH
+* OUTSW  ds    1        OUTPUT SWITCH
+* *                       (ZERO => ECHO INPUT)
+* TRCADR ds    2        TRACE ADDRESS
+* TRCINS ds    1        OP CODE REPLACED BY SWI
+* NTRACE ds    2        NO. OF INSTRUCTIONS TO TRACE
+* *
+* BRKADR ds    NBRBPT*2 BREAKPOINT ADDRESS TABLE
+* BRKINS ds    NBRBPT*2 OP CODES FOR BREAK REPLACEMENT
+* *                            (UPPER BYTE OF EACH
+* *                             PAIR USED ONLY)
+CKSM   EQU    BRANEN        CHECKSUM
+ASAVE  EQU    BRANEN        A REG SAVE
+TEMP   EQU    BRANEN        CHAR COUNT(INADD)
+
+OUTSW  EQU    BRANEN        OUTPUT SWITCH
 *                       (ZERO => ECHO INPUT)
-TRCADR ds    2        TRACE ADDRESS
-TRCINS ds    1        OP CODE REPLACED BY SWI
-NTRACE ds    2        NO. OF INSTRUCTIONS TO TRACE
+TRCADR EQU    OUTSW+1        TRACE ADDRESS
+TRCINS EQU    TRCADR+2        OP CODE REPLACED BY SWI
+NTRACE EQU    TRCINS+1        NO. OF INSTRUCTIONS TO TRACE
 *
-BRKADR ds    NBRBPT*2 BREAKPOINT ADDRESS TABLE
-BRKINS ds    NBRBPT*2 OP CODES FOR BREAK REPLACEMENT
+BRKADR EQU    NTRACE+2       BREAKPOINT ADDRESS TABLE
+BRKINS EQU    BRKADR+NBRBPT*2       OP CODES FOR BREAK REPLACEMENT
 *                            (UPPER BYTE OF EACH
 *                             PAIR USED ONLY)
-CKSM   EQU    *        CHECKSUM
-ASAVE  EQU    *        A REG SAVE
-TEMP   EQU    *        CHAR COUNT(INADD)
-       DS    1
+CKSM   EQU    BRKINS+NBRBPT*2        CHECKSUM
+ASAVE  EQU    CKSM        A REG SAVE
+TEMP   EQU    TEMP        CHAR COUNT(INADD) 
 *
 *
-BYTECT EQU    *        BYTE COUNT
-MCONT  EQU    *        TMP
-       DS    1
+BYTECT EQU    TEMP+1        BYTE COUNT
+MCONT  EQU    BYTECT        TMP 
 *
 *
-XHI    DS    1        X REG HIGH (TEMP)
-XLOW   DS    1        X REG LOW
+XHI    EQU    MCONT+1        X REG HIGH (TEMP)
+XLOW   EQU    XHI+1        X REG LOW
 *
 *
 SSAVE  EQU    *        S REG SAVE
@@ -1807,8 +1844,12 @@ R      DS    1        R,S IS CRC REGISTER
 S      DS    1
 V      DS    1        PAGE COUNT
 T1     EQU    CL
+
+* <jdh move stack to end of ram
 *
 * REST OF 128 RAM IS USED FOR STACK
 *
-       DS    36
-STACK  DS    1        START OF STACK AREA
+*        DS    36
+* STACK  DS    1        START OF STACK AREA
+STACK  EQU    $BF00
+* jdh>
