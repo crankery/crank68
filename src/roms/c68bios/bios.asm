@@ -42,15 +42,27 @@
 ; hardware definitions
 ; ------------------------------------------------------------
 
-    org $e000
+ram_start       equ $0000
+ram_end         equ $bfff
+bank_start      equ $c000
+bank_end        equ $dfff
+io_start        equ $e000
+io_end          equ $e0ff
+rom_start       equ $e100
+rom_end         equ $ffff
 
-latch_reg       equ $e000
+; slot 0
+bank_latch_reg  equ $e000
 
-; adjust these for your actual acia map
+; slot 1
 acia0_data      equ $e010
 acia0_status    equ $e011
-acia0_cmd       equ $e012
-acia0_ctrl      equ $e013
+; pia0
+
+; slot 2
+acia0_cmd       equ $e020
+acia0_ctrl      equ $e021
+; pia1
 
 acia_tdre_mask  equ $02
 acia_rdrf_mask  equ $01
@@ -93,23 +105,35 @@ cmd_ws         equ $05
 ; rom identification / version
 ; ------------------------------------------------------------
 
-; bios_id:
-;         fcb 'd','h','6','8','0','0'
+ bios_id:
+         fcb 'd','h','6','8','0','0'
 
-; bios_version:
-;         fcb 0
-;         fcb 1
+ bios_version:
+         fcb 0
+         fcb 1
 
 ; ------------------------------------------------------------
 ; cold reset entry
 ; ------------------------------------------------------------
 
-        org $e100
+; align the rom to 8KB, overlapping I/O
+; eat up the i/o page 
+; using this as a build id area as it's not mapped into memory
+        org io_start
+
+ bios_id:
+        fcb 'd','h','6','8','0','0'
+
+ bios_version:
+        fcb 0
+        fcb 1
+
+; actual start of rom
+        org rom_start
 
 reset:
-; establish a simple initial stack
-; end of RAM
-        lds #$bfff
+; try putting the stack at the end of ram
+        lds #ram_end
 
 ; clear condition codes
         clra
@@ -119,7 +143,7 @@ reset:
         staa latch_reg
 
 ; install optional ram vectors
-;        jsr init_vectors
+        jsr init_vectors
 
 ; initialize console / serial hardware
         jsr acia0_init

@@ -508,7 +508,6 @@ bool M6800::op_rts(uint8_t opcode, op_names op, addr_mode mode)
     case addr_mode::inh:
     {
         s_.pc = pop16();
-        printf("rts %04x", s_.pc);
         return true;
     }
     default:
@@ -1004,11 +1003,6 @@ bool M6800::op_inx(uint8_t opcode, op_names op, addr_mode mode)
 }
 
 bool M6800::op_jmp(uint8_t opcode, op_names op, addr_mode mode)
-{
-       return false;
-}
-
-bool M6800::op_jsr(uint8_t opcode, op_names op, addr_mode mode)
 {
        return false;
 }

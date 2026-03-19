@@ -30,8 +30,8 @@ public:
     void write(uint16_t addr, uint8_t value);
 
 private:
-    Ram ram_;
-    Rom rom_;
-    MemoryIO memory_io_;
-    BankedMemory banked_memory_;
+    mutable Ram ram_;
+    mutable Rom rom_;
+    mutable MemoryIO memory_io_;
+    mutable BankedMemory banked_memory_;
 };

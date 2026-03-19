@@ -92,9 +92,7 @@ uint16_t M6800::read16(uint16_t addr) const
 
 void M6800::write8(uint16_t addr, uint8_t value)
 {
-    printf("cpu write before %04x <- %02x\n", addr, value);
     machine_.write(addr, value);
-    printf("cpu write after %04x = %02x\n", addr, read8(addr));
 }
 
 void M6800::write16(uint16_t addr, uint16_t value)
@@ -117,10 +115,7 @@ uint16_t M6800::fetch16()
 
 void M6800::push8(uint8_t v)
 {
-    printf("push8(v:%02x) sp:%04x before:%02x\n", v, s_.sp, read8(s_.sp));
-    write8(s_.sp--, v);
-
-    printf("after: %02x\n", read8(s_.sp + 1));
+    write8(--s_.sp, v);
 }
 
 void M6800::push16(uint16_t v)
@@ -131,28 +126,14 @@ void M6800::push16(uint16_t v)
 
 uint8_t M6800::pop8()
 {
-    uint16_t readAddr = s_.sp + 1;
-    printf("pop8 before: sp = %04x \n", readAddr);
-    uint8_t v = read8(readAddr);
-
-    printf("pop8 %02x %02x\n", readAddr, v);
-
-    s_.sp++;
-
-    return v;
+    return read8(s_.sp++);
 }
 
 uint16_t M6800::pop16()
 {
-    printf("pop16()\n");
     uint8_t hi = pop8();
-    printf("hi %02x\n", hi);
     uint8_t lo = pop8();
-    printf("lo %02x\n", lo);
-
     uint16_t result = static_cast<uint16_t>((hi << 8) | lo);
-    printf("result %04x\n", result);
-
     return result;
 }
 

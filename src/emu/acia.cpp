@@ -2,10 +2,10 @@
 
 #include <cstdint>
 
-uint8_t Acia::in(uint8_t addr) const
+uint8_t Acia::in(const uint8_t port) const
 {
     // uint8_t port = getPort(addr);
-    switch (addr)
+    switch (port)
     {
     case 0:
     {
@@ -41,9 +41,9 @@ uint8_t Acia::in(uint8_t addr) const
     }
 }
 
-void Acia::out(uint8_t addr, uint8_t value)
+void Acia::out(uint8_t port, uint8_t value)
 {
-    switch (addr)
+    switch (port)
     {
     case 0:
         // control register

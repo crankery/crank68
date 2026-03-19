@@ -55,7 +55,7 @@ public:
         unsigned char irq_n : 1;
     };
 
-    Acia(uint8_t slot, uint8_t offset)
+    Acia(const uint8_t slot, const uint8_t offset)
         : MemoryIODevice(slot, offset, AciaRegisterCount)
     {
         // clear the old state
@@ -79,8 +79,8 @@ public:
         oldStatus = sb;
     }
 
-    virtual uint8_t in(uint8_t addr) const override;
-    virtual void out(uint8_t addr, uint8_t value) override;
+    virtual uint8_t in(uint8_t port) const override;
+    virtual void out(uint8_t port, uint8_t value) override;
 
 private:
     ControlByte oldControl;
