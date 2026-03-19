@@ -121,13 +121,6 @@ cmd_ws         equ $05
 ; using this as a build id area as it's not mapped into memory
         org io_start
 
- bios_id:
-        fcb 'd','h','6','8','0','0'
-
- bios_version:
-        fcb 0
-        fcb 1
-
 ; actual start of rom
         org rom_start
 
@@ -140,7 +133,7 @@ reset:
         tap
 
 ; initialize latch / bank register to known state
-        staa latch_reg
+        staa bank_latch_reg
 
 ; install optional ram vectors
         jsr init_vectors
@@ -339,7 +332,7 @@ bios_sei:
 ; initialization helpers
 ; ------------------------------------------------------------
 
-; init_vectors:
+init_vectors:
 ;         ldx #bios_rom_putc
 ;         stx vec_conout
 
@@ -354,7 +347,7 @@ bios_sei:
 
 ;         ldx #bios_rom_warmstart
 ;         stx vec_warmstart
-;         rts
+          rts
 
 ; ------------------------------------------------------------
 ; warm start / monitor entry
