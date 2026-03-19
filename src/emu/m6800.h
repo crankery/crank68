@@ -6,7 +6,6 @@
 #include <string>
 #include <map>
 
-#include "machine.h"
 #include "m6800_defs.h"
 
 class M6800
@@ -42,11 +41,6 @@ public:
     const State &state() const { return s_; }
     State &state() { return s_; }
 
-    bool loadRom(const char *path, uint16_t offset = 0)
-    {
-        return machine_.loadRom(path, offset);
-    }
-
     uint8_t read8(uint16_t addr) const;
     uint16_t read16(uint16_t addr) const;
 
@@ -54,7 +48,6 @@ public:
 
 private:
     State s_;
-    Machine machine_;
 
     void trace();
 

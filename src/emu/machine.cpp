@@ -4,11 +4,15 @@ uint8_t Machine::read(uint16_t addr) const
 {
     if (addr >= ram_.getStartAddress() && addr <= ram_.getEndAddress())
     {
-        return ram_.read(addr);
+        uint8_t v = ram_.read(addr);
+        //        printf("machine read ram[%04x]: %02x\n", addr, v);
+        return v;
     }
     else if (addr >= rom_.getStartAddress() && addr <= rom_.getEndAddress())
     {
-        return rom_.read(addr);
+        uint8_t v = rom_.read(addr);
+        //      printf("machine read rom[%04x]: %02x\n", addr, v);
+        return v;
     }
     else if (addr >= memory_io_.getStartAddress() && addr <= memory_io_.getEndAddress())
     {

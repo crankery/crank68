@@ -26,11 +26,6 @@ public:
         return endAddress_;
     }
 
-    uint16_t size() const
-    {
-        return endAddress_ - startAddress_ + 1;
-    }
-
 protected:
     uint16_t startAddress_;
     uint16_t endAddress_;

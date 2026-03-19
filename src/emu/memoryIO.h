@@ -4,25 +4,16 @@
 #include <vector>
 
 #include "mem.h"
-#include "memoryIODevice.h"
 
 // devices
+#include "memoryIODevice.h"
+
 #include "latch.h"
 #include "acia.h"
 
 class MemoryIO : public Mem
 {
 public:
-    static const uint16_t StartAddress = 0xE000;
-    static const uint16_t EndAddress = 0xE0FF;
-
-    const static uint8_t SlotLatch = 0x0;
-    const static uint8_t OffsetBankedMemoryLatch = 0x0;
-
-    const static uint8_t SlotCom0 = 0x1;
-    const static uint8_t SlotCom1 = 0x2;
-    const static uint8_t OffsetAcia = 0x0;
-
     MemoryIO()
         : Mem(StartAddress, EndAddress),
           banked_memory_latch_(SlotLatch, OffsetBankedMemoryLatch),
@@ -40,7 +31,17 @@ public:
     }
 
 private:
-    mutable Latch banked_memory_latch_;
-    mutable Acia acia_0_;
-    mutable Acia acia_1_;
+    static const uint16_t StartAddress = 0xE000;
+    static const uint16_t EndAddress = 0xE0FF;
+
+    static const uint8_t SlotLatch = 0x0;
+    static const uint8_t OffsetBankedMemoryLatch = 0x0;
+
+    static const uint8_t SlotCom0 = 0x1;
+    static const uint8_t SlotCom1 = 0x2;
+    static const uint8_t OffsetAcia = 0x0;
+
+    Latch banked_memory_latch_;
+    Acia acia_0_;
+    Acia acia_1_;
 };

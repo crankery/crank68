@@ -2,6 +2,17 @@
 #include <iomanip>
 
 #include "m6800.h"
+#include "machine.h"
+
+uint8_t M6800::read8(uint16_t addr) const
+{
+    return MachineInstance.read(addr);
+}
+
+void M6800::write8(uint16_t addr, uint8_t value)
+{
+    MachineInstance.write(addr, value);
+}
 
 void M6800::trace()
 {
@@ -78,21 +89,11 @@ void M6800::trace()
            s_.sp);
 }
 
-uint8_t M6800::read8(uint16_t addr) const
-{
-    return machine_.read(addr);
-}
-
 uint16_t M6800::read16(uint16_t addr) const
 {
     uint8_t hi = read8(addr);
     uint8_t lo = read8(static_cast<uint16_t>(addr + 1));
     return static_cast<uint16_t>((hi << 8) | lo);
-}
-
-void M6800::write8(uint16_t addr, uint8_t value)
-{
-    machine_.write(addr, value);
 }
 
 void M6800::write16(uint16_t addr, uint16_t value)
@@ -193,12 +194,16 @@ uint8_t M6800::sub8(uint8_t lhs, uint8_t rhs, bool carry_in)
 
 void M6800::reset()
 {
+    uint16_t reset_vector = read16(0xFFFE);
+
+    printf(" --- RESET to %04x ---\n", reset_vector);
+
     s_.a = 0;
     s_.b = 0;
     s_.x = 0;
     s_.cc = I;
     s_.sp = 0x00FF;
-    s_.pc = read16(0xFFFE);
+    s_.pc = reset_vector;
 }
 
 [[noreturn]] void M6800::unimplemented(uint8_t opcode) const

@@ -1,38 +1,69 @@
 #include "rom.h"
+#include "bios.h"
 
 uint8_t Rom::read(uint16_t addr) const
 {
     if (addr >= StartAddress && addr <= EndAddress)
     {
-        return memory_[addr - StartAddress];
+        uint8_t v = ___roms_c68bios_bios_rom[addr - StartAddress + 0x100];
+        return v;
+        // return memory_[addr - StartAddress];
     }
 
     return 0xff;
 }
 
-void Rom::write(uint16_t addr, uint8_t value)
-{
-}
+// bool Rom::load(const char *path, uint16_t skip)
+// {
+//     printf("start address %04x end address %04x size %04x\n", startAddress_, endAddress_, Size);
 
-bool Rom::load(const char *path, uint16_t offset)
-{
-    std::ifstream f(path, std::ios::binary);
+//     printf("load %s at %04x.\n", path, startAddress_);
+//     FILE *f = fopen(path, "rb");
+//     if (f == NULL)
+//     {
+//         printf("unable to open %s\n", path);
+//     }
 
-    if (!f)
-        return false;
+//     fseek(f, 0, SEEK_END);
+//     uint16_t fileSize = ftell(f);
+//     rewind(f);
 
-    std::vector<uint8_t> data((std::istreambuf_iterator<char>(f)),
-                              std::istreambuf_iterator<char>());
+//     uint8_t *buf = (uint8_t *)malloc(fileSize * sizeof(uint8_t));
+//     size_t bytesRead = fread(buf, 1, fileSize, f);
+//     printf("bytes read: %4x\n", (unsigned int)bytesRead);
+//     fclose(f);
 
-    if (data.size() - offset > this->size())
-    {
-        return false;
-    }
+//     printf("copying from file index %04x to memory of size %04x\n", skip, Size);
+//     for (int bufIdx = 0x100; bufIdx < 0x1F00; ++bufIdx)
+//     {
+//         memory_.push_back(buf[bufIdx]);
+//     }
 
-    for (size_t i = 0; i < data.size(); ++i)
-    {
-        this->memory_[i] = data[i + offset];
-    }
+//     printf("\n");
+//     printf("...finished copy\n");
 
-    return true;
-}
+//     // int mp = 0;
+//     // int count = 0;
+//     // for (uint16_t addr = startAddress_; addr < endAddress_; addr++)
+//     // {
+//     //     if (count == 0)
+//     //     {
+//     //         printf("%04x %04x:", (uint16_t)addr, mp);
+//     //     }
+
+//     //     printf(" %04x|%02x|0%2x", mp, memory_[mp], MachineInstance.read(addr));
+
+//     //     count++;
+//     //     if (count >= 16)
+//     //     {
+//     //         count = 0;
+//     //         printf("\n");
+//     //     }
+
+//     //     mp++;
+//     // }
+
+//     free(buf);
+
+//     return true;
+// }

@@ -4,6 +4,9 @@ M6800_DEFS_CPP = m6800_defs.cpp
 M6800_OPS_CSV = m6800_ops.csv
 GENERATOR = m6800_defs_gen.py
 
+# todo: build the bios header
+# xxd -i ../roms/c68bios/bios.rom bios.h
+
 # Compiler
 CXX = g++
 

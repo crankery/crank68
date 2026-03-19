@@ -39,7 +39,7 @@ public:
 
     // -1 if no match with this device
     // port number on device (0-15) on match
-    virtual int8_t getPort(uint8_t addr)
+    virtual int8_t getPort(uint8_t addr) const
     {
         uint8_t slot = (addr & 0xF0) >> 4;
         uint8_t offset = addr & 0xf;

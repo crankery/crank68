@@ -15,29 +15,27 @@
 
 int main(int argc, char **argv)
 {
-    M6800 cpu;
+    // if (argc > 1)
+    // {
+    //     if (!MachineInstance.rom_.load(argv[1], 0x100))
+    //     {
+    //         std::cerr << "Failed to load ROM " << errno << "\n";
+    //         return 1;
+    //     }
+    // }
+    // else
+    // {
+    //     std::cerr << "No ROM image provided\n";
+    //     return 1;
+    // }
 
-    if (argc > 1)
-    {
-        if (!cpu.loadRom(argv[1], 0x100))
-        {
-            std::cerr << "Failed to load ROM\n";
-            return 1;
-        }
-    }
-    else
-    {
-        std::cerr << "No ROM image provided\n";
-        return 1;
-    }
-
-    cpu.reset();
+    MachineInstance.cpu_.reset();
 
     try
     {
         while (true)
         {
-            cpu.step();
+            MachineInstance.cpu_.step();
         }
     }
     catch (const std::exception &e)
