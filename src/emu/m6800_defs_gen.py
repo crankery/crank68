@@ -45,23 +45,25 @@ def load_csv(csv_path: Path) -> dict[int, OpInfo]:
 
     return table
 
+def get_op_names(entries: dict[int, OpInfo]) -> list[str]:
+    op_names = []
+    for opcode in range(256):
+        if opcode in entries:
+            op = entries[opcode]
+            op_name = op.op_name_s
+            if op_name not in op_names:
+                op_names.append(op_name)
+    return op_names
 
-def emit_defs_header(header_path: Path, header_template_path: Path, csv_file: Path) -> None:
+def emit_defs_header(header_path: Path, header_template_path: Path, entries: dict[int, OpInfo]) -> None:
     template = header_template_path.read_text(encoding="utf-8")
     lines = []
-    ops = []
-    with open(csv_file) as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            op = row["mnemonic"]
-            if op not in ops:
-                ops.append(op)
-
+    op_names = get_op_names(entries)
     lines.append("enum class op_names : uint8_t\n")
     lines.append("{\n")
-    for op in ops:
-        lines.append(f"    {op},\n")
-    lines.append("    invalid\n")
+    for op_name in op_names:
+        lines.append(f"    {op_name},\n")
+    lines.append("    inv\n")
     lines.append("};\n")
     lines.append("\n");
 
@@ -90,22 +92,39 @@ def emit_defs_cpp(cpp_path: Path, cpp_template_path: Path, entries: dict[int, Op
     template = template.replace("{{defs_cpp}}", out)
     cpp_path.write_text(template, encoding="utf-8")
 
+def emit_dispatch_cpp(dispatch_cpp_path: Path, dispatch_cpp_template_path: Path,entries: dict[int, OpInfo]) -> None:
+    template = dispatch_cpp_template_path.read_text(encoding="utf-8")
+    lines = [];
+    
+    op_names = get_op_names(entries)
+    for op_name in op_names:
+        lines.append(f"    case op_names::{op_name}\n")
+        lines.append(f"        result = op_{op_name}(op, op_info.op_name, op_info.addr_mode);\n")
+        lines.append("        break;\n")
+
+    out = "".join(lines)
+    template = template.replace("{{dispatch_cpp}}", out)
+    dispatch_cpp_path.write_text(template, encoding="utf-8")
+
 def main() -> None:
-    print(f"{len(sys.argv)}\n");
-    if len(sys.argv) == 6:
+    if len(sys.argv) == 8:
         csv_path = Path(sys.argv[1])
         defs_header_path = Path(sys.argv[2])
         defs_header_template_path = Path(sys.argv[3])
         defs_cpp_path = Path(sys.argv[4])
         defs_cpp_template_path = Path(sys.argv[5])
+        dispatch_cpp_path = Path(sys.argv[6])
+        dispatch_cpp_template_path = Path(sys.argv[7])
 
         entries = load_csv(csv_path)
-        emit_defs_header(defs_header_path, defs_header_template_path, csv_path)
+        emit_defs_header(defs_header_path, defs_header_template_path, entries)
         emit_defs_cpp(defs_cpp_path, defs_cpp_template_path, entries)
+        emit_dispatch_cpp(dispatch_cpp_path, dispatch_cpp_template_path, entries)
 
         print(f"Loaded {len(entries)} documented opcodes from {csv_path}")
         print(f"Wrote {defs_header_path}")
         print(f"Wrote {defs_cpp_path}")
+        print(f"Wrote {dispatch_cpp_path}")
     else:
         print(f"usage: python3 {sys.argv[0]} [source.csv] [defs.h] [defs_h.template] [defs.cpp] [defs_cpp.template]")
 

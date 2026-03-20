@@ -1,4 +1,3 @@
-m6800_defs.cpp
-m6800_defs.h
+*.g.*
 build/
 .vscode/

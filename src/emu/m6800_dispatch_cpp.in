@@ -9,8 +9,7 @@ void M6800::step()
     bool result = false;
     switch (op_info.op_name)
     {
-{{dispatch_cpp}}
-    }
+{{dispatch_cpp}}    }
 
     if (!result)
     {
