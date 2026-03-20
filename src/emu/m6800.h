@@ -6,7 +6,7 @@
 #include <string>
 #include <map>
 
-#include "m6800_defs.h"
+#include "m6800_defs.g.h"
 
 class M6800
 {

@@ -1,4 +1,4 @@
-#include "m6800_defs.h"
+#include "m6800_defs.g.h"
 
 const OpInfo m6800_op_table[256] =
 {

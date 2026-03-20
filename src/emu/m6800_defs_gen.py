@@ -83,7 +83,7 @@ def emit_defs_cpp(cpp_path: Path, cpp_template_path: Path, entries: dict[int, Op
             )
         else:
             line = (
-                f'    {{ "invalid", op_names::invalid, inh, 0, false }}, '
+                f'    {{ "inv", op_names::inv, inh, 0, false }}, '
                 f"// 0x{opcode:02X}\n"
             )
         lines.append(line)
@@ -98,7 +98,7 @@ def emit_dispatch_cpp(dispatch_cpp_path: Path, dispatch_cpp_template_path: Path,
     
     op_names = get_op_names(entries)
     for op_name in op_names:
-        lines.append(f"    case op_names::{op_name}\n")
+        lines.append(f"    case op_names::{op_name}:\n")
         lines.append(f"        result = op_{op_name}(op, op_info.op_name, op_info.addr_mode);\n")
         lines.append("        break;\n")
 
