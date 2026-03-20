@@ -1,6 +1,8 @@
 #include "rom.h"
 #include "machine.h"
 
+// the physical rom is 8KB. we ignore the 1st 256 bytes
+// TODO: consider making reads work on this area of the rom, overlaying the latches for write
 #define ROM_SIZE 0x2000
 
 uint8_t Rom::read(uint16_t addr) const

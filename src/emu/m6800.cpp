@@ -4,18 +4,20 @@
 #include "m6800.h"
 #include "machine.h"
 
+// 8 bit read on the machine's bus
 uint8_t M6800::read8(uint16_t addr) const
 {
-    Machine &machine = Machine::instance();
-    return machine.read(addr);
+    return Machine::instance().read(addr);
 }
 
+// 8 bit write on the machine's bus
 void M6800::write8(uint16_t addr, uint8_t value)
 {
-    Machine &machine = Machine::instance();
-    machine.write(addr, value);
+    Machine::instance().write(addr, value);
 }
 
+// trace
+// todo: send this to a logger
 void M6800::trace()
 {
     uint16_t pc = s_.pc;
@@ -198,7 +200,8 @@ void M6800::reset()
 {
     uint16_t reset_vector = read16(0xFFFE);
 
-    printf(" --- RESET to %04x ---\n", reset_vector);
+    // todo: trace log
+    printf("----- RESET to %04x\n", reset_vector);
 
     s_.a = 0;
     s_.b = 0;

@@ -1,17 +1,3 @@
-#include "m6800.h"
-
-void M6800::step()
-{
-    M6800::trace();
-
-    // uint16_t pc = s_.pc;
-    uint8_t op = fetch8();
-
-    OpInfo op_info = m6800_op_table[op];
-
-    bool result = false;
-    switch (op_info.op_name)
-    {
     case op_names::anda:
         result = op_anda(op, op_info.op_name, op_info.addr_mode);
         break;
@@ -86,10 +72,3 @@ void M6800::step()
         break;
     default:
         result = false;
-    }
-
-    if (!result)
-    {
-        unimplemented(op);
-    }
-}

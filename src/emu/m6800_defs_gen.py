@@ -5,57 +5,12 @@ from dataclasses import dataclass
 from pathlib import Path
 import sys
 
-
 @dataclass
 class OpInfo:
     op_name_s: str
     op_name: str
     addr_mode: str
     cycles: int
-
-
-HEADER_TEXT = """\
-#pragma once
-
-#include <cstdint>
-
-enum addr_mode : uint8_t
-{
-    inh, /* inherent */
-    rel, /* relative */
-    imb, /* immediate (byte) */
-    imw, /* immediate (word) */
-    dir, /* direct address */
-    ext, /* extended address */
-    idx  /* x + byte offset */
-};
-
-enum class op_names : uint8_t;
-
-struct OpInfo
-{
-    const char *op_name_s;
-    op_names op_name;
-    addr_mode addr_mode;
-    uint8_t cycles;
-    bool valid;
-};
-
-extern const OpInfo m6800_op_table[256];
-
-"""
-
-CPP_PREAMBLE_F = """\
-#include "{header_path}"
-
-const OpInfo m6800_op_table[256] =
-{{
-"""
-
-CPP_POSTAMBLE = """\
-};
-"""
-
 
 def parse_opcode_byte(s: str) -> int:
     s = s.strip()
@@ -91,9 +46,9 @@ def load_csv(csv_path: Path) -> dict[int, OpInfo]:
     return table
 
 
-def emit_header(header_path: Path, csv_file: Path) -> None:
-    lines = [HEADER_TEXT]
-
+def emit_defs_header(header_path: Path, header_template_path: Path, csv_file: Path) -> None:
+    template = header_template_path.read_text(encoding="utf-8")
+    lines = []
     ops = []
     with open(csv_file) as f:
         reader = csv.DictReader(f)
@@ -111,13 +66,12 @@ def emit_header(header_path: Path, csv_file: Path) -> None:
     lines.append("\n");
 
     out = "".join(lines)
+    template = template.replace("{{defs_h}}", out)
+    header_path.write_text(template, encoding="utf-8")
 
-    header_path.write_text(out, encoding="utf-8")
-
-
-def emit_cpp(cpp_path: Path, h_path: Path, entries: dict[int, OpInfo]) -> None:
-    lines = [CPP_PREAMBLE_F.format(header_path=h_path)]
-
+def emit_defs_cpp(cpp_path: Path, cpp_template_path: Path, entries: dict[int, OpInfo]) -> None:
+    template = cpp_template_path.read_text(encoding="utf-8")
+    lines = [];
     for opcode in range(256):
         if opcode in entries:
             op = entries[opcode]
@@ -132,28 +86,28 @@ def emit_cpp(cpp_path: Path, h_path: Path, entries: dict[int, OpInfo]) -> None:
             )
         lines.append(line)
 
-    lines.append(CPP_POSTAMBLE)
-
     out = "".join(lines)
-
-    cpp_path.write_text(out, encoding="utf-8")
-
+    template = template.replace("{{defs_cpp}}", out)
+    cpp_path.write_text(template, encoding="utf-8")
 
 def main() -> None:
-    if len(sys.argv) == 4:
+    print(f"{len(sys.argv)}\n");
+    if len(sys.argv) == 6:
         csv_path = Path(sys.argv[1])
-        header_path = Path(sys.argv[2])
-        cpp_path = Path(sys.argv[3])
+        defs_header_path = Path(sys.argv[2])
+        defs_header_template_path = Path(sys.argv[3])
+        defs_cpp_path = Path(sys.argv[4])
+        defs_cpp_template_path = Path(sys.argv[5])
 
         entries = load_csv(csv_path)
-        emit_header(header_path, csv_path)
-        emit_cpp(cpp_path, header_path, entries)
+        emit_defs_header(defs_header_path, defs_header_template_path, csv_path)
+        emit_defs_cpp(defs_cpp_path, defs_cpp_template_path, entries)
 
         print(f"Loaded {len(entries)} documented opcodes from {csv_path}")
-        print(f"Wrote {header_path}")
-        print(f"Wrote {cpp_path}")
+        print(f"Wrote {defs_header_path}")
+        print(f"Wrote {defs_cpp_path}")
     else:
-        print(f"usage: python3 {sys.argv[0]} [source.csv] [output.h] [output.cpp]")
+        print(f"usage: python3 {sys.argv[0]} [source.csv] [defs.h] [defs_h.template] [defs.cpp] [defs_cpp.template]")
 
 if __name__ == "__main__":
     main()

@@ -1,0 +1,19 @@
+#include "m6800.h"
+
+void M6800::step()
+{
+    M6800::trace();
+    uint8_t op = fetch8();
+    OpInfo op_info = m6800_op_table[op];
+
+    bool result = false;
+    switch (op_info.op_name)
+    {
+{{dispatch_cpp}}
+    }
+
+    if (!result)
+    {
+        unimplemented(op);
+    }
+}
