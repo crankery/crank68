@@ -15,27 +15,27 @@
 
 int main(int argc, char **argv)
 {
-    // if (argc > 1)
-    // {
-    //     if (!MachineInstance.rom_.load(argv[1], 0x100))
-    //     {
-    //         std::cerr << "Failed to load ROM " << errno << "\n";
-    //         return 1;
-    //     }
-    // }
-    // else
-    // {
-    //     std::cerr << "No ROM image provided\n";
-    //     return 1;
-    // }
+    if (argc > 1)
+    {
+        if (!Machine::instance().rom_.load(argv[1], 0x100))
+        {
+            std::cerr << "Failed to load ROM " << errno << "\n";
+            return 1;
+        }
+    }
+    else
+    {
+        std::cerr << "No ROM image provided\n";
+        return 1;
+    }
 
-    MachineInstance.cpu_.reset();
+    Machine::instance().cpu_.reset();
 
     try
     {
         while (true)
         {
-            MachineInstance.cpu_.step();
+            Machine::instance().cpu_.step();
         }
     }
     catch (const std::exception &e)

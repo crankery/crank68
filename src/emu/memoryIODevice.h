@@ -10,47 +10,39 @@ public:
     {
     }
 
-    ~MemoryIODevice() = default;
+    virtual ~MemoryIODevice() = default;
 
-    uint8_t getSlot()
+    uint8_t getSlot() const
     {
         return slot_;
     };
 
-    uint8_t getOffset()
+    uint8_t getOffset() const
     {
         return offset_;
     };
 
-    uint8_t getCount()
+    uint8_t getCount() const
     {
         return count_;
     };
 
-    virtual uint8_t in(uint8_t addr) const
-    {
-        return 0xff;
-    }
+    virtual uint8_t in(uint8_t addr) const = 0;
 
-    virtual void out(uint8_t addr, uint8_t value)
-    {
-        // do nothing
-    }
+    virtual void out(uint8_t addr, uint8_t value) = 0;
 
-    // -1 if no match with this device
-    // port number on device (0-15) on match
-    virtual int8_t getPort(uint8_t addr) const
+    bool handles(uint16_t addr)
     {
-        uint8_t slot = (addr & 0xF0) >> 4;
-        uint8_t offset = addr & 0xf;
-
-        if (slot == slot_ && offset >= offset_ && offset <= offset_ + count_)
+        if (((addr >> 12) == slot_))
         {
-            // the port number on the device is the device's offset minus the address's offset
-            return offset_ - offset;
+            uint8_t offset = addr & 0xf;
+            if (offset >= offset_ && offset <= offset_ + count_)
+            {
+                return true;
+            }
         }
 
-        return -1;
+        return false;
     }
 
 protected:

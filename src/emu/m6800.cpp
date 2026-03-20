@@ -6,12 +6,14 @@
 
 uint8_t M6800::read8(uint16_t addr) const
 {
-    return MachineInstance.read(addr);
+    Machine &machine = Machine::instance();
+    return machine.read(addr);
 }
 
 void M6800::write8(uint16_t addr, uint8_t value)
 {
-    MachineInstance.write(addr, value);
+    Machine &machine = Machine::instance();
+    machine.write(addr, value);
 }
 
 void M6800::trace()

@@ -42,17 +42,23 @@
 ; hardware definitions
 ; ------------------------------------------------------------
 
+; M6800 vectors
+v_irq   equ  $FFF8
+v_swi   equ  $FFFA
+v_nmi   equ  $FFFC
+v_reset equ  $FFFE
+
 ram_start       equ $0000
 ram_end         equ $bfff
 bank_start      equ $c000
 bank_end        equ $dfff
 io_start        equ $e000
 io_end          equ $e0ff
-rom_start       equ $e100
+bios_start      equ $e100
 rom_end         equ $ffff
 
 ; slot 0
-bank_latch_reg  equ $e000
+bank_reg  equ $e000
 
 ; slot 1
 acia0_data      equ $e010
@@ -66,8 +72,6 @@ acia0_ctrl      equ $e021
 
 acia_tdre_mask  equ $02
 acia_rdrf_mask  equ $01
-
-rom_base        equ $e100
 
 ; ------------------------------------------------------------
 ; zero page / low ram workspace
@@ -98,31 +102,22 @@ cmd_getc       equ $04
 cmd_ws         equ $05
 
 ; ------------------------------------------------------------
-; rom starts here
+; start of 8K rom image
+; this area of the rom is not present on the bus
 ; ------------------------------------------------------------
 
-; ------------------------------------------------------------
-; rom identification / version
-; ------------------------------------------------------------
+        org io_start
 
- bios_id:
-         fcb 'd','h','6','8','0','0'
-
- bios_version:
-         fcb 0
-         fcb 1
+bios_id:
+        string "Crank68 BIOS"
+        string "Dave Hamilton 2026"
+        string "v0.1"
 
 ; ------------------------------------------------------------
 ; cold reset entry
 ; ------------------------------------------------------------
 
-; align the rom to 8KB, overlapping I/O
-; eat up the i/o page 
-; using this as a build id area as it's not mapped into memory
-        org io_start
-
-; actual start of rom
-        org rom_start
+        org bios_start
 
 reset:
 ; try putting the stack at the end of ram
@@ -133,7 +128,7 @@ reset:
         tap
 
 ; initialize latch / bank register to known state
-        staa bank_latch_reg
+        staa bank_reg
 
 ; install optional ram vectors
         jsr init_vectors
@@ -144,7 +139,10 @@ reset:
 ; simple banner using inline-dispatch interface
         jsr bios_main
         byte cmd_puts
-        byte 'h','e','l','l','o',' ','w','o','r','l','d',13,10,0
+        string "Hello world\r\n"
+        byte 13
+        byte 10
+        byte 0
 
 ; hand off to monitor / shell / idle loop
         jsr warmstart
@@ -445,8 +443,14 @@ nmi_handler:
 ;   $fffe reset
 ; ------------------------------------------------------------
 
-        org $fff8
+        org v_irq
         fdb irq_handler
+
+        org v_swi
         fdb swi_handler
+        
+        org v_nmi
         fdb nmi_handler
+
+        org v_reset
         fdb reset

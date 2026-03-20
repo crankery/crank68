@@ -9,9 +9,14 @@
 class Machine
 {
 public:
-    Machine()
+    static Machine &instance()
     {
+        static Machine instance;
+        return instance;
     }
+
+    Machine(const Machine &) = delete;
+    Machine &operator=(const Machine &) = delete;
 
     uint8_t read(uint16_t addr) const;
     void write(uint16_t addr, uint8_t value);
@@ -21,6 +26,6 @@ public:
     Rom rom_;
     MemoryIO memory_io_;
     BankedMemory banked_memory_;
-};
 
-static Machine MachineInstance;
+    Machine() = default;
+};

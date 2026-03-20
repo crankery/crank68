@@ -46,15 +46,19 @@ void Acia::out(uint8_t port, uint8_t value)
     switch (port)
     {
     case 0:
+    {
         // control register
         ControlByte cb;
         memset(&cb, value, sizeof(ControlByte));
         oldControl = cb;
         break;
+    }
     case 1:
+    {
         // transmit register
         // send it on out to the output stream
         break;
+    }
     }
 
     // todo: this is weird, add assert

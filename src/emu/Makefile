@@ -33,7 +33,7 @@ SRCS = $(wildcard *.cpp)
 # Object files
 OBJS = $(SRCS:%.cpp=$(BUILD_DIR)/%.o)
 
-# Links
+# Linker
 $(TARGET): $(OBJS)
 	$(CXX) $(CXXFLAGS) $(OBJS) -o $@
 
