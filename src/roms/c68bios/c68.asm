@@ -1,9 +1,10 @@
-; bios.asm
+; c68.asm
 ;
-; simple framework BIOS for a homebrew 6800 system
+; bios for crank68 computer
 ;
 ; memory map:
-;   $0000-$dfff   ram
+;   $0000-$bfff   ram
+;   $c000-$dfff   banked memory    
 ;   $e000-$e0ff   i/o
 ;   $e100-$ffff   rom
 ;

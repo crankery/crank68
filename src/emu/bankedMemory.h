@@ -17,6 +17,12 @@ public:
     virtual void write(uint16_t addr, uint8_t value) override;
 
 private:
+    int getBankedMemoryAddr(uint16_t addr) const;
+
+    static const int InstalledBanks = 8 * 8; // 8 * 8K (size of widow) * 8 chips
     static const uint16_t StartAddress = 0xC000;
     static const uint16_t EndAddress = 0xDFFF;
+    static const uint16_t Size = EndAddress - StartAddress + 1;
+
+    std::array<uint8_t, InstalledBanks * Size> bankedMemory_;
 };

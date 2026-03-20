@@ -1,6 +1,4 @@
 #include "rom.h"
-#include "bios.h"
-
 #include "machine.h"
 
 #define ROM_SIZE 0x2000

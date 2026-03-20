@@ -2,11 +2,6 @@
 
 #include <array>
 #include <cstdint>
-#include <fstream>
-#include <iomanip>
-#include <iostream>
-#include <iterator>
-#include <vector>
 
 #include "mem.h"
 
@@ -19,7 +14,6 @@ public:
 
     Rom() : Mem(StartAddress, EndAddress)
     {
-        memory_.resize(Size);
     }
 
     virtual uint8_t read(uint16_t addr) const override;
@@ -30,5 +24,5 @@ public:
     bool load(const char *path, uint16_t skip);
 
 private:
-    std::vector<uint8_t> memory_;
+    std::array<uint8_t, Size> memory_;
 };
