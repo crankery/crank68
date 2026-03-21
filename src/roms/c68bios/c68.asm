@@ -190,8 +190,7 @@ bios_main:
 ; and return after it
 bios_unknown:
         ldx bios_ptr
-        jsr bios_rts
-        rts
+        jmp bios_rts
 
 ; ------------------------------------------------------------
 ; command handlers
@@ -239,19 +238,17 @@ lputs_scanned:
         stx bios_ptr            ; fix the stack for return
         ldx bios_tmp            ; we stored this earlier, it's pointing to the start of the string
         jsr puts_x_impl
-        ldx bios_ptr
-        jsr bios_rts
-        rts
+
+        jmp bios_rts_ptr
 
 bios_crlf:
 ; inline format:
 ;   fcb bios_cmd_crlf
 ;   no args
 
-        ldx bios_ptr
-        jsr bios_rts
         jsr crlf_impl
-        rts
+
+        jmp bios_rts_ptr
 
 bios_getc:
 ; inline format:
@@ -261,18 +258,18 @@ bios_getc:
 ; return value in A
 
         ldx bios_ptr
-        jsr bios_rts
         jsr conin_impl
-        rts
+
+        jmp bios_rts_ptr
 
 bios_ws:
 ; inline format:
 ;   fcb bios_cmd_warmstart
 ;   no args
 
-        ldx bios_ptr
-        jsr bios_rts
-        jmp warmstart
+        jsr warmstart
+
+        jmp bios_rts_ptr
 
 ; ------------------------------------------------------------
 ; helper: fix caller return address and restore irq mask state
@@ -285,6 +282,10 @@ bios_ws:
 ;   corrected return address pushed for rts
 ;   irq mask restored to original state
 ; ------------------------------------------------------------
+
+bios_rts_ptr:
+; return address stored in bios_ptr
+        ldx bios_ptr
 
 bios_rts:
 ; fix return address

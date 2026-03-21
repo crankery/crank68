@@ -1,0 +1,22 @@
+#include "cpu.h"
+
+void Cpu::step()
+{
+    Cpu::traceBefore();
+    uint8_t op = fetch8();
+    OpInfo op_info = cpu_op_table[op];
+
+    bool result;
+    switch (op_info.op_name)
+    {
+{{dispatch_cpp}}    default:
+        result = false;
+    }
+
+    Cpu::traceAfter();
+
+    if (!result)
+    {
+        unimplemented(op);
+    }
+}
