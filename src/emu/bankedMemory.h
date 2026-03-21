@@ -19,7 +19,7 @@ public:
 private:
     int getBankedMemoryAddr(uint16_t addr) const;
 
-    static const int InstalledBanks = 8 * 8; // 8 * 8K (size of widow) * 8 chips
+    static const int InstalledBanks = 8 * 8; // 8x8KB * 8 64K chips
     static const uint16_t StartAddress = 0xC000;
     static const uint16_t EndAddress = 0xDFFF;
     static const uint16_t Size = EndAddress - StartAddress + 1;

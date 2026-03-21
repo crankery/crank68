@@ -1,6 +1,6 @@
 #pragma once
 
-#include "m6800.h"
+#include "cpu.h"
 #include "ram.h"
 #include "rom.h"
 #include "memoryIO.h"
@@ -21,7 +21,7 @@ public:
     uint8_t read(uint16_t addr) const;
     void write(uint16_t addr, uint8_t value);
 
-    M6800 cpu_;
+    Cpu cpu_;
     Ram ram_;
     Rom rom_;
     MemoryIO memory_io_;

@@ -85,13 +85,6 @@ bios_saved_a    equ $0005    ; scratch
 bios_saved_b    equ $0006    ; scratch
 bios_saved_x    equ $0007    ; 16-bit scratch
 
-; optional user-visible vectors / jump table in ram
-vec_conout      equ $0010
-vec_conin       equ $0012
-vec_puts        equ $0014
-vec_crlf        equ $0016
-vec_warmstart   equ $0018
-
 ; ------------------------------------------------------------
 ; bios command numbers
 ; ------------------------------------------------------------
@@ -121,18 +114,15 @@ bios_id:
         org bios_start
 
 reset:
-; try putting the stack at the end of ram
-        lds #ram_end
+; stack goes at the end of ram
+        lds #ram_end    
 
 ; clear condition codes
         clra
         tap
 
 ; initialize latch / bank register to known state
-        staa bank_reg
-
-; install optional ram vectors
-        jsr init_vectors
+        staa bank_reg   
 
 ; initialize console / serial hardware
         jsr acia0_init
@@ -140,14 +130,15 @@ reset:
 ; simple banner using inline-dispatch interface
         jsr bios_main
         byte cmd_puts
-        string "Hello world\r\n"
-        byte 13
-        byte 10
-        byte 0
+        fcc "Hello world"
+        fcb 13
+        fcb 10
+        fcb 0
 
 ; hand off to monitor / shell / idle loop
-        jsr warmstart
+        jmp warmstart
 
+; emulator will detect infinite loop and stop
 halt:
         bra halt
 
@@ -164,19 +155,19 @@ bios_main:
         sei
 
 ; pull caller return address into bios_ptr
-; on 6800, low byte is on top of stack for rts return
+; on 6800, high byte is on top of stack for rts return
         pula
         pulb
 
 ; save pointer = address of first inline byte
-        staa bios_ptr+1
-        stab bios_ptr
+        staa bios_ptr
+        stab bios_ptr+1
 
 ; read command byte
         ldx bios_ptr
         ldaa 0,x
         inx
-        stx bios_ptr
+        stx bios_ptr            ; bios_ptr is the return address
 
 ; dispatch on command in a
         cmpa #cmd_putc
@@ -217,7 +208,6 @@ bios_putc:
         ldx bios_ptr
         ldaa 0,x
         inx
-
 ; fix return address and restore irq state
         jsr bios_rts
 
@@ -232,21 +222,25 @@ bios_puts:
 ;
 ; on entry bios_ptr points to first char
 
-        ldx bios_ptr
-        stx bios_tmp
+        ldx bios_ptr        
+        stx bios_tmp            ; save start of string to bios_tmp
 
 bios_puts_scan:
         ldaa 0,x
-        inx
         beq lputs_scanned
+        inx
         bra bios_puts_scan
 
-; X now points just past terminating zero
+; X now points to the terminating zero
 ; print from saved starting pointer
 
 lputs_scanned:
-        ldx bios_tmp
+        inx                     ; one byte past the null, aka: the return address
+        stx bios_ptr            ; fix the stack for return
+        ldx bios_tmp            ; we stored this earlier, it's pointing to the start of the string
         jsr puts_x_impl
+        ldx bios_ptr
+        jsr bios_rts
         rts
 
 bios_crlf:
@@ -293,22 +287,10 @@ bios_ws:
 ; ------------------------------------------------------------
 
 bios_rts:
-; push corrected return address for rts
-; rts expects low then high on stack after pops,
-; so match normal 6800 convention here
-
-; fill this in however you like if you want a helper
-; implementation without a TFR instruction, since 6800
-; does not have TFR.
-;
-; easiest is just:
-;   stx bios_tmp
-;   ldaa bios_tmp+1
-;   ldab bios_tmp
-;
+; fix return address
         stx bios_tmp
-        ldaa bios_tmp+1
-        ldab bios_tmp
+        ldaa bios_tmp
+        ldab bios_tmp+1
         pshb
         psha
 
@@ -326,27 +308,6 @@ bios_cli:
 bios_sei:
         sei
         rts
-
-; ------------------------------------------------------------
-; initialization helpers
-; ------------------------------------------------------------
-
-init_vectors:
-;         ldx #bios_rom_putc
-;         stx vec_conout
-
-;         ldx #bios_rom_getc
-;         stx vec_conin
-
-;         ldx #bios_rom_puts_x
-;         stx vec_puts
-
-;         ldx #bios_rom_crlf
-;         stx vec_crlf
-
-;         ldx #bios_rom_warmstart
-;         stx vec_warmstart
-          rts
 
 ; ------------------------------------------------------------
 ; warm start / monitor entry
@@ -396,7 +357,6 @@ conin_wait:
         ldab acia0_status
         andb #acia_rdrf_mask
         beq conin_wait
-
         ldaa acia0_data
         rts
 

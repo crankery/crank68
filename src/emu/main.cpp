@@ -1,13 +1,5 @@
-#include "m6800.h"
-#include <array>
-#include <cstdint>
-#include <fstream>
-#include <iomanip>
-#include <iostream>
-#include <iterator>
-#include <vector>
-#include <memory>
-
+#include <stdio.h>
+#include "cpu.h"
 #include "ram.h"
 #include "rom.h"
 #include "memoryIO.h"
@@ -19,13 +11,13 @@ int main(int argc, char **argv)
     {
         if (!Machine::instance().rom_.load(argv[1], 0x100))
         {
-            std::cerr << "Failed to load ROM " << errno << "\n";
+            printf("Failed to load ROM\n");
             return 1;
         }
     }
     else
     {
-        std::cerr << "No ROM image provided\n";
+        printf("No ROM image provided\n");
         return 1;
     }
 
@@ -40,7 +32,7 @@ int main(int argc, char **argv)
     }
     catch (const std::exception &e)
     {
-        std::cerr << "CPU stopped: " << e.what() << '\n';
+        printf("CPU stopped: %s\n", e.what());
         return 1;
     }
 

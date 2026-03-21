@@ -1,12 +1,5 @@
 BUILD_DIR = build
-M6800_DEFS_H = m6800_defs.g.h
-M6800_DEFS_H_TEMPLATE = m6800_defs_h.in
-M6800_DEFS_CPP = m6800_defs.g.cpp
-M6800_DEFS_CPP_TEMPLATE = m6800_defs_cpp.in
-M6800_DISPATCH_CPP = m6800_dispatch.g.cpp
-M6800_DISPATCH_CPP_TEMPLATE = m6800_dispatch_cpp.in
-M6800_OPS_CSV = m6800_ops.csv
-GENERATOR = m6800_defs_gen.py
+GENERATOR = cpu_codegen.py
 
 # todo: build the bios header
 # xxd -i ../roms/c68bios/bios.rom bios.h
@@ -24,13 +17,17 @@ CXXFLAGS = -std=c++17 -Wall -O2 -Imame -g
 TARGET = $(BUILD_DIR)/emu
 
 # Default target
-all: $(M6800_DEFS) $(TARGET)
+all: $(TARGET)
 
-TEMPLATES = $(M6800_DEFS_H_TEMPLATE) $(M6800_DEFS_CPP_TEMPLATE)
-$(M6800_DEFS_H) $(M6800_DEFS_CPP): $(GENERATOR) $(M6800_OPS_CSV) $(M6800_DEFS_H_TEMPLATE) $(M6800_DEFS_CPP_TEMPLATE)
-	$(PYTHON) $(GENERATOR) $(M6800_OPS_CSV) $(M6800_DEFS_H) $(M6800_DEFS_H_TEMPLATE) $(M6800_DEFS_CPP) $(M6800_DEFS_CPP_TEMPLATE) $(M6800_DISPATCH_CPP) $(M6800_DISPATCH_CPP_TEMPLATE)
+GEN_TEMPLATES = $(wildcard *.in)
+GEN_INPUTS = cpu_operations.csv cpu_operations.cpp
+GEN_OUTS_CPP = cpu_defs.g.cpp cpu_dispatch.g.cpp
+GEN_OUTS_H = cpu_defs.g.h cpu_operations.g.h
+GEN_OUTS = $(GEN_OUTS_CPP) $(GEN_OUTS_H)
+$(GEN_OUTS): $(GENERATOR) ${GEN_TEMPLATES} ${GEN_INPUTS}
+	$(PYTHON) $(GENERATOR)
 
-$(M6800_DEFS_CPP:.cpp=.o): $(M6800_DEFS_CPP) $(M6800_DEFS_H)
+$(GEN_OUTS_CPP:.cpp=.o): $(GEN_OUTS)
 
 # Source files (all .cpp in current directory)
 SRCS = $(wildcard *.cpp)
@@ -43,20 +40,20 @@ $(TARGET): $(OBJS)
 	$(CXX) $(CXXFLAGS) $(OBJS) -o $@
 
 # Compile
-${BUILD_DIR}/%.o: %.cpp | $(BUILD_DIR)
+${BUILD_DIR}/%.o: %.cpp | $(BUILD_DIR) $(GEN_OUTS)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 # Clean build files
 clean:
-	rm -rf $(BUILD_DIR) $(M6800_DEFS_H) $(M6800_DEFS_CPP)
+	rm -rf $(BUILD_DIR) $(GEN_OUTS)
 
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
-generated: $(M6800_DEFS_H) $(M6800_DEFS_CPP) 
+generated: ${GEN_OUTS}
 
 regen:
-	rm -f $(M6800_DEFS_H) $(M6800_DEFS_CPP)
+	rm -f $(CPU_DEFS_H) $(CPU_DEFS_CPP)
 	$(MAKE) generated
 
 .PHONY: all clean generated
