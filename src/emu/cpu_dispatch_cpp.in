@@ -2,7 +2,9 @@
 
 void Cpu::step()
 {
-    Cpu::traceBefore();
+    char buf[1024];
+
+    Cpu::traceBefore(buf, sizeof(buf));
     uint8_t op = fetch8();
     OpInfo op_info = cpu_op_table[op];
 
@@ -13,7 +15,7 @@ void Cpu::step()
         result = false;
     }
 
-    Cpu::traceAfter();
+    Cpu::traceAfter(buf);
 
     if (!result)
     {

@@ -23423,133 +23423,6 @@
 			)
 			(embedded_fonts no)
 		)
-		(symbol "Device:Speaker"
-			(pin_names
-				(offset 0)
-				(hide yes)
-			)
-			(exclude_from_sim no)
-			(in_bom yes)
-			(on_board yes)
-			(property "Reference" "LS"
-				(at 1.27 5.715 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(justify right)
-				)
-			)
-			(property "Value" "Speaker"
-				(at 1.27 3.81 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(justify right)
-				)
-			)
-			(property "Footprint" ""
-				(at 0 -5.08 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "Datasheet" "~"
-				(at -0.254 -1.27 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "Description" "Speaker"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "ki_keywords" "speaker sound"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(symbol "Speaker_0_0"
-				(rectangle
-					(start -2.54 1.27)
-					(end 1.016 -3.81)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy 1.016 1.27) (xy 3.556 3.81) (xy 3.556 -6.35) (xy 1.016 -3.81)
-					)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-			)
-			(symbol "Speaker_1_1"
-				(pin input line
-					(at -5.08 0 0)
-					(length 2.54)
-					(name "1"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "1"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin input line
-					(at -5.08 -2.54 0)
-					(length 2.54)
-					(name "2"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "2"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-			)
-			(embedded_fonts no)
-		)
 		(symbol "Oscillator:ACO-xxxMHz"
 			(pin_names
 				(offset 0.254)
@@ -27698,7 +27571,7 @@
 	)
 	(global_label "SPK_{L}"
 		(shape input)
-		(at 33.02 176.53 180)
+		(at 33.02 173.99 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -27708,7 +27581,7 @@
 		)
 		(uuid "4ad03f21-1c60-48ff-9093-083c4bb4dac7")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 25.412 176.53 0)
+			(at 25.412 173.99 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -31822,28 +31695,28 @@
 			)
 		)
 		(pin "4"
-			(uuid "a7f69091-19b7-440a-ae0c-26a2789fcf1c")
+			(uuid "a7f69091-19b7-440a-ae0c-26a2789fcf1d")
 		)
 		(pin "8"
-			(uuid "e98cd6e8-ab1b-4d7f-88e7-a3b0c7fab3df")
+			(uuid "e98cd6e8-ab1b-4d7f-88e7-a3b0c7fab3e0")
 		)
 		(pin "7"
-			(uuid "c9de81ba-faea-442e-92e0-1e5b76042ee1")
+			(uuid "c9de81ba-faea-442e-92e0-1e5b76042ee2")
 		)
 		(pin "6"
-			(uuid "ce37d0e7-5fea-4fbe-8ef3-5b9cde7419a4")
+			(uuid "ce37d0e7-5fea-4fbe-8ef3-5b9cde7419a5")
 		)
 		(pin "5"
-			(uuid "d874f925-627a-48a1-9510-2a2ebca4157b")
+			(uuid "d874f925-627a-48a1-9510-2a2ebca4157c")
 		)
 		(pin "1"
-			(uuid "1b6dc756-30f2-4ff7-bd0f-1004bed65ae7")
+			(uuid "1b6dc756-30f2-4ff7-bd0f-1004bed65ae8")
 		)
 		(pin "2"
-			(uuid "18c5e82d-8559-4b2d-ad56-1d9a623bb7fa")
+			(uuid "18c5e82d-8559-4b2d-ad56-1d9a623bb7fb")
 		)
 		(pin "3"
-			(uuid "88ade78e-e6bf-4cc6-a877-152a1ccf443a")
+			(uuid "88ade78e-e6bf-4cc6-a877-152a1ccf443b")
 		)
 		(instances
 			(project ""
@@ -33876,76 +33749,6 @@
 		)
 	)
 	(symbol
-		(lib_id "Device:Speaker")
-		(at 60.96 180.34 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "66ab85d0-737d-49b5-9b2e-ef9a860af77d")
-		(property "Reference" "LS2"
-			(at 66.04 180.3399 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "L8Ω"
-			(at 66.04 182.8799 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" ""
-			(at 60.96 185.42 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 60.706 181.61 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Speaker"
-			(at 60.96 180.34 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "979eefb5-ae7d-463e-8057-1fadce952954")
-		)
-		(pin "2"
-			(uuid "99703fad-592f-4d28-8f48-973ab74a3e31")
-		)
-		(instances
-			(project "Sound"
-				(path "/e0d1fb1e-fa63-41d1-b097-e8f57c1048de"
-					(reference "LS2")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "74xx:74LS00")
 		(at 160.02 128.27 0)
 		(unit 3)
@@ -35298,28 +35101,28 @@
 			)
 		)
 		(pin "4"
-			(uuid "a7f69091-19b7-440a-ae0c-26a2789fcf1c")
+			(uuid "a7f69091-19b7-440a-ae0c-26a2789fcf1e")
 		)
 		(pin "8"
-			(uuid "e98cd6e8-ab1b-4d7f-88e7-a3b0c7fab3df")
+			(uuid "e98cd6e8-ab1b-4d7f-88e7-a3b0c7fab3e1")
 		)
 		(pin "7"
-			(uuid "c9de81ba-faea-442e-92e0-1e5b76042ee1")
+			(uuid "c9de81ba-faea-442e-92e0-1e5b76042ee3")
 		)
 		(pin "6"
-			(uuid "ce37d0e7-5fea-4fbe-8ef3-5b9cde7419a4")
+			(uuid "ce37d0e7-5fea-4fbe-8ef3-5b9cde7419a6")
 		)
 		(pin "5"
-			(uuid "d874f925-627a-48a1-9510-2a2ebca4157b")
+			(uuid "d874f925-627a-48a1-9510-2a2ebca4157d")
 		)
 		(pin "1"
-			(uuid "1b6dc756-30f2-4ff7-bd0f-1004bed65ae7")
+			(uuid "1b6dc756-30f2-4ff7-bd0f-1004bed65ae9")
 		)
 		(pin "2"
-			(uuid "18c5e82d-8559-4b2d-ad56-1d9a623bb7fa")
+			(uuid "18c5e82d-8559-4b2d-ad56-1d9a623bb7fc")
 		)
 		(pin "3"
-			(uuid "88ade78e-e6bf-4cc6-a877-152a1ccf443a")
+			(uuid "88ade78e-e6bf-4cc6-a877-152a1ccf443c")
 		)
 		(instances
 			(project ""
@@ -36956,46 +36759,46 @@
 			)
 		)
 		(pin "3"
-			(uuid "9d61b40a-934b-4a2a-b6c6-2271d659fea0")
+			(uuid "9d61b40a-934b-4a2a-b6c6-2271d659fea1")
 		)
 		(pin "13"
-			(uuid "a93cf220-3ec5-4be1-9cc3-bda63675662f")
+			(uuid "a93cf220-3ec5-4be1-9cc3-bda636756630")
 		)
 		(pin "2"
-			(uuid "38dd7262-abc2-4479-9393-c513257292ae")
+			(uuid "38dd7262-abc2-4479-9393-c513257292af")
 		)
 		(pin "10"
-			(uuid "1ae30a43-8f3b-424b-80fa-853ca3a022f6")
+			(uuid "1ae30a43-8f3b-424b-80fa-853ca3a022f7")
 		)
 		(pin "9"
-			(uuid "47a7221f-0ae6-43eb-a7b6-9d9c02092f38")
+			(uuid "47a7221f-0ae6-43eb-a7b6-9d9c02092f39")
 		)
 		(pin "12"
-			(uuid "e0dc88c8-408e-4eda-848a-a1b0c5590d7f")
+			(uuid "e0dc88c8-408e-4eda-848a-a1b0c5590d80")
 		)
 		(pin "6"
-			(uuid "6522d48d-95d8-4b7b-b91d-0f8fa50187c0")
+			(uuid "6522d48d-95d8-4b7b-b91d-0f8fa50187c1")
 		)
 		(pin "14"
-			(uuid "4759cc5a-a933-4a6c-8508-d55fdd869c0c")
+			(uuid "4759cc5a-a933-4a6c-8508-d55fdd869c0d")
 		)
 		(pin "8"
-			(uuid "7bf8b048-2ac6-4a2a-805f-181310b1a016")
+			(uuid "7bf8b048-2ac6-4a2a-805f-181310b1a017")
 		)
 		(pin "4"
-			(uuid "e082c3d3-c4de-4778-8791-4e4ab46297d7")
+			(uuid "e082c3d3-c4de-4778-8791-4e4ab46297d8")
 		)
 		(pin "5"
-			(uuid "81ab3425-2e12-45ed-81c5-dac6bc34e0e1")
+			(uuid "81ab3425-2e12-45ed-81c5-dac6bc34e0e2")
 		)
 		(pin "1"
-			(uuid "0c0135ff-9aac-4361-b94a-ae2d9c36111b")
+			(uuid "0c0135ff-9aac-4361-b94a-ae2d9c36111c")
 		)
 		(pin "11"
-			(uuid "271e790f-9e04-492c-86c7-8a2c5a5d68b5")
+			(uuid "271e790f-9e04-492c-86c7-8a2c5a5d68b6")
 		)
 		(pin "7"
-			(uuid "848088bc-dab5-4064-aa93-5b75498a9347")
+			(uuid "848088bc-dab5-4064-aa93-5b75498a9348")
 		)
 		(instances
 			(project ""
@@ -39028,76 +38831,6 @@
 		)
 	)
 	(symbol
-		(lib_id "Device:Speaker")
-		(at 60.96 168.91 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "e07bcbff-9558-4ab7-bb87-e826bb9fa108")
-		(property "Reference" "LS1"
-			(at 66.04 168.9099 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "R8Ω"
-			(at 66.04 171.4499 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" ""
-			(at 60.96 173.99 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 60.706 170.18 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Speaker"
-			(at 60.96 168.91 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "2e3bd9df-a9ef-4896-8ef8-cf6ab62d926d")
-		)
-		(pin "2"
-			(uuid "79167a3b-9120-4c8d-9314-63519417e85e")
-		)
-		(instances
-			(project ""
-				(path "/e0d1fb1e-fa63-41d1-b097-e8f57c1048de"
-					(reference "LS1")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "power:GND")
 		(at 49.53 119.38 0)
 		(unit 1)
@@ -39565,46 +39298,46 @@
 			)
 		)
 		(pin "3"
-			(uuid "9d61b40a-934b-4a2a-b6c6-2271d659fea0")
+			(uuid "9d61b40a-934b-4a2a-b6c6-2271d659fea2")
 		)
 		(pin "13"
-			(uuid "a93cf220-3ec5-4be1-9cc3-bda63675662f")
+			(uuid "a93cf220-3ec5-4be1-9cc3-bda636756631")
 		)
 		(pin "2"
-			(uuid "38dd7262-abc2-4479-9393-c513257292ae")
+			(uuid "38dd7262-abc2-4479-9393-c513257292b0")
 		)
 		(pin "10"
-			(uuid "1ae30a43-8f3b-424b-80fa-853ca3a022f6")
+			(uuid "1ae30a43-8f3b-424b-80fa-853ca3a022f8")
 		)
 		(pin "9"
-			(uuid "47a7221f-0ae6-43eb-a7b6-9d9c02092f38")
+			(uuid "47a7221f-0ae6-43eb-a7b6-9d9c02092f3a")
 		)
 		(pin "12"
-			(uuid "e0dc88c8-408e-4eda-848a-a1b0c5590d7f")
+			(uuid "e0dc88c8-408e-4eda-848a-a1b0c5590d81")
 		)
 		(pin "6"
-			(uuid "6522d48d-95d8-4b7b-b91d-0f8fa50187c0")
+			(uuid "6522d48d-95d8-4b7b-b91d-0f8fa50187c2")
 		)
 		(pin "14"
-			(uuid "4759cc5a-a933-4a6c-8508-d55fdd869c0c")
+			(uuid "4759cc5a-a933-4a6c-8508-d55fdd869c0e")
 		)
 		(pin "8"
-			(uuid "7bf8b048-2ac6-4a2a-805f-181310b1a016")
+			(uuid "7bf8b048-2ac6-4a2a-805f-181310b1a018")
 		)
 		(pin "4"
-			(uuid "e082c3d3-c4de-4778-8791-4e4ab46297d7")
+			(uuid "e082c3d3-c4de-4778-8791-4e4ab46297d9")
 		)
 		(pin "5"
-			(uuid "81ab3425-2e12-45ed-81c5-dac6bc34e0e1")
+			(uuid "81ab3425-2e12-45ed-81c5-dac6bc34e0e3")
 		)
 		(pin "1"
-			(uuid "0c0135ff-9aac-4361-b94a-ae2d9c36111b")
+			(uuid "0c0135ff-9aac-4361-b94a-ae2d9c36111d")
 		)
 		(pin "11"
-			(uuid "271e790f-9e04-492c-86c7-8a2c5a5d68b5")
+			(uuid "271e790f-9e04-492c-86c7-8a2c5a5d68b7")
 		)
 		(pin "7"
-			(uuid "848088bc-dab5-4064-aa93-5b75498a9347")
+			(uuid "848088bc-dab5-4064-aa93-5b75498a9349")
 		)
 		(instances
 			(project ""

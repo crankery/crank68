@@ -16,9 +16,7 @@ void Cpu::write8(uint16_t addr, uint8_t value)
     Machine::instance().write(addr, value);
 }
 
-// trace
-// todo: send this to a logger
-void Cpu::traceBefore()
+void Cpu::traceBefore(char *buf, size_t buf_size)
 {
     uint16_t pc = s_.pc;
     uint8_t op = read8(pc);
@@ -76,36 +74,46 @@ void Cpu::traceBefore()
         break;
     }
 
-    printf("%04x: %02x %-8s %-12s",
-           pc,
-           op,
-           args,
-           op_formatted);
+    snprintf(buf,
+             buf_size,
+             "%04x: %02x %-8s %-12s",
+             pc,
+             op,
+             args,
+             op_formatted);
 }
 
-void Cpu::traceAfter()
+void Cpu::traceAfter(char *before)
 {
-    printf(" | %c%c%c%c%c%c | a:%02x b:%02x x:%04x s:%04x|",
-           s_.cc & C ? 'C' : ' ',
-           s_.cc & V ? 'V' : ' ',
-           s_.cc & Z ? 'Z' : ' ',
-           s_.cc & N ? 'N' : ' ',
-           s_.cc & I ? 'I' : ' ',
-           s_.cc & H ? 'H' : ' ',
-           s_.a,
-           s_.b,
-           s_.x,
-           s_.sp);
+    char message[256];
+    char stack[64];
 
+    stack[0] = '\0';
     int count = 0;
     for (int sp = s_.sp; sp < 0xbfff; ++sp)
     {
-        printf(" %02x", read8(sp));
+        snprintf(stack, sizeof(stack), "%s %02x", stack, read8(sp));
         if (++count > 8)
             break;
     }
 
-    printf("\n");
+    snprintf(message,
+             sizeof(message),
+             "%s | %c%c%c%c%c%c | a:%02x b:%02x x:%04x s:%04x|%s\n",
+             before,
+             s_.cc & C ? 'C' : ' ',
+             s_.cc & V ? 'V' : ' ',
+             s_.cc & Z ? 'Z' : ' ',
+             s_.cc & N ? 'N' : ' ',
+             s_.cc & I ? 'I' : ' ',
+             s_.cc & H ? 'H' : ' ',
+             s_.a,
+             s_.b,
+             s_.x,
+             s_.sp,
+             stack);
+
+    Machine::instance().trace(message);
 }
 
 uint16_t Cpu::read16(uint16_t addr) const
@@ -215,8 +223,9 @@ void Cpu::reset()
 {
     uint16_t reset_vector = read16(0xFFFE);
 
-    // todo: trace log
-    printf("----- RESET to %04x\n", reset_vector);
+    char message[256];
+    snprintf(message, sizeof(message), "---\nreset pc=%04x\n---\n", reset_vector);
+    Machine::instance().trace(message);
 
     s_.a = 0;
     s_.b = 0;
@@ -228,12 +237,18 @@ void Cpu::reset()
 
 [[noreturn]] void Cpu::unimplemented(uint8_t opcode) const
 {
-    fprintf(stderr, "---\n\n failure: unimplemented opcode 0x%02x at 0x%04x\n\n---\n", opcode, s_.pc - 1);
-    exit(-1);
+    char message[256];
+    snprintf(message, sizeof(message), "---\n\n failure: unimplemented opcode 0x%02x at 0x%04x\n\n---\n", opcode, s_.pc - 1);
+    Machine::instance().trace(message);
+
+    throw std::runtime_error("unimplemented opcode");
 }
 
 [[noreturn]] void Cpu::infiniteloop() const
 {
-    fprintf(stderr, "---\n\n infinite loop at 0x%04x\n\n---\n", s_.pc - 1);
-    exit(-1);
+    char message[256];
+    snprintf(message, sizeof(message), "---\ninfinite loop at %04x\n---\n", s_.pc);
+    Machine::instance().trace(message);
+
+    throw std::runtime_error("infinite loop");
 }

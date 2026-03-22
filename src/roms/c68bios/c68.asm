@@ -62,13 +62,13 @@ rom_end         equ $ffff
 bank_reg  equ $e000
 
 ; slot 1
-acia0_data      equ $e010
-acia0_status    equ $e011
+acia0_reg       equ $e010
+acia0_data      equ $e011
 ; pia0
 
 ; slot 2
-acia0_cmd       equ $e020
-acia0_ctrl      equ $e021
+acia1_reg       equ $e020
+acia1_data      equ $e021
 ; pia1
 
 acia_tdre_mask  equ $02
@@ -130,12 +130,12 @@ reset:
 ; simple banner using inline-dispatch interface
         jsr bios_main
         byte cmd_puts
-        fcc "Hello world"
+        fcc "C68 BIOS 0.1"
         fcb 13
         fcb 10
         fcb 0
 
-; hand off to monitor / shell / idle loop
+; hand off to monitor
         jmp warmstart
 
 ; emulator will detect infinite loop and stop
@@ -268,7 +268,6 @@ bios_ws:
 ;   no args
 
         jsr warmstart
-
         jmp bios_rts_ptr
 
 ; ------------------------------------------------------------
@@ -318,6 +317,17 @@ warmstart:
 ; placeholder
 ; replace this with monitor entry, shell, scheduler, etc.
 warmstart_loop:
+
+        jsr bios_main
+        fcb cmd_putc
+        fcb ':'
+
+mgets   jsr bios_main
+        fcb cmd_getc
+
+        staa acia0_data
+        bra mgets
+
         bra warmstart_loop
 
 ; ------------------------------------------------------------
@@ -333,11 +343,13 @@ acia0_init:
 ;   - set divider
 ;   - set 8n1
 ;   - enable tx/rx
+        ldaa #$00               ; todo: set this appropriately
+        staa acia0_reg
         rts
 
 conout_impl:
 ; entry: A = character to send
-
+        staa acia0_data
 conout_wait:
 ; placeholder status poll
 ; if you want fake-emulator output via $e000 instead,
@@ -345,17 +357,15 @@ conout_wait:
 ;   staa latch_reg
 ;   rts
 ;
-        ldab acia0_status
-        andb #acia_tdre_mask
-        beq conout_wait
-
-        staa acia0_data
+;        ldab acia0_status
+;        andb #acia_tdre_mask
+;        beq conout_wait
         rts
 
 conin_impl:
 ; return received character in A
 conin_wait:
-        ldab acia0_status
+        ldab acia0_reg
         andb #acia_rdrf_mask
         beq conin_wait
         ldaa acia0_data

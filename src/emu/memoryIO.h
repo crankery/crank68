@@ -40,11 +40,16 @@ public:
 
     virtual void write(uint16_t addr, uint8_t value) override
     {
+        // printf("memory io write %04x %02x\r\n", addr, value);
         for (auto dev : devices_)
         {
-            if (dev->handles(addr))
+            // printf("checking %04x with dev slot %1x offset %1x count %1x\r\n", addr, dev->getSlot(), dev->getOffset(), dev->getCount());
+
+            int8_t port = dev->handles(addr);
+            if (port >= 0)
             {
-                dev->out(addr, value);
+                // printf("sending %02x to device port %x\r\n", value, port);
+                dev->out(port, value);
                 return;
             }
         }
@@ -54,6 +59,10 @@ public:
     {
         return banked_memory_latch_.getValue();
     }
+
+    Latch banked_memory_latch_;
+    Acia acia_0_;
+    Acia acia_1_;
 
 private:
     static const uint16_t StartAddress = 0xE000;
@@ -65,10 +74,6 @@ private:
     static const uint8_t SlotCom0 = 0x1;
     static const uint8_t SlotCom1 = 0x2;
     static const uint8_t OffsetAcia = 0x0;
-
-    Latch banked_memory_latch_;
-    Acia acia_0_;
-    Acia acia_1_;
 
     std::vector<MemoryIODevice *> devices_;
 };

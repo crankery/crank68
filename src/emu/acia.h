@@ -2,8 +2,7 @@
 
 #include <cstring>
 #include "memoryIODevice.h"
-
-static const uint8_t AciaRegisterCount = 2;
+#include "byteBuffer.h"
 
 class Acia : public MemoryIODevice
 {
@@ -43,6 +42,15 @@ public:
         unsigned char receiveInterruptEnable : 1;
     };
 
+    // status byte
+    // rdrf  - receiver buffer is full
+    // tdre  - transmit buffer is empty
+    // dcd_n - data carrier detected
+    // cts_n - clear to send
+    // fe    - there is no framing error
+    // ovrn  - there is no receiver overrun
+    // pe   -  there is no parity error
+    // irq_n - this acia has not issued an IRQ
     struct StatusByte
     {
         unsigned char rdrf : 1;
@@ -56,35 +64,25 @@ public:
     };
 
     Acia(const uint8_t slot, const uint8_t offset)
-        : MemoryIODevice(slot, offset, AciaRegisterCount)
+        : MemoryIODevice(slot, offset, RegisterCount)
     {
-        // clear the old state
-        // these are just to note what changed
-        ControlByte cb;
-        cb.divisorSelectAndReset = 0;
-        cb.receiveInterruptEnable = 0;
-        cb.transmitterControl = 0;
-        cb.wordSelect = 0;
-        oldControl = cb;
-
-        StatusByte sb;
-        sb.cts_n = 0;
-        sb.dcd_n = 0;
-        sb.fe = 0;
-        sb.irq_n = 0;
-        sb.ovrn = 0;
-        sb.pe = 0;
-        sb.rdrf = 0;
-        sb.tdre = 0;
-        oldStatus = sb;
     }
 
-    virtual uint8_t in(uint8_t port) const override;
+    virtual uint8_t in(uint8_t port) override;
     virtual void out(uint8_t port, uint8_t value) override;
 
+    // terminal output
+    void terminalOutAciaIn(uint8_t c);
+    bool clearToSend();
+
+    // terminal input
+    std::optional<uint8_t> terminalInAciaOut();
+
+    bool dataReady();
+
+    static const uint8_t RegisterCount = 2;
+
 private:
-    ControlByte oldControl;
-    StatusByte oldStatus;
-    // uint8_t oldReceive = 0;
-    // uint8_t oldTransmit = 0;
+    ByteBuffer terminalInAciaOutBuffer;
+    ByteBuffer terminalOutAciaInBuffer;
 };

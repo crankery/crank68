@@ -67,8 +67,8 @@ private:
     [[noreturn]] void unimplemented(uint8_t opcode) const;
 
     bool dispatch(uint8_t opcode, op_names op, addr_mode mode);
-    void traceBefore();
-    void traceAfter();
+    void traceBefore(char *buf, size_t buf_size);
+    void traceAfter(char *before);
 
 #include "cpu_operations.g.h"
 };

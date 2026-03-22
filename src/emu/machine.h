@@ -28,4 +28,11 @@ public:
     BankedMemory banked_memory_;
 
     Machine() = default;
+
+    void beginTrace();
+    void trace(char *message);
+    void endTrace();
+
+private:
+    FILE *traceFp = NULL;
 };

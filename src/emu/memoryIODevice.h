@@ -1,6 +1,7 @@
 #pragma once
 
 #include "mem.h"
+#include <stdio.h>
 
 class MemoryIODevice
 {
@@ -27,22 +28,28 @@ public:
         return count_;
     };
 
-    virtual uint8_t in(uint8_t addr) const = 0;
+    virtual uint8_t in(uint8_t addr) = 0;
 
     virtual void out(uint8_t addr, uint8_t value) = 0;
 
-    bool handles(uint16_t addr)
+    int8_t handles(uint16_t addr)
     {
-        if (((addr >> 12) == slot_))
+        uint8_t io_port = addr & 0xff;
+        uint8_t slot = io_port >> 4;
+        uint8_t offset = io_port & 0xf;
+
+        // printf("handles io_port %02x: slot: %1x=%1x %1x>=%1x<=%1x\r\n", io_port, slot_, slot, offset_, offset, count_);
+        if ((slot_ == slot))
         {
-            uint8_t offset = addr & 0xf;
             if (offset >= offset_ && offset <= offset_ + count_)
             {
-                return true;
+                int8_t devPort = offset - offset_;
+                // printf("dev match %x:%x\r\n", slot, devPort);
+                return devPort;
             }
         }
 
-        return false;
+        return -1;
     }
 
 protected:

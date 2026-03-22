@@ -13,7 +13,7 @@ public:
         value_ = 0;
     }
 
-    virtual uint8_t in(uint8_t port) const override;
+    virtual uint8_t in(uint8_t port) override;
     virtual void out(uint8_t addr, uint8_t value) override;
 
     uint8_t getValue()

@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "latch.h"
 
-uint8_t Latch::in(uint8_t port) const
+uint8_t Latch::in(uint8_t port)
 {
     return 0xff;
 }

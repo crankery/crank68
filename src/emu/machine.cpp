@@ -1,5 +1,7 @@
 #include "machine.h"
 
+#define TRACE_FILE "./emu_trace.log"
+
 uint8_t Machine::read(uint16_t addr) const
 {
     if (addr >= ram_.getStartAddress() && addr <= ram_.getEndAddress())
@@ -47,5 +49,27 @@ void Machine::write(uint16_t addr, uint8_t value)
     {
         banked_memory_.write(addr, value);
         return;
+    }
+}
+
+void Machine::beginTrace()
+{
+    traceFp = fopen(TRACE_FILE, "w");
+}
+
+void Machine::trace(char *message)
+{
+    if (traceFp)
+    {
+        fprintf(traceFp, "%s", message);
+    }
+}
+
+void Machine::endTrace()
+{
+    if (traceFp)
+    {
+        fclose(traceFp);
+        traceFp = NULL;
     }
 }
