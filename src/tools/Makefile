@@ -1,40 +1,65 @@
 BIN_DIR := bin
+
 VASM_DIR := vasm
-VASM_OLDSTYLE := vasm6800_oldstyle
-VASM_MOT := vasm6800_mot
+VASM_DAILY := http://sun.hasenbraten.de/vasm/daily/vasm.tar.gz
+VASM := vasm6800_std
+VOBJDUMP := vobjdump
+VLINK_DAILY := http://sun.hasenbraten.de/vlink/daily/vlink.tar.gz
+VLINK := vlink
 
-TARGET_VASM_OLDSTYLE := $(BIN_DIR)/$(VASM_OLDSTYLE)
-TARGET_VASM_MOT := $(BIN_DIR)/$(VASM_MOT)
+TARGET_VASM := $(BIN_DIR)/$(VASM)
+VASM_OUT := $(VASM_DIR)/$(VASM)
+TARGET_VOBJDUMP := $(BIN_DIR)/$(VOBJDUMP)
+VOBJDUMP_OUT := $(VASM_DIR)/$(VOBJDUMP)
 
-VASM_OLDSTYLE_OUT := $(VASM_DIR)/$(VASM_OLDSTYLE)
-VASM_MOT_OUT := $(VASM_DIR)/$(VASM_MOT)
+VLINK_DIR := $(VLINK)
+VLINK_OBJ_DIR := $(VLINK_DIR)/objects
+VLINK_OUT := $(VLINK_DIR)/$(VLINK)
+TARGET_VLINK := $(BIN_DIR)/$(VLINK)
 
-tools: $(TARGET_VASM_OLDSTYLE) $(TARGET_VASM_MOT) 
+TARGETS := $(TARGET_VASM) $(TARGET_VLINK) $(TARGET_VOBJDUMP)
+
+tools: $(TARGETS)
 
 all: tools
 
-$(TARGET_VASM_OLDSTYLE): $(VASM_OLDSTYLE) $(BIN_DIR)
-	cp $(VASM_OLDSTYLE_OUT) $(TARGET_VASM_OLDSTYLE) 
+$(VASM_DIR):
+	wget -O - $(VASM_DAILY) | tar -xz
 
-$(TARGET_VASM_MOT): $(VASM_MOT) $(BIN_DIR)
-	cp $(VASM_MOT_OUT) $(TARGET_VASM_MOT)
+$(VLINK_DIR):
+	wget -O - $(VLINK_DAILY) | tar -xz
 
-$(VASM_OLDSTYLE):
-	$(MAKE) -C $(VASM_DIR) CPU=6800 SYNTAX=oldstyle
+$(TARGET_VLINK): $(VLINK_OUT) $(BIN_DIR)
+	cp $(VLINK_OUT) $(TARGET_VLINK)
 
-$(VASM_MOT):
-	$(MAKE) -C $(VASM_DIR) CPU=6800 SYNTAX=mot
+$(TARGET_VASM): $(VASM_OUT) $(BIN_DIR)
+	cp $(VASM_OUT) $(TARGET_VASM)
+
+$(TARGET_VOBJDUMP): $(VASM_OUT)
+	cp $(VOBJDUMP_OUT) $(TARGET_VOBJDUMP)
+
+$(VASM_OUT): $(VASM_DIR)
+	$(MAKE) -C $(VASM_DIR) CPU=6800 SYNTAX=std
 	
+$(VLINK_OBJ_DIR):
+	mkdir -p $(VLINK_OBJ_DIR)
+
+$(VLINK_OUT): $(VLINK_DIR) $(VLINK_OBJ_DIR)
+	$(MAKE) -C $(VLINK_DIR)
+
 $(BIN_DIR):
 	mkdir -p $(BIN_DIR)
 
-clean: clean_bin clean_vasm
+clean: clean_bin clean_vasm clean_vlink
 
 clean_bin:
-	rm -rf $(TARGET_VASM_OLDSTYLE) $(TARGET_VASM_MOT)
+	rm -rf $(TARGET_VASM) $(TARGET_VLINK)
+
+clean_vlink:
+	rm -rf $(VLINK_OUT) $(VLINK_OBJ_DIR)
 
 clean_vasm:
 	$(MAKE) -C $(VASM_DIR) clean
+	rm -rf $(VASM_OUT)
 
 .PHONY: all clean tools
-

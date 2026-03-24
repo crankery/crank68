@@ -4,24 +4,33 @@ SHELL := /bin/bash
 NAME := c68
 
 TOOLS_DIR := ../../tools
-VASM_DIR := $(TOOLS_DIR)/vasm
 TOOLS_BIN_DIR := ${TOOLS_DIR}/bin
-VASM := $(TOOLS_BIN_DIR)/vasm6800_oldstyle
 
-SRC := ${NAME}.asm
-ROM := ${NAME}.rom
-LST := ${NAME}.lst
+VASM := vasm6800_std
+VASM_BIN := $(TOOLS_BIN_DIR)/$(VASM)
+
+VLINK := vlink
+VLINK_BIN := $(TOOLS_BIN_DIR)/$(VLINK)
+
+SRCS := $(wildcard *.s)
+OUTS := $(SRCS:%.s=%.o)
+LSTS := $(SRCS:%.s=%.lst)
+
+TARGET := $(NAME).rom
+LINKER_SCRIPT = ${NAME}.ln
 
 .PHONY: all clean
 
-all: $(ROM)
+all: $(TARGET)
 
-$(ROM): $(SRC) $(VASM)
-	$(VASM) -Fbin -L $(LST) -o $@ $<
+$(TARGET): $(OUTS)
+	$(VLINK_BIN) -b rawbin -T $(LINKER_SCRIPT) -o $(TARGET) $(OUTS)
 
-# Build vasm
-$(VASM):
+%.o: %.s | 
+	$(VASM_BIN) -Fvobj -L $(@:.o=.lst) -o $@ $<
+
+$(VLINK_BIN) $(VASM_BIN):
 	$(MAKE) -C $(TOOLS_DIR)
 
 clean:
-	rm -rf $(ROM) $(LST)
+	rm -rf $(TARGET) $(LSTS) $(OUTS)

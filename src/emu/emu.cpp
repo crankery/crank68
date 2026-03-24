@@ -1,15 +1,16 @@
+
+#include <stdio.h>
+#include <optional>
+#include <unistd.h>
+#include <sys/select.h>
+#include <termios.h>
+
 #include <stdio.h>
 #include "cpu.h"
 #include "ram.h"
 #include "rom.h"
 #include "memoryIO.h"
 #include "machine.h"
-
-#include <optional>
-
-#include <unistd.h>
-#include <sys/select.h>
-#include <termios.h>
 
 struct termios orig_termios;
 
@@ -55,6 +56,41 @@ int getch()
     }
 }
 
+void run(int cycles = 0)
+{
+    int cycleCount = 0;
+    while (cycles == 0 || cycleCount++ < cycles)
+    {
+        Machine::instance().cpu_.step();
+
+        if (Machine::instance().memory_io_.acia_0_.clearToSend())
+        {
+            if (kbhit())
+            {
+                int c = getchar();
+                printf("key:%c\r\n", c);
+                if (c == '~')
+                {
+                    return;
+                }
+
+                Machine::instance().memory_io_.acia_0_.terminalOutAciaIn(c);
+            }
+        }
+
+        if (Machine::instance().memory_io_.acia_0_.dataReady())
+        {
+            std::optional<uint8_t> c = Machine::instance().memory_io_.acia_0_.terminalInAciaOut();
+
+            if (c.has_value())
+            {
+                // printf("acia 0:%02x \n", c.value());
+                printf("%c", c.value());
+            }
+        }
+    }
+}
+
 int main(int argc, char **argv)
 {
     set_conio_terminal_mode();
@@ -80,30 +116,7 @@ int main(int argc, char **argv)
     int result = 0;
     try
     {
-        while (true)
-        {
-            if (Machine::instance().memory_io_.acia_0_.clearToSend())
-            {
-                if (kbhit())
-                {
-                    int c = getchar();
-                    Machine::instance().memory_io_.acia_0_.terminalOutAciaIn(c);
-                }
-            }
-
-            if (Machine::instance().memory_io_.acia_0_.dataReady())
-            {
-                std::optional<uint8_t> c = Machine::instance().memory_io_.acia_0_.terminalInAciaOut();
-
-                if (c.has_value())
-                {
-                    // printf("acia 0:%02x \n", c.value());
-                    printf("%c", c.value());
-                }
-            }
-
-            Machine::instance().cpu_.step();
-        }
+        run(argc > 2 ? atoi(argv[2]) : 0);
     }
     catch (const std::exception &e)
     {

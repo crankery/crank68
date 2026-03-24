@@ -4,7 +4,3 @@
 [submodule "src/emu/mikbug"]
 	path = src/emu/mikbug
 	url = git@github.com:crsjones/MIKBUG2.git
-[submodule "src/tools/vasm"]
-	path = src/tools/vasm
-	url = git@github.com:dbuchwald/vasm.git
-	ignore = dirty

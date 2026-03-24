@@ -1,4 +1,3 @@
 bin/
-vasm/*.o
-vasm/vasm6800*
-
+vasm/
+vlink/
