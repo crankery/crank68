@@ -53,13 +53,12 @@ $(BIN_DIR):
 clean: clean_bin clean_vasm clean_vlink
 
 clean_bin:
-	rm -rf $(TARGET_VASM) $(TARGET_VLINK)
+	rm -rf $(TARGET_VASM) $(TARGET_VOBJDUMP) $(TARGET_VLINK)
 
 clean_vlink:
-	rm -rf $(VLINK_OUT) $(VLINK_OBJ_DIR)
+	rm -rf $(VLINK_DIR)
 
 clean_vasm:
-	$(MAKE) -C $(VASM_DIR) clean
-	rm -rf $(VASM_OUT)
+	rm -rf $(VASM_DIR)
 
 .PHONY: all clean tools
