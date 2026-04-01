@@ -10,27 +10,41 @@
 
 #include "latch.h"
 #include "acia.h"
+#include "switches.h"
 
 class MemoryIO : public Mem
 {
 public:
     MemoryIO()
         : Mem(StartAddress, EndAddress),
-          banked_memory_latch_(SlotLatch, OffsetBankedMemoryLatch),
-          acia_0_(SlotCom0, OffsetAcia),
-          acia_1_(SlotCom1, OffsetAcia)
+          banked_memory_latch_(0, OffsetBankedMemoryLatch),
+          config_switches_(0, OffsetConfigSwitches),
+          acia_0_(1, OffsetAcia0)
+    //   ,
+    //   acia_1_(1, OffsetAcia1),
+    //   acia_2_(1, OffsetAcia2),
+    //   acia_3_(1, OffsetAcia3)
     {
         devices_.push_back(&banked_memory_latch_);
+        devices_.push_back(&config_switches_);
         devices_.push_back(&acia_0_);
-        devices_.push_back(&acia_1_);
+
+        // devices_.push_back(&acia_1_);
+        // devices_.push_back(&acia_2_);
+        // devices_.push_back(&acia_3_);
     }
 
     virtual uint8_t read(uint16_t addr) const override
     {
+        // printf("memory IO read: %04x\r\n", addr);
+
         for (auto dev : devices_)
         {
-            if (dev->handles(addr))
+            // printf("checking %04x with dev slot %1x offset %1x count %1x\r\n", addr, dev->getSlot(), dev->getOffset(), dev->getCount());
+
+            if (dev->handles(addr) >= 0)
             {
+                // printf("IO read: dev @ %1x:%1x handles\r\n", dev->getSlot(), dev->getOffset());
                 return dev->in(addr);
             }
         }
@@ -55,25 +69,24 @@ public:
         }
     }
 
-    uint8_t getBankedMemoryLatchValue()
-    {
-        return banked_memory_latch_.getValue();
-    }
-
     Latch banked_memory_latch_;
+    Switches config_switches_;
     Acia acia_0_;
-    Acia acia_1_;
+    // Acia acia_1_;
+    // Acia acia_2_;
+    // Acia acia_3_;
 
 private:
     static const uint16_t StartAddress = 0xE000;
     static const uint16_t EndAddress = 0xE0FF;
 
-    static const uint8_t SlotLatch = 0x0;
-    static const uint8_t OffsetBankedMemoryLatch = 0x0;
+    static const uint8_t OffsetBankedMemoryLatch = 0;
+    static const uint8_t OffsetConfigSwitches = 1;
 
-    static const uint8_t SlotCom0 = 0x1;
-    static const uint8_t SlotCom1 = 0x2;
-    static const uint8_t OffsetAcia = 0x0;
+    static const uint8_t OffsetAcia0 = 0;
+    // static const uint8_t OffsetAcia1 = 2;
+    // static const uint8_t OffsetAcia2 = 4;
+    // static const uint8_t OffsetAcia3 = 6;
 
     std::vector<MemoryIODevice *> devices_;
 };

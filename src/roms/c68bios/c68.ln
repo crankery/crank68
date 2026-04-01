@@ -1,0 +1,39 @@
+MEMORY
+{
+    RAM:    ORIGIN = 0x0000, LENGTH = 0xC000
+    BANKED: ORIGIN = 0xC000, LENGTH = 0x2000
+    ROM:    ORIGIN = 0xe000, LENGTH = 0x2000
+}
+
+SECTIONS
+{
+    .zp 0x0000 (NOLOAD) :
+    {
+        *(.zp)
+    } > RAM
+
+    .bios_tmp 0x0100 (NOLOAD) :
+    {
+        *(.bios_tmp)
+    } > RAM
+
+    .io 0xE000 :
+    {
+        *(.io)
+    } > ROM
+
+    .bios :
+    {
+        *(.bios)
+    } > ROM
+
+    .strings :
+    {
+        *(.strings)
+    } > ROM
+
+    .vectors 0xFFF8 :
+    {
+        *(.vectors)
+    } > ROM
+}

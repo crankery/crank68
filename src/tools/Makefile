@@ -17,7 +17,7 @@ VLINK_OBJ_DIR := $(VLINK_DIR)/objects
 VLINK_OUT := $(VLINK_DIR)/$(VLINK)
 TARGET_VLINK := $(BIN_DIR)/$(VLINK)
 
-TARGETS := $(TARGET_VASM) $(TARGET_VLINK) $(TARGET_VOBJDUMP)
+TARGETS := $(TARGET_VASM) $(TARGET_VLINK) $(TARGET_VOBJDUMP) 
 
 tools: $(TARGETS)
 
@@ -40,6 +40,8 @@ $(TARGET_VOBJDUMP): $(VASM_OUT)
 
 $(VASM_OUT): $(VASM_DIR)
 	$(MAKE) -C $(VASM_DIR) CPU=6800 SYNTAX=std
+	$(MAKE) -C $(VASM_DIR) CPU=6800 SYNTAX=mot
+	$(MAKE) -C $(VASM_DIR) CPU=6800 SYNTAX=oldstyle
 	
 $(VLINK_OBJ_DIR):
 	mkdir -p $(VLINK_OBJ_DIR)
@@ -53,7 +55,7 @@ $(BIN_DIR):
 clean: clean_bin clean_vasm clean_vlink
 
 clean_bin:
-	rm -rf $(TARGET_VASM) $(TARGET_VOBJDUMP) $(TARGET_VLINK)
+	rm -rf $(TARGET_VASM) $(TARGET_VOBJDUMP) $(TARGET_VLINK) $(TARGET_VASM_MOT)
 
 clean_vlink:
 	rm -rf $(VLINK_DIR)

@@ -4,6 +4,23 @@
 #include "cpu.h"
 #include "machine.h"
 
+void Cpu::step()
+{
+    uint16_t pc = s_.pc;
+    uint8_t opcode = fetch8();
+    OpInfo op_info = cpu_op_table[opcode];
+    cycles_ += op_info.cycles;
+
+    bool result = dispatch(opcode, op_info);
+
+    trace(pc);
+
+    if (!result)
+    {
+        unimplemented(opcode);
+    }
+}
+
 // 8 bit read on the machine's bus
 uint8_t Cpu::read8(uint16_t addr) const
 {
@@ -16,37 +33,34 @@ void Cpu::write8(uint16_t addr, uint8_t value)
     Machine::instance().write(addr, value);
 }
 
-void Cpu::traceBefore(char *buf, size_t buf_size)
+void Cpu::trace(uint16_t pc)
 {
-    uint16_t pc = s_.pc;
     uint8_t op = read8(pc);
     OpInfo op_info = cpu_op_table[op];
     const char *op_name_s = op_info.op_name_s;
     addr_mode addr_mode = op_info.addr_mode;
 
-    int argc =
-        addr_mode == rel ? 1 : addr_mode == imb ? 1
-                           : addr_mode == imw   ? 2
-                           : addr_mode == idx   ? 1
-                           : addr_mode == dir   ? 1
-                           : addr_mode == ext   ? 2
-                                                : 0;
+    int argc = addr_mode == inh                                           ? 0
+               : addr_mode == rel || addr_mode == imb || addr_mode == idx ? 1
+                                                                          : 2;
+    uint8_t argv[2];
+    for (int i = 0; i < argc; i++)
+    {
+        argv[i] = read8(pc + i + 1);
+    }
 
     char args[10];
-    if (argc == 0)
-    {
-        args[0] = '\0';
-    }
-    else if (argc == 1)
+    char op_formatted[16];
+    args[0] = '\0';
+    if (argc == 1)
     {
         snprintf(args, sizeof(args), "%02x", read8(pc + 1));
     }
     else
     {
-        snprintf(args, sizeof(args), "%02x %02x", read8(pc + 1), read8(pc + 2));
+        snprintf(args, sizeof(args), "%02x%02x", read8(pc + 1), read8(pc + 2));
     }
 
-    char op_formatted[16];
     switch (addr_mode)
     {
     case inh:
@@ -59,7 +73,7 @@ void Cpu::traceBefore(char *buf, size_t buf_size)
         snprintf(op_formatted, sizeof(op_formatted), "%s #$%04x", op_name_s, (read8(pc + 1) << 8) | read8(pc + 2));
         break;
     case idx:
-        snprintf(op_formatted, sizeof(op_formatted), "%s $%02x, x", op_name_s, read8(pc + 1));
+        snprintf(op_formatted, sizeof(op_formatted), "%s $%02x,x", op_name_s, read8(pc + 1));
         break;
     case dir:
         snprintf(op_formatted, sizeof(op_formatted), "%s $%02x", op_name_s, read8(pc + 1));
@@ -68,39 +82,31 @@ void Cpu::traceBefore(char *buf, size_t buf_size)
         snprintf(op_formatted, sizeof(op_formatted), "%s $%04x", op_name_s, (read8(pc + 1) << 8) | read8(pc + 2));
         break;
     case rel:
-        snprintf(op_formatted, sizeof(op_formatted), "%s [$%04x] ", op_name_s, pc + 2 + ((int8_t)read8(pc + 1)));
+        snprintf(op_formatted, sizeof(op_formatted), "%s $%04x", op_name_s, pc + 2 + ((int8_t)read8(pc + 1)));
         break;
     default:
         break;
     }
 
-    snprintf(buf,
-             buf_size,
-             "%04x: %02x %-8s %-12s",
-             pc,
-             op,
-             args,
-             op_formatted);
-}
-
-void Cpu::traceAfter(char *before)
-{
     char message[256];
-    char stack[64];
+    // char stack[64];
 
-    stack[0] = '\0';
-    int count = 0;
-    for (int sp = s_.sp; sp < 0xbfff; ++sp)
-    {
-        snprintf(stack, sizeof(stack), "%s %02x", stack, read8(sp));
-        if (++count > 8)
-            break;
-    }
+    // stack[0] = '\0';
+    // int count = 0;
+    // for (int sp = s_.sp; sp < 0xbfff; ++sp)
+    // {
+    //     snprintf(stack, sizeof(stack), "%s %02x", stack, read8(sp));
+    //     if (++count > 8)
+    //         break;
+    // }
 
     snprintf(message,
              sizeof(message),
-             "%s | %c%c%c%c%c%c | a:%02x b:%02x x:%04x s:%04x|%s\n",
-             before,
+             "%04x:%02x%-4s %-12s|%c%c%c%c%c%c|a%02x|b%02x|x%04x|s%04x\n",
+             pc,
+             op,
+             args,
+             op_formatted,
              s_.cc & C ? 'C' : ' ',
              s_.cc & V ? 'V' : ' ',
              s_.cc & Z ? 'Z' : ' ',
@@ -110,8 +116,7 @@ void Cpu::traceAfter(char *before)
              s_.a,
              s_.b,
              s_.x,
-             s_.sp,
-             stack);
+             s_.sp);
 
     Machine::instance().trace(message);
 }

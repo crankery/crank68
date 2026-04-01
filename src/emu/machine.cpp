@@ -1,7 +1,5 @@
 #include "machine.h"
 
-#define TRACE_FILE "./emu_trace.log"
-
 uint8_t Machine::read(uint16_t addr) const
 {
     if (addr >= ram_.getStartAddress() && addr <= ram_.getEndAddress())
@@ -54,22 +52,51 @@ void Machine::write(uint16_t addr, uint8_t value)
 
 void Machine::beginTrace()
 {
-    traceFp = fopen(TRACE_FILE, "w");
+    if (tracing_)
+    {
+        fprintf(traceFp_, "\r\n---\r\nEnd of file %d\r\n---\r\n", traceFile_);
+        fflush(traceFp_);
+        fclose(traceFp_);
+
+        traces_ = 0;
+        tracing_ = false;
+        traceFile_++;
+    }
+    else
+    {
+        traceFile_ = 0;
+    }
+
+    char fn[16];
+    snprintf(fn, sizeof(fn), "emu_trace_%d.log", traceFile_ % 2);
+
+    traceFp_ = fopen(fn, "w");
+    traces_ = 0;
+    tracing_ = true;
+
+    fprintf(traceFp_, "\r\n---\r\nStart of file %d\r\n---\r\n", traceFile_);
 }
 
 void Machine::trace(char *message)
 {
-    if (traceFp)
+    if (tracing_)
     {
-        fprintf(traceFp, "%s", message);
+        fprintf(traceFp_, "%s", message);
+
+        // switch files every so often
+        if (traces_++ > 10000)
+        {
+            beginTrace();
+        }
     }
 }
 
 void Machine::endTrace()
 {
-    if (traceFp)
+    if (tracing_)
     {
-        fclose(traceFp);
-        traceFp = NULL;
+        fflush(traceFp_);
+        fclose(traceFp_);
+        tracing_ = false;
     }
 }

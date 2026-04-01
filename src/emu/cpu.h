@@ -66,9 +66,10 @@ private:
     [[noreturn]] void infiniteloop() const;
     [[noreturn]] void unimplemented(uint8_t opcode) const;
 
-    bool dispatch(uint8_t opcode, op_names op, addr_mode mode);
-    void traceBefore(char *buf, size_t buf_size);
-    void traceAfter(char *before);
+    bool dispatch(uint8_t op, OpInfo op_info);
+    void trace(uint16_t pc);
+
+    uint32_t cycles_ = 0;
 
 #include "cpu_operations.g.h"
 };

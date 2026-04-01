@@ -4,13 +4,13 @@
 
 int BankedMemory::getBankedMemoryAddr(uint16_t busAddr) const
 {
-    int bankNumber = Machine::instance().memory_io_.getBankedMemoryLatchValue();
+    int bankNumber = Machine::instance().memory_io_.banked_memory_latch_.getValue();
     if (bankNumber > InstalledBanks)
     {
         return -1;
     }
 
-    int baseAddress = busAddr - StartAddress; // 0x0000 - 0x1FFF
+    int baseAddress = busAddr - StartAddress;
     return bankNumber * 0x2000 + baseAddress;
 }
 

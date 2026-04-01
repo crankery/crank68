@@ -3,14 +3,14 @@
 
 uint8_t Acia::in(uint8_t port)
 {
+    char buf[80];
     switch (port & 0xf)
     {
     case 0:
     {
         uint8_t status = getStatusByte();
 
-        char buf[80];
-        snprintf(buf, sizeof(buf), "Acia read status byte: %02x\n", status);
+        snprintf(buf, sizeof(buf), "%s status in %02x\n", name(), status);
         Machine::instance().trace(buf);
 
         return status;
@@ -20,20 +20,21 @@ uint8_t Acia::in(uint8_t port)
         std::optional<uint8_t> c = terminalOutAciaInBuffer.next();
         if (c.has_value())
         {
+            snprintf(buf, sizeof(buf), "%s data in %02x\r\n", name(), c.value());
             lastOut = c.value();
         }
 
-        // no data avaiable, probably shouldn't have called this :)
-        // assume the acia would have just returned whatever the heck it had prepared in the buffer last time
         return lastOut;
     }
     default:
-        return 0xff;
+        return 0xa5;
     }
 }
 
 void Acia::out(uint8_t port, uint8_t value)
 {
+    char buf[80];
+
     switch (port & 0xf)
     {
     case 0:
@@ -65,8 +66,8 @@ void Acia::out(uint8_t port, uint8_t value)
         // 0b01 = /16
         // 0b10 = /64
         // 0b11 = reset - set to 0x11 to reset device then select clock divisor
-        char buf[80];
-        snprintf(buf, sizeof(buf), "Acia control byte set to %02x\n", value);
+
+        snprintf(buf, sizeof(buf), "%s control out %02x\n", name(), value);
         Machine::instance().trace(buf);
         // control
         controlByte = value;
@@ -74,6 +75,9 @@ void Acia::out(uint8_t port, uint8_t value)
     }
     case 1:
     {
+        snprintf(buf, sizeof(buf), "%s data out %02x\n", name(), value);
+        Machine::instance().trace(buf);
+
         terminalInAciaOutBuffer.push(value);
         break;
     }
@@ -85,12 +89,13 @@ void Acia::out(uint8_t port, uint8_t value)
 void Acia::terminalOutAciaIn(uint8_t c)
 {
     terminalOutAciaInBuffer.push(c);
+
+    // printf("terminalOutAciaIn: %c, terminalOutAciaInBuffer length: %d\r\n", c, terminalOutAciaInBuffer.length());
 }
 
-bool Acia::clearToSend()
+bool Acia::terminalOutAciaInReady()
 {
-    // I don't think it really matters much
-    return true;
+    return !terminalOutAciaInBuffer.empty();
 }
 
 std::optional<uint8_t> Acia::terminalInAciaOut()
@@ -98,16 +103,16 @@ std::optional<uint8_t> Acia::terminalInAciaOut()
     return terminalInAciaOutBuffer.next();
 }
 
-bool Acia::dataReady()
+bool Acia::terminalInAciaOutReady()
 {
-    return !terminalOutAciaInBuffer.empty();
+    return !terminalInAciaOutBuffer.empty();
 }
 
 uint8_t Acia::getStatusByte()
 {
-    uint8_t status = (dataReady() ? status_rdrf : 0) // if there's data ready, rdrf is set
-                     | status_tdre                   // the terminal is good to go
-                     | status_irq_n;                 // there are no interrupts
+    uint8_t status = (terminalOutAciaInReady() ? status_rdrf : 0) // receive buffer full, that is there's at least one byte in the queue
+                     | status_tdre                                // "transmit buffer empty", but really we have a basically infinite queue
+                     | status_irq_n;                              // there are no interrupts
 
     return status;
 }

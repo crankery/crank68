@@ -490,7 +490,7 @@
       "plot": "",
       "pos_files": "",
       "specctra_dsn": "",
-      "step": "Processor.step",
+      "step": "../3D/Processor.step",
       "svg": "",
       "vrml": ""
     },

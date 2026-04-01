@@ -34,5 +34,8 @@ public:
     void endTrace();
 
 private:
-    FILE *traceFp = NULL;
+    FILE *traceFp_;
+    bool tracing_ = false;
+    int traces_ = 0;
+    int traceFile_ = 0;
 };

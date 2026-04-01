@@ -16,6 +16,10 @@ struct termios orig_termios;
 
 void reset_terminal_mode()
 {
+    char exitString[20];
+    strcpy(exitString, "\r\n\r\n(Exit)\r\n");
+    write(1, exitString, strlen(exitString));
+
     tcsetattr(0, TCSANOW, &orig_termios);
 }
 
@@ -56,46 +60,51 @@ int getch()
     }
 }
 
-void run(int cycles = 0)
+void run()
 {
-    int cycleCount = 0;
-    while (cycles == 0 || cycleCount++ < cycles)
+    while (1)
     {
         Machine::instance().cpu_.step();
 
-        if (Machine::instance().memory_io_.acia_0_.clearToSend())
+        if (kbhit())
         {
-            if (kbhit())
+            int c = getchar();
+            if (c == 0x03)
             {
-                int c = getchar();
-                printf("key:%c\r\n", c);
-                if (c == '~')
-                {
-                    return;
-                }
-
-                Machine::instance().memory_io_.acia_0_.terminalOutAciaIn(c);
+                return;
             }
+
+            Machine::instance().memory_io_.acia_0_.terminalOutAciaIn(c);
         }
 
-        if (Machine::instance().memory_io_.acia_0_.dataReady())
-        {
-            std::optional<uint8_t> c = Machine::instance().memory_io_.acia_0_.terminalInAciaOut();
+        std::optional<uint8_t> c = Machine::instance().memory_io_.acia_0_.terminalInAciaOut();
 
-            if (c.has_value())
-            {
-                // printf("acia 0:%02x \n", c.value());
-                printf("%c", c.value());
-            }
+        if (c.has_value())
+        {
+            // just print it out to stdout without buffering
+            write(1, &c.value(), 1);
         }
+
+        // slow it down, logs are huge
+        usleep(500);
     }
 }
 
 int main(int argc, char **argv)
 {
     set_conio_terminal_mode();
+    setvbuf(stdout, NULL, _IONBF, 0);
 
     Machine::instance().beginTrace();
+
+    // for now, the only configuration is for the 6850 control register
+    // here we have:
+    // 01: counter divide by 16
+    // 101: 8N1
+    // 00: transmit interrupts disabled
+    // 0: receive interrupts disabled
+    uint8_t config = 0b00010101;
+    Machine::instance().memory_io_.config_switches_.setValue(config);
 
     if (argc > 1)
     {
@@ -116,7 +125,7 @@ int main(int argc, char **argv)
     int result = 0;
     try
     {
-        run(argc > 2 ? atoi(argv[2]) : 0);
+        run();
     }
     catch (const std::exception &e)
     {

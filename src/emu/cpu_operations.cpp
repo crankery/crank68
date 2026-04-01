@@ -16,6 +16,7 @@ bool Cpu::op_anda(uint8_t opcode, op_names op, addr_mode mode)
         return false;
     }
 
+    s_.a = r;
     set_flag(Z, r == 0);
     set_flag(N, (r & 0x80) != 0);
     set_flag(V, (((s_.a ^ v) & (s_.a ^ r)) & 0x80) != 0);
@@ -25,8 +26,9 @@ bool Cpu::op_anda(uint8_t opcode, op_names op, addr_mode mode)
 
 bool Cpu::op_andb(uint8_t opcode, op_names op, addr_mode mode)
 {
-    uint8_t v;
     uint8_t r;
+    uint8_t v;
+
     switch (mode)
     {
     case addr_mode::imb:
@@ -39,6 +41,7 @@ bool Cpu::op_andb(uint8_t opcode, op_names op, addr_mode mode)
         return false;
     }
 
+    s_.b = r;
     set_flag(Z, r == 0);
     set_flag(N, (r & 0x80) != 0);
     set_flag(V, (((s_.b ^ v) & (s_.b ^ r)) & 0x80) != 0);
@@ -178,6 +181,40 @@ bool Cpu::op_adda(uint8_t opcode, op_names op, addr_mode mode)
     }
 }
 
+bool Cpu::op_bcs(uint8_t opcode, op_names op, addr_mode mode)
+{
+    switch (mode)
+    {
+    case addr_mode::rel:
+    {
+        int8_t off = static_cast<int8_t>(fetch8());
+        if (get_flag(C))
+            s_.pc = static_cast<uint16_t>(s_.pc + off);
+        return true;
+    }
+    default:
+        return false;
+    }
+}
+
+bool Cpu::op_bhi(uint8_t opcode, op_names op, addr_mode mode)
+{
+    switch (mode)
+    {
+    case addr_mode::rel:
+    {
+        int8_t off = static_cast<int8_t>(fetch8());
+
+        if (!(get_flag(C) || get_flag(Z)))
+            s_.pc = static_cast<uint16_t>(s_.pc + off);
+
+        return true;
+    }
+    default:
+        return false;
+    }
+}
+
 bool Cpu::op_beq(uint8_t opcode, op_names op, addr_mode mode)
 {
     switch (mode)
@@ -186,6 +223,38 @@ bool Cpu::op_beq(uint8_t opcode, op_names op, addr_mode mode)
     {
         int8_t off = static_cast<int8_t>(fetch8());
         if (get_flag(Z))
+            s_.pc = static_cast<uint16_t>(s_.pc + off);
+        return true;
+    }
+    default:
+        return false;
+    }
+}
+
+bool Cpu::op_blt(uint8_t opcode, op_names op, addr_mode mode)
+{
+    switch (mode)
+    {
+    case addr_mode::rel:
+    {
+        int8_t off = static_cast<int8_t>(fetch8());
+        if (get_flag(N) ^ get_flag(V))
+            s_.pc = static_cast<uint16_t>(s_.pc + off);
+        return true;
+    }
+    default:
+        return false;
+    }
+}
+
+bool Cpu::op_bls(uint8_t opcode, op_names op, addr_mode mode)
+{
+    switch (mode)
+    {
+    case addr_mode::rel:
+    {
+        int8_t off = static_cast<int8_t>(fetch8());
+        if (get_flag(N) ^ get_flag(V))
             s_.pc = static_cast<uint16_t>(s_.pc + off);
         return true;
     }
@@ -257,7 +326,6 @@ bool Cpu::op_clrb(uint8_t opcode, op_names op, addr_mode mode)
 
 bool Cpu::op_cmpa(uint8_t opcode, op_names op, addr_mode mode)
 {
-    uint8_t r;
     uint8_t v;
 
     switch (mode)
@@ -265,30 +333,6 @@ bool Cpu::op_cmpa(uint8_t opcode, op_names op, addr_mode mode)
     case addr_mode::imb:
     {
         v = fetch8();
-        r = sub8(s_.a, v);
-        break;
-    }
-    default:
-        return false;
-    }
-
-    set_flag(Z, r == 0);
-    set_flag(N, (r & 0x80) != 0);
-    set_flag(V, (((s_.a ^ v) & (s_.a ^ r)) & 0x80) != 0);
-    return true;
-}
-
-bool Cpu::op_cmpb(uint8_t opcode, op_names op, addr_mode mode)
-{
-    uint8_t r;
-    uint8_t v;
-
-    switch (mode)
-    {
-    case addr_mode::imb:
-    {
-        v = fetch8();
-        r = sub8(s_.b, v);
         break;
     }
     case idx:
@@ -296,16 +340,90 @@ bool Cpu::op_cmpb(uint8_t opcode, op_names op, addr_mode mode)
         uint8_t off = fetch8();
         uint16_t addr = static_cast<uint16_t>(s_.x + off);
         v = read8(addr);
-        r = sub8(s_.b, v);
+        break;
+    }
+    case addr_mode::ext:
+    {
+        uint16_t addr = fetch16();
+        v = read8(addr);
         break;
     }
     default:
         return false;
     }
 
-    set_flag(Z, r == 0);
-    set_flag(N, (r & 0x80) != 0);
-    set_flag(V, (((s_.b ^ v) & (s_.b ^ r)) & 0x80) != 0);
+    sub8(s_.a, v);
+    return true;
+}
+
+bool Cpu::op_cmpb(uint8_t opcode, op_names op, addr_mode mode)
+{
+    uint8_t v;
+
+    switch (mode)
+    {
+    case addr_mode::imb:
+    {
+        v = fetch8();
+        break;
+    }
+    case idx:
+    {
+        uint8_t off = fetch8();
+        uint16_t addr = static_cast<uint16_t>(s_.x + off);
+        v = read8(addr);
+        break;
+    }
+    case addr_mode::ext:
+    {
+        uint16_t addr = fetch16();
+        v = read8(addr);
+        break;
+    }
+    default:
+        return false;
+    }
+
+    sub8(s_.b, v);
+    return true;
+}
+
+bool Cpu::op_inc(uint8_t opcode, op_names op, addr_mode mode)
+{
+    switch (mode)
+    {
+    case addr_mode::ext:
+    {
+        uint16_t addr = fetch16();
+        uint8_t o = read8(addr);
+        uint8_t r = add8(o, 1);
+        write8(addr, r);
+        break;
+    }
+    default:
+        return false;
+    }
+
+    return true;
+}
+
+bool Cpu::op_dec(uint8_t opcode, op_names op, addr_mode mode)
+{
+    switch (mode)
+    {
+    case addr_mode::ext:
+    {
+        uint16_t addr = fetch16();
+        uint8_t o = read8(addr);
+        uint8_t r = sub8(o, 1);
+        // printf("dec %04d: v=%02d r=%02d\r\n", addr, o, r);
+        write8(addr, r);
+        break;
+    }
+    default:
+        return false;
+    }
+
     return true;
 }
 
@@ -316,11 +434,13 @@ bool Cpu::op_deca(uint8_t opcode, op_names op, addr_mode mode)
     case addr_mode::inh:
     {
         s_.a = sub8(s_.a, 1);
-        return true;
+        break;
     }
     default:
         return false;
     }
+
+    return true;
 }
 
 bool Cpu::op_decb(uint8_t opcode, op_names op, addr_mode mode)
@@ -330,11 +450,12 @@ bool Cpu::op_decb(uint8_t opcode, op_names op, addr_mode mode)
     case addr_mode::inh:
     {
         s_.b = sub8(s_.b, 1);
-        return true;
+        break;
     }
     default:
         return false;
     }
+    return true;
 }
 
 bool Cpu::op_incb(uint8_t opcode, op_names op, addr_mode mode)
@@ -502,6 +623,29 @@ bool Cpu::op_ldx(uint8_t opcode, op_names op, addr_mode mode)
     return true;
 }
 
+bool Cpu::op_lsra(uint8_t opcode, op_names op, addr_mode mode)
+{
+    bool lsb;
+    switch (mode)
+    {
+    case addr_mode::inh:
+    {
+        lsb = (s_.a & 1) == 1;
+        s_.a >>= 1;
+
+        break;
+    }
+    default:
+        return false;
+    }
+
+    set_flag(C, lsb);
+    set_flag(N, false);                     // always reset
+    set_flag(V, get_flag(N) ^ get_flag(C)); // this boils down to C
+    set_flag(Z, s_.a == 0);
+    return true;
+}
+
 bool Cpu::op_psha(uint8_t opcode, op_names op, addr_mode mode)
 {
     switch (mode)
@@ -612,6 +756,13 @@ bool Cpu::op_staa(uint8_t opcode, op_names op, addr_mode mode)
         write8(addr, s_.a);
         break;
     }
+    case addr_mode::idx:
+    {
+        uint8_t off = fetch8();
+        uint16_t addr = static_cast<uint16_t>(s_.x + off);
+        write8(addr, s_.a);
+        break;
+    }
     default:
         return false;
     }
@@ -635,6 +786,13 @@ bool Cpu::op_stab(uint8_t opcode, op_names op, addr_mode mode)
     case addr_mode::ext:
     {
         uint16_t addr = fetch16();
+        write8(addr, s_.b);
+        break;
+    }
+    case addr_mode::idx:
+    {
+        uint8_t off = fetch8();
+        uint16_t addr = static_cast<uint16_t>(s_.x + off);
         write8(addr, s_.b);
         break;
     }
@@ -667,12 +825,52 @@ bool Cpu::op_stx(uint8_t opcode, op_names op, addr_mode mode)
         write8(static_cast<uint8_t>(zp + 1), (uint8_t)s_.x & 0xff);
         break;
     }
+    case addr_mode::ext:
+    {
+        uint8_t addr = fetch16();
+        write16(addr, s_.x);
+        break;
+    }
     default:
         return false;
     }
 
     set_nz16(s_.x);
     set_flag(V, false);
+
+    return true;
+}
+
+bool Cpu::op_suba(uint8_t opcode, op_names op, addr_mode mode)
+{
+    switch (mode)
+    {
+    case addr_mode::imb:
+    {
+        uint8_t v = fetch8();
+        s_.a = sub8(s_.a, v);
+        break;
+    }
+    default:
+        return false;
+    }
+
+    return true;
+}
+
+bool Cpu::op_subb(uint8_t opcode, op_names op, addr_mode mode)
+{
+    switch (mode)
+    {
+    case addr_mode::imb:
+    {
+        uint8_t v = fetch8();
+        s_.b = sub8(s_.b, v);
+        break;
+    }
+    default:
+        return false;
+    }
 
     return true;
 }

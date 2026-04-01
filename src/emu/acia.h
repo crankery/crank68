@@ -28,6 +28,7 @@ public:
     Acia(const uint8_t slot, const uint8_t offset)
         : MemoryIODevice(slot, offset, RegisterCount)
     {
+        snprintf(name_, sizeof(name_), "acia(%x:%x)", slot, offset);
     }
 
     virtual uint8_t in(uint8_t port) override;
@@ -35,13 +36,16 @@ public:
 
     // terminal output
     void terminalOutAciaIn(uint8_t c);
-    bool clearToSend();
+    bool terminalOutAciaInReady();
+
+    virtual char *name() override
+    {
+        return name_;
+    }
 
     // terminal input
     std::optional<uint8_t> terminalInAciaOut();
-
-    // there is data ready (relative to the acia)
-    bool dataReady();
+    bool terminalInAciaOutReady();
 
     static const uint8_t RegisterCount = 2;
 
@@ -53,4 +57,6 @@ private:
 
     uint8_t controlByte;
     uint8_t lastOut;
+
+    char name_[25];
 };

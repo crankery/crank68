@@ -1,24 +1,17 @@
 #include "cpu.h"
+#include "cpu_defs.g.h"
 
-void Cpu::step()
+bool Cpu::dispatch(uint8_t op, OpInfo op_info)
 {
-    char buf[1024];
-
-    Cpu::traceBefore(buf, sizeof(buf));
-    uint8_t op = fetch8();
-    OpInfo op_info = cpu_op_table[op];
-
     bool result;
-    switch (op_info.op_name)
+    op_names op_name = op_info.op_name;
+
+    switch (op_name)
     {
-{{dispatch_cpp}}    default:
+{{dispatch_cpp}}
+    default:
         result = false;
     }
 
-    Cpu::traceAfter(buf);
-
-    if (!result)
-    {
-        unimplemented(op);
-    }
+    return result;
 }

@@ -34,6 +34,11 @@ public:
         return items.empty();
     }
 
+    int length()
+    {
+        return items.size();
+    }
+
 private:
     std::queue<uint8_t> items;
 };

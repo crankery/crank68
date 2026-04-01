@@ -12,7 +12,7 @@ VASM_BIN := $(TOOLS_BIN_DIR)/$(VASM)
 VLINK := vlink
 VLINK_BIN := $(TOOLS_BIN_DIR)/$(VLINK)
 
-SRCS := $(wildcard *.s)
+SRCS := $(filter-out defs.s, $(wildcard *.s))
 OUTS := $(SRCS:%.s=%.o)
 LSTS := $(SRCS:%.s=%.lst)
 
@@ -23,11 +23,12 @@ LINKER_SCRIPT = ${NAME}.ln
 
 all: $(TARGET)
 
-$(TARGET): $(OUTS)
-	$(VLINK_BIN) -b rawbin -T $(LINKER_SCRIPT) -o $(TARGET) $(OUTS)
+$(TARGET): $(OUTS) $(LINKER_SCRIPT)
+	$(VLINK_BIN) -b rawbin -T $(LINKER_SCRIPT) -M$(NAME).map -o $(TARGET) $(OUTS)
 
 %.o: %.s | 
 	$(VASM_BIN) -Fvobj -L $(@:.o=.lst) -o $@ $<
+	cat $(@:.o=.lst)
 
 $(VLINK_BIN) $(VASM_BIN):
 	$(MAKE) -C $(TOOLS_DIR)
