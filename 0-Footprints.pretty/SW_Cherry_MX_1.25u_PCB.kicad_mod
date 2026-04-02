@@ -11,19 +11,19 @@
 		(uuid "6ab4d51f-16c2-48fc-985d-8f4fd78566e3")
 		(effects
 			(font
-				(size 1 1)
-				(thickness 0.15)
+				(size 0.8 0.8)
+				(thickness 0.1)
 			)
 		)
 	)
 	(property "Value" "SW_Cherry_MX_1.25u_PCB"
 		(at -2.54 12.954 0)
-		(layer "F.Fab")
+		(layer "F.SilkS")
 		(uuid "af49fc84-0cc0-4845-8ce4-7f86b3f0dae5")
 		(effects
 			(font
-				(size 1 1)
-				(thickness 0.15)
+				(size 0.8 0.8)
+				(thickness 0.1)
 			)
 		)
 	)
@@ -213,17 +213,6 @@
 		)
 		(layer "F.Fab")
 		(uuid "39b86816-203e-4478-82ee-f2392a551bf0")
-	)
-	(fp_text user "${REFERENCE}"
-		(at -2.54 -2.794 0)
-		(layer "F.Fab")
-		(uuid "19f67c8f-bbf8-4b63-90fd-2c4d9a4c19a7")
-		(effects
-			(font
-				(size 1 1)
-				(thickness 0.15)
-			)
-		)
 	)
 	(pad "" np_thru_hole circle
 		(at -7.62 5.08)

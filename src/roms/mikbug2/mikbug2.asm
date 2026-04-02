@@ -5,13 +5,8 @@
 * BY CRAIG JONES,RAY BELLIS
 *
 
-* jdh: changed minimally to build with vasm6800_mot
-* todo: 
-* - remove audio cassette stuff
-* - 
-
-*     NAM    MIKBUG
-*     TTL    2.0 WITH AUDIO CASSETTE
+*       NAM    MIKBUG
+*       TTL    2.0 WITH AUDIO CASSETTE
 *     REV  0
 *     COPYRIGHT (C)  1977  BY MOTOROLA INC.
 *
@@ -38,18 +33,14 @@
 *     E  EXORTAPE CASSETTE INTERFACE
 *
 *      OPT    S,O,LLEN=80,CREF
-
-* <jdh - change the acia addresses to match target system
-* ACIAS  EQU    $8008
-* ACIAD  EQU    $8009
-ACIAS  EQU    $E010
-ACIAD  EQU    $E020
-* jdh>
-
-SWI    EQU    $3F      SWI OP CODE
+*ACIAS  EQU    $8008
+*ACIAD  EQU    $8009
+ACIAS   EQU    $e100
+ACIAD   EQU    $e101
+* SWI    EQU    $3F      SWI OP CODE
 *
-BASORG EQU    $F800
-       ORG    BASORG        BASE ORIGIN
+       ORG    $F800
+BASORG EQU    *        BASE ORIGIN
 *
 *     I/O INTERRUPT SEQUENCE
 *
@@ -69,42 +60,42 @@ SFEI   LDX    SWI1
 * JUMP TABLE TO ROUTINES PERFORMING MIKBUG FCTN'S
 *
 FCTABL EQU    *
-       dc.b    'B'      "B" - PRINT ALL BREAKS
-       dc.w    PNTBRK
-       dc.b    'C'      "C" - CONTINUE
-       dc.w    CONT
-       dc.b    'D'      "D" - DELETE ALL BREAKS
-       dc.w    DELBRK
-       dc.b    'G'      "G" - GO TO ENTERED ADDRESS
-       dc.w    GOTO
-       dc.b    'L'      "L" - LOAD
-       dc.w    LOAD
-       dc.b    'M'      "M" - MEMORY CHANGE
-       dc.w    CHANGE
-       dc.b    'N'      "N" - NEXT (TRACE 1 INSTR)
-       dc.w    NEXT
-       dc.b    'P'      "P" - PUNCH
-       dc.w    PUNCH
-       dc.b    'R'      "R" - PRINT STACK
-       dc.w    PSTAK1
-       dc.b    'S'      "S" - CHANGE SPEED FOR TTY
-       dc.w    SPD
-       dc.b    'T'      "T" - TRACE N INSTRUCTIONS
-       dc.w    TRACE
-       dc.b    'U'      "U" - RESET A BREAKPOINT
-       dc.w    RSTBRK
-       dc.b    'E'      "E" - EXORTAPE CASSETT INTERFACE
-       dc.w    EXORT
-       dc.b    'V'      "V" - SET A BREAKPOINT
-       dc.w    SETBRK
+       FCC    /B/      "B" - PRINT ALL BREAKS
+       FDB    PNTBRK
+       FCC    /C/      "C" - CONTINUE
+       FDB    CONT
+       FCC    /D/      "D" - DELETE ALL BREAKS
+       FDB    DELBRK
+       FCC    /G/      "G" - GO TO ENTERED ADDRESS
+       FDB    GOTO
+       FCC    /L/      "L" - LOAD
+       FDB    LOAD
+       FCC    /M/      "M" - MEMORY CHANGE
+       FDB    CHANGE
+       FCC    /N/      "N" - NEXT (TRACE 1 INSTR)
+       FDB    NEXT
+       FCC    /P/      "P" - PUNCH
+       FDB    PUNCH
+       FCC    /R/      "R" - PRINT STACK
+       FDB    PSTAK1
+       FCC    /S/      "S" - CHANGE SPEED FOR TTY
+       FDB    SPD
+       FCC    /T/      "T" - TRACE N INSTRUCTIONS
+       FDB    TRACE
+       FCC    /U/      "U" - RESET A BREAKPOINT
+       FDB    RSTBRK
+       FCC    /E/      "E" - EXORTAPE CASSETT INTERFACE
+       FDB    EXORT
+       FCC    /V/      "V" - SET A BREAKPOINT
+       FDB    SETBRK
 FCTBEN EQU    *
 *
 *      INITIALIZATION/RESET CODE
 *
 ADRSTR EQU    *
-       dc.w    STACK    INIT FOR "SP"
-       dc.w    SWI15    INIT FOR "SWI1"
-       dc.w    BRKINH   INIT FOR "SWI2"
+       FDB    STACK    INIT FOR "SP"
+       FDB    SWI15    INIT FOR "SWI1"
+       FDB    BRKINH   INIT FOR "SWI2"
 *
        BRA    BRG      "BRA" INST IS REPLACED BY
        JMP    BRNOGO   COND BRA INST IN ROUT.
@@ -211,12 +202,12 @@ LOAD3  BSR    INCH
        BRA    LOAD4
 ENTER  JMP    ENT1     MIKBUG 1 ENTRY POINT
 LOAD4  EQU    *
-       CMPA   #'S'
+       CMPA   #'S
        BNE    LOAD3    1ST CHAR NOT (S)
        BSR    INCH     READ CHAR
-       CMPA   #'9'
+       CMPA   #'9
        BEQ    C1
-       CMPA   #'1'
+       CMPA   #'1
        BNE    LOAD3    2ND CHAR NOT (1)
        CLR    CKSM     ZERO CHECKSUM
        JSR    BYTE     READ BYTE
@@ -238,7 +229,7 @@ LOAD11 JSR    BYTE
 *
 LOAD15 INCB
        BEQ    LOAD3
-LOAD19 LDAA   #'?'      PRINT QUESTION MARK
+LOAD19 LDAA   #'?      PRINT QUESTION MARK
        BSR    OUTCH1
 C1     JMP    CONTRL
 *
@@ -386,7 +377,7 @@ GOODCH LDX    1,X      GET ADDRESS FROM J.T.
 *
 NMI    STS    SP       SAVE STACK
        JSR    PCRLF
-       LDAA   #'B'      PRINT B
+       LDAA   #'B      PRINT B
        BSR    OUT2
        JSR    OUTS
        LDAA   #2       REMOVE BREAKPOINTS
@@ -396,7 +387,7 @@ NMI    STS    SP       SAVE STACK
 * SET SPEED FOR USER TTY
 *
 SPD    BSR    INCH2    INPUT CHAR
-       CMPA   #'1'
+       CMPA   #'1
        BEQ    INZ
        LDAA   #$15
        BRA    INZ1     SET 2 STOP BITS
@@ -641,7 +632,7 @@ PRINT  JSR    PCRLF    PRINT CR LF
 *     ADDRESS (ENDA)
 *
 
-MTAPE1 dc.b    $D,$A,0,0,0,0,'S','1',4 PUNCH FORMAT
+MTAPE1 FCB    $D,$A,0,0,0,0,'S,'1,4 PUNCH FORMAT
 
 PUNCH  EQU    *
 
@@ -938,38 +929,38 @@ OPBTRT RTS             RETURN TO CALLER
 *           -------  --------------------
 *
 OPBTTB EQU    *
-       dc.b    1        0
-       DC.B    1        1
-       DC.B    2+%10000000 2 ( MINUS=> BRANCHES )
-       DC.B    1        3
-       DC.B    1        4
-       DC.B    1        5
-       DC.B    2        6
-       DC.B    3        7
-       DC.B    0        8 # BYTES=2 EXCEPT 8C,8E
-       DC.B    2        9
-       DC.B    2        A
-       DC.B    3        B
-       DC.B    0        C # BYTES = 2 EXCEPT CE
-       DC.B    2        D
-       DC.B    2        E
-       DC.B    3        F
+       FCB    1        0
+       FCB    1        1
+       FCB    2+%10000000 2 ( MINUS=> BRANCHES )
+       FCB    1        3
+       FCB    1        4
+       FCB    1        5
+       FCB    2        6
+       FCB    3        7
+       FCB    0        8 # BYTES=2 EXCEPT 8C,8E
+       FCB    2        9
+       FCB    2        A
+       FCB    3        B
+       FCB    0        C # BYTES = 2 EXCEPT CE
+       FCB    2        D
+       FCB    2        E
+       FCB    3        F
 *
 * CONSTANT DATA
 *
-MEOF   dc.b    'S9030000FC'
-       DC.B    4
-MCLOFF DC.B    $13      READER OFF
-MCL    DC.B    $A,$D,$14,0,0,0,0,'*',4 LF,CR,PUNCH
-MCL1   DC.B    $D,$A,0,0,0,0,4 CR LF
-MCL2   dc.b    'MIKBUG 2.0'
-       DC.B    4
-MCL3   dc.b    'CC B  A   X    P    S'
-       DC.B    4
-MCL4   dc.b    'BEG ADDR ?'
-       DC.B    4
-MCL5   dc.b    'END ADDR ?'
-       DC.B    4
+MEOF   FCC    /S9030000FC/
+       FCB    4
+MCLOFF FCB    $13      READER OFF
+MCL    FCB    $A,$D,$14,0,0,0,0,'*,4 LF,CR,PUNCH
+MCL1   FCB    $D,$A,0,0,0,0,4 CR LF
+MCL2   FCC    /MIKBUG 2.0/
+       FCB    4
+MCL3   FCC    /CC B  A   X    P    S/
+       FCB    4
+MCL4   FCC    /BEG ADDR ?/
+       FCB    4
+MCL5   FCC    /END ADDR ?/
+       FCB    4
 *
 *
 * MAXIMAL SOFTWARE IMPLEMENTATION OF THE
@@ -1062,16 +1053,16 @@ EOT    EQU    4
 *   MESSAGES
 *
 *
-MSG1   DC.B    'EXORTAPE 4.3'
-       DC.B    EOT
-MSG2   DC.B    'C L D S: '
-       DC.B    EOT
-MSG3   DC.B    'FILE ID: '
-       DC.B    EOT
-MSG4   DC.B    'STARTSTOP PAGES: '
-       DC.B    EOT
-MSG5   DC.B    'SPEED: '
-       DC.B    EOT
+MSG1   FCC    /EXORTAPE 4.3/
+       FCB    EOT
+MSG2   FCC    /C L D S: /
+       FCB    EOT
+MSG3   FCC    /FILE ID: /
+       FCB    EOT
+MSG4   FCC    /STARTSTOP PAGES: /
+       FCB    EOT
+MSG5   FCC    /SPEED: /
+       FCB    EOT
 *
 * PRINT LINE WITH A PRECEEDING CR/LF
 *   X POINT TO STRING, STRING MUST
@@ -1096,7 +1087,7 @@ EXORT  BSR    EXOR     CALL TAPE ROUTINE VIA A BSR
 *
 * TIN'S ERROR ROUTINE
 *
-ERR    LDAA   #'?'      PRINT '?'
+ERR    LDAA   #'?      PRINT '?'
        JSR    OUTCH
 * FALL INTO TINS
 *
@@ -1140,7 +1131,7 @@ TIN5   STX    TOTCNT
 TIN8   LDX    #MSG2    SEND MODE QUESTION
 TI2    BSR    PDATA    C=CHECK; L=LOAD
        JSR    INCH     D=DUMP; S= SPEED
-       CMPA   #'S'
+       CMPA   #'S
        BEQ    TI2A
 *
 *
@@ -1151,7 +1142,7 @@ TI4    BSR    PDATA
        STX    FIDH
        JSR    PCRLF
        LDAA   T1
-       CMPA   #'D'      DUMP MODE?
+       CMPA   #'D      DUMP MODE?
        BNE    TIN7
        LDX    #MSG4    SEND START/STOP PROMPT
        BSR    PDAT1P
@@ -1159,9 +1150,9 @@ TI4    BSR    PDATA
        STX    STARTP
        JSR    PCRLF
        JMP    MASTER
-TIN7   CMPA   #'C'      CHECK MODE?
+TIN7   CMPA   #'C      CHECK MODE?
        BEQ    CHECK
-       CMPA   #'L'      CHECK FOR LOAD
+       CMPA   #'L      CHECK FOR LOAD
        BEQ    LOAD2
        JMP    ERR
 *
@@ -1197,9 +1188,9 @@ GET2   BSR    STARTV   GET THE NEXT RECORD-TYPE
 GET1   TST    V        CHECK PAGE COUNT
        BEQ    GET4
        BMI    GET3
-       LDAA   #'-'      '-' FOR MISSING PAGE(S)
+       LDAA   #'-      '-' FOR MISSING PAGE(S)
        BRA    GET5
-GET3   LDAA   #'+'      '+' FOR EXTRA PAGE(S)
+GET3   LDAA   #'+      '+' FOR EXTRA PAGE(S)
 GET5   JSR    OUTCH    PRINT IT!
 GET4   RTS             RETURN
 *
@@ -1232,9 +1223,9 @@ CRCK   BSR    LDV      ) INPUT CRC CHARS
        LDAA   R        CHECK CRC REGISTERS
        ORAA   S
        BNE    CRCK1
-       LDAA   #'G'      PRINT G FOR GOOD CRC
+       LDAA   #'G      PRINT G FOR GOOD CRC
        BRA    CRCK2
-CRCK1  LDAA   #'B'      PRINT B FOR BAD CRC
+CRCK1  LDAA   #'B      PRINT B FOR BAD CRC
 CRCK2  JMP    TTYO1    PRINT IT!
 LDV    JMP    LOADBV   GET A TAPE BYTE IN ACCB
 STARTV BRA    STARTF
@@ -1247,7 +1238,7 @@ STARTV BRA    STARTF
 *
 *     REGS:  ACCA, ACCB (SCRATCH ONLY)
 *
-G1     LDAA   #'X'      INDICATE WRONG FILE FOUND
+G1     LDAA   #'X      INDICATE WRONG FILE FOUND
        BSR    CRCK2    SEND CHAR TO TTY
 GETFIL BSR    STARTF
        BEQ    G2       OUT IFF ESCAPE
@@ -1259,7 +1250,7 @@ GETFIL BSR    STARTF
        BSR    LDV
        CMPB   FIDL     GOOD FILE ID(L)?
        BNE    G1
-       LDAA   #'H'      INDICATE HEADER FOUND
+       LDAA   #'H      INDICATE HEADER FOUND
        BSR    CRCK2
        BSR    LDV
        STAB   V        STORE PAGE COUNT
@@ -1471,7 +1462,7 @@ DUMP1  LDAA   0,X
        INC    L        BYTE CTR
        BNE    DUMP1
        BSR    SENCRC
-       LDAA   #'D'      PRINT D FOR EACH PAGE DUMPED
+       LDAA   #'D      PRINT D FOR EACH PAGE DUMPED
        BSR    TTYO1
        CLRA
        BRA    BYTOV1   EXTRA BITS
@@ -1633,7 +1624,7 @@ SMUL   DES             CARVE OUT A PLACE ON THE STACK F...
        CLR    0,X      CLEAR FLAG
        TSTA            CHECK MULTIPLIER
        BPL    SML1     POSITIVE, NO COMP. NEEDED
-       NEGA            2s COMP. ARGUMENT
+       NEGA            2'S COMP. ARGUMENT
        INC    0,X      INCR FLAG
 SML1   TSTB            TEST OTHER ARG
        BPL    SML2     NO COMP NEEDED
@@ -1731,125 +1722,95 @@ DIVOV2 INS
 * INTERRUPT VECTORS
 *
        ORG    BASORG+$7F8
-       dc.w    IO
-       dc.w    SFEI
-       dc.w    POWDWN
-       dc.w   START
+       FDB    IO
+       FDB    SFEI
+       FDB    POWDWN
+       FDB    START
 *
 *
 * RAM - LOCATIONS DEVOTED TO VARIABLE INFORMATION
 *
-
-* <jdh - our ram starts at 0x000
-*       ORG    $A000    START OF RAM .
-*       ORG    $0000    START OF RAM .
-* jdh>
-
+*
+       ORG    $A000    START OF RAM .
 NBRBPT EQU    8        # OF BREAKPOINTS SUPPORTED
 *
 * THE FOLLOWING ARE INITIALIZED AT START
 *
-* <jdh change these to simple equs
-* IOV    ds    2        I/O INTERRUPT POINTER
-* BEGA   ds    2        BEGIN ADDRESS PRINT/PUNCH
-* ENDA   ds    2        END ADDRESS PRINT/PUNCH
-* NIO    ds    2        NMI INTERRUPT POINTER
-* SP     ds    2        USER STACK POINTER
-* SWI1   ds    2        LEVEL 1 SWI VECTOR
-* SWI2   ds    2        LEVEL 2 SWI VECTOR
-* BRINS  ds    8        STORAGE FOR CONDITIONAL BRANCH
-RAMST  EQU    $0000
-IOV    EQU    RAMST        I/O INTERRUPT POINTER
-BEGA   EQU    IOV+2        BEGIN ADDRESS PRINT/PUNCH
-ENDA   EQU    BEGA+2        END ADDRESS PRINT/PUNCH
-NIO    EQU    ENDA+2        NMI INTERRUPT POINTER
-SP     EQU    NIO+2        USER STACK POINTER
-SWI1   EQU    SP+2        LEVEL 1 SWI VECTOR
-SWI2   EQU    SWI1+2        LEVEL 2 SWI VECTOR
-BRINS  EQU    SWI2+2       STORAGE FOR CONDITIONAL BRANCH
+IOV    RMB    2        I/O INTERRUPT POINTER
+BEGA   RMB    2        BEGIN ADDRESS PRINT/PUNCH
+ENDA   RMB    2        END ADDRESS PRINT/PUNCH
+NIO    RMB    2        NMI INTERRUPT POINTER
+SP     RMB    2        USER STACK POINTER
+SWI1   RMB    2        LEVEL 1 SWI VECTOR
+SWI2   RMB    2        LEVEL 2 SWI VECTOR
+BRINS  RMB    8        STORAGE FOR CONDITIONAL BRANCH
 *                            ROUTINE
-BRANEN EQU    BRINS+8        END OF BRANCH ROUTINE + 1
+BRANEN EQU    *        END OF BRANCH ROUTINE + 1
 *
 * THE FOLLOWING ARE INITIALIZED TO ZERO AT START
 *
 *
-* OUTSW  ds    1        OUTPUT SWITCH
-* *                       (ZERO => ECHO INPUT)
-* TRCADR ds    2        TRACE ADDRESS
-* TRCINS ds    1        OP CODE REPLACED BY SWI
-* NTRACE ds    2        NO. OF INSTRUCTIONS TO TRACE
-* *
-* BRKADR ds    NBRBPT*2 BREAKPOINT ADDRESS TABLE
-* BRKINS ds    NBRBPT*2 OP CODES FOR BREAK REPLACEMENT
-* *                            (UPPER BYTE OF EACH
-* *                             PAIR USED ONLY)
-CKSM   EQU    BRANEN        CHECKSUM
-ASAVE  EQU    BRANEN        A REG SAVE
-TEMP   EQU    BRANEN        CHAR COUNT(INADD)
-
-OUTSW  EQU    BRANEN        OUTPUT SWITCH
+OUTSW  RMB    1        OUTPUT SWITCH
 *                       (ZERO => ECHO INPUT)
-TRCADR EQU    OUTSW+1        TRACE ADDRESS
-TRCINS EQU    TRCADR+2        OP CODE REPLACED BY SWI
-NTRACE EQU    TRCINS+1        NO. OF INSTRUCTIONS TO TRACE
+TRCADR RMB    2        TRACE ADDRESS
+TRCINS RMB    1        OP CODE REPLACED BY SWI
+NTRACE RMB    2        NO. OF INSTRUCTIONS TO TRACE
 *
-BRKADR EQU    NTRACE+2       BREAKPOINT ADDRESS TABLE
-BRKINS EQU    BRKADR+NBRBPT*2       OP CODES FOR BREAK REPLACEMENT
+BRKADR RMB    NBRBPT*2 BREAKPOINT ADDRESS TABLE
+BRKINS RMB    NBRBPT*2 OP CODES FOR BREAK REPLACEMENT
 *                            (UPPER BYTE OF EACH
 *                             PAIR USED ONLY)
-CKSM   EQU    BRKINS+NBRBPT*2        CHECKSUM
-ASAVE  EQU    CKSM        A REG SAVE
-TEMP   EQU    TEMP        CHAR COUNT(INADD) 
+CKSM   EQU    *        CHECKSUM
+ASAVE  EQU    *        A REG SAVE
+TEMP   EQU    *        CHAR COUNT(INADD)
+       RMB    1
 *
 *
-BYTECT EQU    TEMP+1        BYTE COUNT
-MCONT  EQU    BYTECT        TMP 
+BYTECT EQU    *        BYTE COUNT
+MCONT  EQU    *        TMP
+       RMB    1
 *
 *
-XHI    EQU    MCONT+1        X REG HIGH (TEMP)
-XLOW   EQU    XHI+1        X REG LOW
+XHI    RMB    1        X REG HIGH (TEMP)
+XLOW   RMB    1        X REG LOW
 *
 *
 SSAVE  EQU    *        S REG SAVE
 TW     EQU    *        TEMP DOUBLE BYTE
-       DS    2
+       RMB    2
 *
 *
-BRKSIN DS    1        1=>BREAKS ARE IN USER PROGRAM
+BRKSIN RMB    1        1=>BREAKS ARE IN USER PROGRAM
 *
-BRKTRC DS    1	       1=>P-COUNTER IS AT BREAKPOINT
+BRKTRC RMB    1	       1=>P-COUNTER IS AT BREAKPOINT
 *                      AND USER WANTS TO CONTINUE-
 *                      ONE TRACE WILL BE DONE AND
 *                      BREAKPOINT RESTORED
 ENDIN0 EQU    $A080    END OF VAR'S INTZ'D to 0
 *
-ACIAT  DS    1        SAVE ACIS CONTROL REG FOR
+ACIAT  RMB    1        SAVE ACIS CONTROL REG FOR
 *                      CONTROL LOOP INITIALIZE
 *  EXORTAPE RAM
 *AUXILIARY REGISTER STORAGE
-FIDH   DS    1
-FIDL   DS    1
-STARTP DS    1
-STOPPG DS    1
-TOTCNT DS    1        WINDOW WIDTH
-PATDEL DS    1        PATTERN-ELEMENT LENGTH
-CL     DS    1        CHECK/LOAD SUB
-CLL    DS    1
-CLLL   DS    1        RTS
+FIDH   RMB    1
+FIDL   RMB    1
+STARTP RMB    1
+STOPPG RMB    1
+TOTCNT RMB    1        WINDOW WIDTH
+PATDEL RMB    1        PATTERN-ELEMENT LENGTH
+CL     RMB    1        CHECK/LOAD SUB
+CLL    RMB    1
+CLLL   RMB    1        RTS
 *TAPE TEMPORARIES
-H      DS    1        LOAD IX, ETC.
-L      DS    1
-Q      DS    1        Q HOLDS LAST BYTE RECOVERED
-R      DS    1        R,S IS CRC REGISTER
-S      DS    1
-V      DS    1        PAGE COUNT
+H      RMB    1        LOAD IX, ETC.
+L      RMB    1
+Q      RMB    1        Q HOLDS LAST BYTE RECOVERED
+R      RMB    1        R,S IS CRC REGISTER
+S      RMB    1
+V      RMB    1        PAGE COUNT
 T1     EQU    CL
-
-* <jdh move stack to end of ram
 *
 * REST OF 128 RAM IS USED FOR STACK
 *
-*        DS    36
-* STACK  DS    1        START OF STACK AREA
-STACK  EQU    $BF00
-* jdh>
+       RMB    36
+STACK  RMB    1        START OF STACK AREA

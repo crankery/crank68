@@ -6,7 +6,7 @@ NAME := mikbug2
 TOOLS_DIR := ../../tools
 VASM_DIR := $(TOOLS_DIR)/vasm
 TOOLS_BIN_DIR := $(TOOLS_DIR)/bin
-VASM := $(TOOLS_BIN_DIR)/vasm6800_mot
+VASM := $(TOOLS_BIN_DIR)/vasm6800_std
 
 SRC := $(NAME).asm
 BIN := $(NAME).bin
