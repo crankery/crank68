@@ -7,7 +7,7 @@
 	(tags "net tie solder jumper bridged")
 	(property "Reference" "REF**"
 		(at 2.15 0 90)
-		(layer "F.SilkS")
+		(layer "F.Fab")
 		(uuid "7e665f20-2274-46c5-b843-429dec3d10e8")
 		(effects
 			(font

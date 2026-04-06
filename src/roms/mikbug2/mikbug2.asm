@@ -35,6 +35,7 @@
 *      OPT    S,O,LLEN=80,CREF
 *ACIAS  EQU    $8008
 *ACIAD  EQU    $8009
+* c68: the main ACIA is at 0xe100
 ACIAS   EQU    $e100
 ACIAD   EQU    $e101
 * SWI    EQU    $3F      SWI OP CODE

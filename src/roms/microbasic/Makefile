@@ -10,7 +10,7 @@ VASM := vasm6800_std
 VASM_BIN := $(TOOLS_BIN_DIR)/$(VASM)
 
 PYTHON := python3
-TRANSLATE := translate.py
+TRANSLATE := $(TOOLS_DIR)/translate.py
 
 ORIG := microbas.asm
 SRC := microbas.s

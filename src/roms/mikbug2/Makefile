@@ -2,7 +2,7 @@ SHELL := /bin/bash
 
 # Motorola mikbug2
 NAME := mikbug2
-
+w
 TOOLS_DIR := ../../tools
 VASM_DIR := $(TOOLS_DIR)/vasm
 TOOLS_BIN_DIR := $(TOOLS_DIR)/bin
