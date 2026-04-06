@@ -6,7 +6,7 @@
 	(descr "28-lead though-hole mounted DIP package, row spacing 15.24mm (600 mils)")
 	(tags "THT DIP DIL PDIP 2.54mm 15.24mm 600mil")
 	(property "Reference" "REF**"
-		(at 7.62 1.27 0)
+		(at 7.62 15.24 0)
 		(layer "F.SilkS")
 		(uuid "dccc3d87-fc06-4c14-8417-ea9a10e57b5a")
 		(effects
@@ -17,7 +17,7 @@
 		)
 	)
 	(property "Value" "DIP-28_W15.24mm"
-		(at 7.62 35.35 0)
+		(at 7.62 17.78 0)
 		(layer "F.SilkS")
 		(uuid "aaac9e56-f922-4d8e-a57b-10ea855b0035")
 		(effects

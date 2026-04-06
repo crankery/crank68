@@ -11348,7 +11348,7 @@
 		(symbol "DS12C887+_1_1"
 			(rectangle
 				(start -12.7 17.78)
-				(end 12.7 -17.78)
+				(end 12.7 -15.24)
 				(stroke
 					(width 0)
 					(type solid)
@@ -11465,8 +11465,26 @@
 					)
 				)
 			)
+			(pin input inverted
+				(at -17.78 -5.08 0)
+				(length 5.08)
+				(name "~{RESET}"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+				(number "18"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+			)
 			(pin input line
-				(at -17.78 -7.62 0)
+				(at -17.78 -10.16 0)
 				(length 5.08)
 				(name "R/~{W}"
 					(effects
@@ -11484,7 +11502,7 @@
 				)
 			)
 			(pin input inverted
-				(at -17.78 -10.16 0)
+				(at -17.78 -12.7 0)
 				(length 5.08)
 				(name "~{CS}"
 					(effects
@@ -11520,7 +11538,7 @@
 				)
 			)
 			(pin power_in line
-				(at 0 -22.86 90)
+				(at 0 -20.32 90)
 				(length 5.08)
 				(name "V_{SS}"
 					(effects
@@ -11538,7 +11556,7 @@
 				)
 			)
 			(pin power_in line
-				(at 0 -22.86 90)
+				(at 0 -20.32 90)
 				(length 5.08)
 				(hide yes)
 				(name "V_{SS}"
@@ -11718,26 +11736,8 @@
 					)
 				)
 			)
-			(pin input inverted
-				(at 17.78 -7.62 180)
-				(length 5.08)
-				(name "~{RESET}"
-					(effects
-						(font
-							(size 1.27 1.27)
-						)
-					)
-				)
-				(number "18"
-					(effects
-						(font
-							(size 1.27 1.27)
-						)
-					)
-				)
-			)
 			(pin output inverted
-				(at 17.78 -10.16 180)
+				(at 17.78 -7.62 180)
 				(length 5.08)
 				(name "~{IRQ}"
 					(effects
@@ -11755,7 +11755,7 @@
 				)
 			)
 			(pin no_connect line
-				(at 17.78 -12.7 180)
+				(at 17.78 -10.16 180)
 				(length 5.08)
 				(hide yes)
 				(name "NC"
@@ -11774,7 +11774,7 @@
 				)
 			)
 			(pin output line
-				(at 17.78 -15.24 180)
+				(at 17.78 -12.7 180)
 				(length 5.08)
 				(name "SQW"
 					(effects
