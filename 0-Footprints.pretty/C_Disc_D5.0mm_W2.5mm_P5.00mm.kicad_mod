@@ -17,7 +17,7 @@
 		)
 	)
 	(property "Value" "C_Disc_D5.0mm_W2.5mm_P5.00mm"
-		(at 6.27 0 90)
+		(at 6.3 0 90)
 		(layer "F.SilkS")
 		(uuid "854f9448-35be-45f2-8eb1-b19196a4f77d")
 		(effects

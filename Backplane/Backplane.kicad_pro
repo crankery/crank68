@@ -490,7 +490,7 @@
       "plot": "bp",
       "pos_files": "",
       "specctra_dsn": "",
-      "step": "../3D/Backplane.step",
+      "step": "../3D/bp.step",
       "svg": "",
       "vrml": ""
     },

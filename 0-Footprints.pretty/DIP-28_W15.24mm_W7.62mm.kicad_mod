@@ -543,7 +543,6 @@
 	)
 	(embedded_fonts no)
 	(model "${KICAD9_3DMODEL_DIR}/Package_DIP.3dshapes/DIP-28_W15.24mm.step"
-		(opacity 0.5600)
 		(offset
 			(xyz 0 0 0)
 		)
@@ -555,6 +554,7 @@
 		)
 	)
 	(model "${KICAD9_3DMODEL_DIR}/Package_DIP.3dshapes/DIP-28_W7.62mm.step"
+		(hide yes)
 		(offset
 			(xyz 0 0 0)
 		)

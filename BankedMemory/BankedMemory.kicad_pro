@@ -487,10 +487,10 @@
       "gencad": "",
       "idf": "",
       "netlist": "",
-      "plot": "",
+      "plot": "mega-gerbers",
       "pos_files": "",
       "specctra_dsn": "",
-      "step": "",
+      "step": "../3D/Mega.step",
       "svg": "",
       "vrml": ""
     },
