@@ -27,15 +27,17 @@ implicitInstructions = [
     "aslb",
     "aba",
     "clc",
-    "clv",
-    "cli",
     "cld",
-    "daa",
+    "cli",
     "clra",
     "clrb",
+    "clv",
+    "daa",
+    "des",
+    "dex",
     "deca",
     "decb",
-    "dex",
+    "ins",
     "inx",
     "inca",
     "incb",
@@ -71,37 +73,126 @@ def fix_instruction(instruction: str) -> str:
     else:
         return instruction
 
+import re
+
+line_re = re.compile(
+    r'''
+    ^(?:
+        (?P<label>[A-Za-z_.$][\w.$]*:)?   # optional label
+    )?
+    [ \t]*
+    (?P<op>\.[A-Za-z]+|[A-Za-z]+)?        # opcode or directive
+    [ \t]*
+    (?P<arg>[^;]*)?                       # operand field
+    (?P<comment>;.*)?                     # optional comment
+    $
+    ''',
+    re.VERBOSE
+)
+
+import re
+
+asm_re = re.compile(r'''
+    ^
+    \s*
+    (?:(?P<label>[A-Za-z_.$][\w.$]*:)\s*)?
+    (?P<op>\.[A-Za-z]+|[A-Za-z][\w.]*)?
+    (?:\s+(?P<arg>[^;]*?))?
+    \s*
+    (?P<comment>;.*)?
+    $
+''', re.VERBOSE)
+
+OPCOL = 12
+COMMENTCOL = 40
+
+def format_line(line: str) -> str:
+    line = line.rstrip("\n")
+
+    if not line.strip():
+        return ""
+
+    if line.lstrip().startswith(";"):
+        return line.lstrip()
+
+    m = asm_re.match(line.expandtabs(12))
+    if not m:
+        return line.expandtabs(12)
+
+    label = m.group("label") or ""
+    op = m.group("op") or ""
+    arg = (m.group("arg") or "").strip()
+    comment = m.group("comment") or ""
+
+    out = ""
+
+    if label:
+        out += label
+    if len(out) < OPCOL:
+        out += " " * (OPCOL - len(out))
+    else:
+        out += " "
+
+    if op:
+        out += op
+
+    if arg:
+        out += " " + arg
+
+    if comment:
+        if len(out) < COMMENTCOL:
+            out += " " * (COMMENTCOL - len(out))
+        else:
+            out += "  "
+        out += comment
+
+    return out.rstrip()
+
 def xlate(file_path: Path) -> list[str]:
     lines1 = []
 
     # clean up comments and fix accumulator directives
     with open(file_path, 'r') as file:
         for line in file:
-            # replace all whitespace with single spaces
-            l = re.sub(r'\s+', ' ', line).rstrip() + " "
-
-            # fix single line comments
-            if l.startswith("*"):
-                lines1.append(f";{l.replace('*', '')}")
+            if line.startswith("*<") or line.startswith("*>"):
+                lines1.append(line.rstrip())
                 continue
+            else:
+                # replace all whitespace with single spaces
+                l = re.sub(r'\s+', ' ', line).rstrip() + " "
 
-            firstSpace = l.find(" ")
-            secondSpace = l.find(" ", firstSpace + 1) if firstSpace >= 0 else -1
-            thirdSpace = l.find(" ", secondSpace + 1) if secondSpace >= 0 else -1
-            
-            if firstSpace >= 0 and secondSpace >= 0 and thirdSpace >= 0:
-                op = l[firstSpace + 1:secondSpace]
-                acc = l[secondSpace + 1: thirdSpace]
+                # fix single line comments
+                if l.startswith("*"):
+                    lines1.append(f";{l.replace('*', '')}")
+                    continue
 
-                if acc in accumulators and op in accumulatorDirectives:
-                    l = l[0:firstSpace] + " " \
-                        + f"{op}{acc} " \
-                        + l[thirdSpace+1:] + " "
+                firstSpace = l.find(" ")
+                secondSpace = l.find(" ", firstSpace + 1) if firstSpace >= 0 else -1
+                thirdSpace = l.find(" ", secondSpace + 1) if secondSpace >= 0 else -1
+                
+                if firstSpace >= 0 and secondSpace >= 0 and thirdSpace >= 0:
+                    op = l[firstSpace + 1:secondSpace]
+                    acc = l[secondSpace + 1: thirdSpace]
 
-            lines1.append(l.rstrip())
+                    if acc in accumulators and op in accumulatorDirectives:
+                        l = l[0:firstSpace] + " " \
+                            + f"{op}{acc} " \
+                            + l[thirdSpace+1:] + " "
+
+                lines1.append(l.rstrip())
 
     out = []
     for line in lines1:
+        if line.startswith("*<"):
+            # skip over line removal marker
+            continue 
+
+        elif line.startswith("*>"):
+            # add verbatim substitution
+            out.append(line[2:])
+            continue
+
+        # try to fix it
         line = line.lower()
 
         if (len(line) == 0):
@@ -130,6 +221,8 @@ def xlate(file_path: Path) -> list[str]:
                 field += "\""
                 inQuotes = not inQuotes
             elif c == '\'':
+                # this doesn't quite work for lines like " MCL FCB $A,$D,$14,0,0,0,0,'*,4 LF,CR,PUNCH"
+                # a singe quote should consume the next character as the value and only worry about the value after that if it's another single quote
                 field += "\'"
                 if (inSingleQuotes):
                     fields.append(field.strip())
@@ -151,6 +244,7 @@ def xlate(file_path: Path) -> list[str]:
         if (instruction not in implicitInstructions):
             operand = fields.pop(0) if len(fields) > 0 else ""
             operand = operand.replace("$", "0x")
+            operand = operand.replace("%", "0b")
 
         if operand == "*" and instruction == ".equ":
             # just convert these to labels
@@ -164,7 +258,12 @@ def xlate(file_path: Path) -> list[str]:
         else:
             out.append(f"{label}\t{instruction}{" " if operand else ""}{operand}\t{comment}".rstrip())
 
-    return out
+    fixed = []
+    for line in out:
+        f = re.sub(r'(["\'])(.*?)\1', lambda m: m.group(1) + m.group(2).upper() + m.group(1), line)
+        fixed.append(format_line(f))
+
+    return fixed
 
 def main() -> None:
     

@@ -388,6 +388,37 @@ bool Cpu::op_cmpb(uint8_t opcode, op_names op, addr_mode mode)
     return true;
 }
 
+bool Cpu::op_cpx(uint8_t opcode, op_names op, addr_mode mode)
+{
+    uint16_t v;
+
+    switch (mode)
+    {
+    case addr_mode::imw:
+    {
+        v = fetch16();
+        break;
+    }
+    case addr_mode::dir:
+    {
+        uint8_t zp = fetch8();
+        v = read16(zp);
+        break;
+    }
+    case addr_mode::ext:
+    {
+        uint16_t addr = fetch16();
+        v = read16(addr);
+        break;
+    }
+    default:
+        return false;
+    }
+
+    sub16(s_.x, v);
+    return true;
+}
+
 bool Cpu::op_inc(uint8_t opcode, op_names op, addr_mode mode)
 {
     switch (mode)

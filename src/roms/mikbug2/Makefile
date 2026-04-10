@@ -1,33 +1,36 @@
 SHELL := /bin/bash
 
-# Motorola mikbug2
 NAME := mikbug2
-w
+
 TOOLS_DIR := ../../tools
-VASM_DIR := $(TOOLS_DIR)/vasm
-TOOLS_BIN_DIR := $(TOOLS_DIR)/bin
-VASM := $(TOOLS_BIN_DIR)/vasm6800_std
+TOOLS_BIN_DIR := ${TOOLS_DIR}/bin
 
-SRC := $(NAME).asm
-BIN := $(NAME).bin
-ROM := $(NAME).rom
-LST := $(NAME).lst
+VASM := vasm6800_std
+VASM_BIN := $(TOOLS_BIN_DIR)/$(VASM)
 
-all: $(ROM)
+VLINK := vlink
+VLINK_BIN := $(TOOLS_BIN_DIR)/$(VLINK)
 
-# asemble the source
-$(BIN): $(SRC) $(VASM)
-	$(VASM) -Fbin -L $(LST) -o $@ $<
+SRCS := $(filter-out defs.s, $(wildcard *.s))
+OUTS := $(SRCS:%.s=%.o)
+LSTS := $(SRCS:%.s=%.lst)
 
-# rip the last 2KB of the output of assembly out as the .ROM
-$(ROM): $(BIN)
-	dd if=$(BIN) of=$(ROM) bs=1024 skip=22 count=2
+TARGET := $(NAME).rom
+LINKER_SCRIPT = ${NAME}.ln
 
-# build vasm
-$(VASM):
+.PHONY: all clean
+
+all: $(TARGET)
+
+$(TARGET): $(OUTS) $(LINKER_SCRIPT)
+	$(VLINK_BIN) -b rawbin -T $(LINKER_SCRIPT) -M$(NAME).map -o $(TARGET) $(OUTS)
+
+%.o: %.s | 
+	$(VASM_BIN) -Fvobj -L $(@:.o=.lst) -o $@ $<
+	cat $(@:.o=.lst)
+
+$(VLINK_BIN) $(VASM_BIN):
 	$(MAKE) -C $(TOOLS_DIR)
 
 clean:
-	rm -rf $(ROM) $(LST) $(BIN)
-
-.PHONY: all clean
+	rm -rf $(TARGET) $(LSTS) $(OUTS)

@@ -224,6 +224,20 @@ uint8_t Cpu::sub8(uint8_t lhs, uint8_t rhs, bool carry_in)
     return out;
 }
 
+uint16_t Cpu::sub16(uint16_t lhs, uint16_t rhs, bool carry_in)
+{
+    uint32_t c = carry_in ? 1u : 0u;
+    uint32_t r = static_cast<uint32_t>(lhs) - static_cast<uint32_t>(rhs) - c;
+    uint16_t out = static_cast<uint16_t>(r & 0xFFFF);
+
+    set_flag(C, r > 0xFFFF);
+    set_flag(Z, out == 0);
+    set_flag(N, (out & 0x8000) != 0);
+    set_flag(V, (((lhs ^ rhs) & (lhs ^ out)) & 0x8000) != 0);
+
+    return out;
+}
+
 void Cpu::reset()
 {
     uint16_t reset_vector = read16(0xFFFE);

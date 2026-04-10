@@ -62,7 +62,8 @@ private:
 
     uint8_t add8(uint8_t lhs, uint8_t rhs, bool carry_in = false);
     uint8_t sub8(uint8_t lhs, uint8_t rhs, bool carry_in = false);
-
+    uint16_t sub16(uint16_t lhs, uint16_t rhs, bool carry_in = false);
+    
     [[noreturn]] void infiniteloop() const;
     [[noreturn]] void unimplemented(uint8_t opcode) const;
 
