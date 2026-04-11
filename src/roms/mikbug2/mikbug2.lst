@@ -1,0 +1,2516 @@
+Sections:
+00: "org0001:e000" (E000-E000)
+01: "org0002:e010" (E010-E012)
+02: "org0003:e100" (E100-E8EC)
+03: "org0004:fff8" (FFF8-0)
+
+
+Source: "mikbug2.s"
+                        	     1: ;
+                        	     2: ; jdh
+                        	     3: ; this file is a working file to test ditching vlink. it is a copy of the generated .s
+                        	     4: ; from the .asm file
+                        	     5: ; 
+                        	     6: ; converted to an assembly file from a crappy pdf by 
+                        	     7: ; members of the motorola 6809 / 6309, 6800 assembly 
+                        	     8: ; language programming facebook group 
+                        	     9: ; by craig jones,ray bellis 
+                        	    10: ; 
+                        	    11: 
+                        	    12: 
+                        	    13: ; 
+                        	    14: ; 
+                        	    15: ; ram - locations devoted to variable information 
+                        	    16: ; 
+                        	    17: ; 
+                        	    18: 
+                        	    19:     .equ RAM_PTR, 0x0300
+                        	    20: 
+                        	    21:     .macro  ALLOC name, size
+                        	    22:     .equ \name, RAM_PTR
+                        	    23:     .equ RAM_PTR, RAM_PTR + \size
+                        	    24:     .endm
+                        	    25: 
+                        	    26:     .equ nbrbpt, 8              ; # of breakpoints supported
+                        	    27: 
+                        	    28: ALLOC iov, 2 
+                        	     1M     .equ iov, RAM_PTR
+                        	     2M     .equ RAM_PTR, RAM_PTR + 2
+                        	    29: ALLOC bega, 2
+                        	     1M     .equ bega, RAM_PTR
+                        	     2M     .equ RAM_PTR, RAM_PTR + 2
+                        	    30: ALLOC enda, 2
+                        	     1M     .equ enda, RAM_PTR
+                        	     2M     .equ RAM_PTR, RAM_PTR + 2
+                        	    31: ALLOC nio, 2
+                        	     1M     .equ nio, RAM_PTR
+                        	     2M     .equ RAM_PTR, RAM_PTR + 2
+                        	    32: ALLOC sp, 2
+                        	     1M     .equ sp, RAM_PTR
+                        	     2M     .equ RAM_PTR, RAM_PTR + 2
+                        	    33: ALLOC swi1, 2
+                        	     1M     .equ swi1, RAM_PTR
+                        	     2M     .equ RAM_PTR, RAM_PTR + 2
+                        	    34: ALLOC swi2, 2
+                        	     1M     .equ swi2, RAM_PTR
+                        	     2M     .equ RAM_PTR, RAM_PTR + 2
+                        	    35: ALLOC brins, 8
+                        	     1M     .equ brins, RAM_PTR
+                        	     2M     .equ RAM_PTR, RAM_PTR + 8
+                        	    36:     .equ branen, RAM_PTR
+                        	    37: 
+                        	    38: ALLOC outsw, 1
+                        	     1M     .equ outsw, RAM_PTR
+                        	     2M     .equ RAM_PTR, RAM_PTR + 1
+                        	    39: ALLOC trcadr, 2
+                        	     1M     .equ trcadr, RAM_PTR
+                        	     2M     .equ RAM_PTR, RAM_PTR + 2
+                        	    40: ALLOC trcins, 1
+                        	     1M     .equ trcins, RAM_PTR
+                        	     2M     .equ RAM_PTR, RAM_PTR + 1
+                        	    41: ALLOC ntrace, 2
+                        	     1M     .equ ntrace, RAM_PTR
+                        	     2M     .equ RAM_PTR, RAM_PTR + 2
+                        	    42: 
+                        	    43: ALLOC brkadr, nbrbpt*2
+                        	     1M     .equ brkadr, RAM_PTR
+                        	     2M     .equ RAM_PTR, RAM_PTR + nbrbpt*2
+                        	    44: ALLOC brkins, nbrbpt*2
+                        	     1M     .equ brkins, RAM_PTR
+                        	     2M     .equ RAM_PTR, RAM_PTR + nbrbpt*2
+                        	    45: ALLOC cksm, 1
+                        	     1M     .equ cksm, RAM_PTR
+                        	     2M     .equ RAM_PTR, RAM_PTR + 1
+                        	    46:     .equ asave, cksm
+                        	    47:     .equ temp, cksm
+                        	    48: ALLOC bytect, 1
+                        	     1M     .equ bytect, RAM_PTR
+                        	     2M     .equ RAM_PTR, RAM_PTR + 1
+                        	    49:     .equ mcont, bytect
+                        	    50: ALLOC xhi, 1
+                        	     1M     .equ xhi, RAM_PTR
+                        	     2M     .equ RAM_PTR, RAM_PTR + 1
+                        	    51: ALLOC xlow, 1
+                        	     1M     .equ xlow, RAM_PTR
+                        	     2M     .equ RAM_PTR, RAM_PTR + 1
+                        	    52: ALLOC ssave, 2
+                        	     1M     .equ ssave, RAM_PTR
+                        	     2M     .equ RAM_PTR, RAM_PTR + 2
+                        	    53:     .equ tw, ssave
+                        	    54: ALLOC brksin, 1
+                        	     1M     .equ brksin, RAM_PTR
+                        	     2M     .equ RAM_PTR, RAM_PTR + 1
+                        	    55: ALLOC brktrc, 1
+                        	     1M     .equ brktrc, RAM_PTR
+                        	     2M     .equ RAM_PTR, RAM_PTR + 1
+                        	    56: ALLOC endin0, 1
+                        	     1M     .equ endin0, RAM_PTR
+                        	     2M     .equ RAM_PTR, RAM_PTR + 1
+                        	    57:     .equ aciat, endin0
+                        	    58: 
+                        	    59: ALLOC aciat, 1
+                        	     1M     .equ aciat, RAM_PTR
+                        	     2M     .equ RAM_PTR, RAM_PTR + 1
+                        	    60: ALLOC fidh, 1
+                        	     1M     .equ fidh, RAM_PTR
+                        	     2M     .equ RAM_PTR, RAM_PTR + 1
+                        	    61: ALLOC fidl, 1
+                        	     1M     .equ fidl, RAM_PTR
+                        	     2M     .equ RAM_PTR, RAM_PTR + 1
+                        	    62: ALLOC startp, 1
+                        	     1M     .equ startp, RAM_PTR
+                        	     2M     .equ RAM_PTR, RAM_PTR + 1
+                        	    63: ALLOC stoppg, 1
+                        	     1M     .equ stoppg, RAM_PTR
+                        	     2M     .equ RAM_PTR, RAM_PTR + 1
+                        	    64: ALLOC totcnt, 1
+                        	     1M     .equ totcnt, RAM_PTR
+                        	     2M     .equ RAM_PTR, RAM_PTR + 1
+                        	    65: ALLOC patdel, 1
+                        	     1M     .equ patdel, RAM_PTR
+                        	     2M     .equ RAM_PTR, RAM_PTR + 1
+                        	    66: ALLOC patdel, 1
+                        	     1M     .equ patdel, RAM_PTR
+                        	     2M     .equ RAM_PTR, RAM_PTR + 1
+                        	    67: ALLOC cl, 1
+                        	     1M     .equ cl, RAM_PTR
+                        	     2M     .equ RAM_PTR, RAM_PTR + 1
+                        	    68: ALLOC cll, 1
+                        	     1M     .equ cll, RAM_PTR
+                        	     2M     .equ RAM_PTR, RAM_PTR + 1
+                        	    69: ALLOC clll, 1
+                        	     1M     .equ clll, RAM_PTR
+                        	     2M     .equ RAM_PTR, RAM_PTR + 1
+                        	    70: 
+                        	    71: ; TAPE TEMPORARIES
+                        	    72: 
+                        	    73: ALLOC h, 1
+                        	     1M     .equ h, RAM_PTR
+                        	     2M     .equ RAM_PTR, RAM_PTR + 1
+                        	    74: ALLOC l, 1
+                        	     1M     .equ l, RAM_PTR
+                        	     2M     .equ RAM_PTR, RAM_PTR + 1
+                        	    75: ALLOC q, 1
+                        	     1M     .equ q, RAM_PTR
+                        	     2M     .equ RAM_PTR, RAM_PTR + 1
+                        	    76: ALLOC r, 1
+                        	     1M     .equ r, RAM_PTR
+                        	     2M     .equ RAM_PTR, RAM_PTR + 1
+                        	    77: ALLOC r, 1
+                        	     1M     .equ r, RAM_PTR
+                        	     2M     .equ RAM_PTR, RAM_PTR + 1
+                        	    78: ALLOC s, 1
+                        	     1M     .equ s, RAM_PTR
+                        	     2M     .equ RAM_PTR, RAM_PTR + 1
+                        	    79: ALLOC v, 1
+                        	     1M     .equ v, RAM_PTR
+                        	     2M     .equ RAM_PTR, RAM_PTR + 1
+                        	    80: 
+                        	    81:     .equ t1, cl
+                        	    82: 
+                        	    83: ; stack is at 0x100
+                        	    84: 
+                        	    85:     .equ stack, 0x100
+                        	    86: 
+                        	    87: ; nam mikbug 
+                        	    88: ; ttl 2.0 with audio cassette 
+                        	    89: ; rev 0 
+                        	    90: ; copyright (c) 1977 by motorola inc. 
+                        	    91: ; 
+                        	    92: ; mikbug (tm) motorola 
+                        	    93: ; 
+                        	    94: ; austin, texas 
+                        	    95: ; microcomputer capital of the world! 
+                        	    96: ; 
+                        	    97: ; l load 
+                        	    98: ; m memory change 
+                        	    99: ; p print/punch dump 
+                        	   100: ; r display contents of target stack 
+                        	   101: ; cc b a x p s 
+                        	   102: ; s 1,set speed for 10 cps 
+                        	   103: ; 3,set speed for 30 cps 
+                        	   104: ; b print out all breakpoints 
+                        	   105: ; c continue execution from current location 
+                        	   106: ; n next instruction 
+                        	   107: ; t trace 'N' instructions 
+                        	   108: ; g go to location 'N' 
+                        	   109: ; d delete all breakpoints 
+                        	   110: ; u reset breakpoint with address 'N' 
+                        	   111: ; v set a breakpoint with address 'N' 
+                        	   112: ; e exortape cassette interface 
+                        	   113: ; 
+                        	   114:             .equ swiop, 0x3f            ; swi op code
+                        	   115: 
+                        	   116:             .org 0xe000 ; slot 0
+                        	   117: 
+                        	   118:             .org 0xe010 ; slot 1
+01:E010 00              	   119: acias:      .space 0x01
+01:E011 00              	   120: aciad:      .space 0x01
+                        	   121: 
+                        	   122:             .org 0xe100
+                        	   123: baseorg:    
+                        	   124: 
+                        	   125: ; 
+                        	   126: ; i/o interrupt sequence 
+                        	   127: ; 
+02:E100 FE0300          	   128: io:         ldx iov
+02:E103 6E00            	   129:             jmp 0,x
+                        	   130: ; 
+                        	   131: ; nmi sequence 
+                        	   132: ; 
+02:E105 FE0306          	   133: powdwn:     ldx nio                     ; get nmi vector
+02:E108 6E00            	   134:             jmp 0,x
+                        	   135: ; 
+                        	   136: ; swi interrupt sequence 
+                        	   137: ; 
+02:E10A FE030A          	   138: sfei:       ldx swi1
+02:E10D 6E00            	   139:             jmp 0,x
+                        	   140: ; 
+                        	   141: ; jump table to routines performing mikbug fctn's 
+                        	   142: ; 
+                        	   143: fctabl:
+02:E10F 42              	   144:             .byte "B"                   ; "B" - print all breaks
+02:E110 E316            	   145:             .word pntbrk
+02:E112 43              	   146:             .byte "C"                   ; "C" - continue
+02:E113 E354            	   147:             .word cont
+02:E115 44              	   148:             .byte "D"                   ; "D" - delete all breaks
+02:E116 E30B            	   149:             .word delbrk
+02:E118 47              	   150:             .byte "G"                   ; "G" - go to entered address
+02:E119 E325            	   151:             .word goto
+02:E11B 4C              	   152:             .byte "L"                   ; "L" - load
+02:E11C E1D0            	   153:             .word load
+02:E11E 4D              	   154:             .byte "M"                   ; "M" - memory change
+02:E11F E21D            	   155:             .word change
+02:E121 4E              	   156:             .byte "N"                   ; "N" - next (trace 1 instr)
+02:E122 E337            	   157:             .word next
+02:E124 50              	   158:             .byte "P"                   ; "P" - punch
+02:E125 E402            	   159:             .word punch
+02:E127 52              	   160:             .byte "R"                   ; "R" - print stack
+02:E128 E35C            	   161:             .word pstak1
+02:E12A 53              	   162:             .byte "S"                   ; "S" - change speed for tty
+02:E12B E2FE            	   163:             .word spd
+02:E12D 54              	   164:             .byte "T"                   ; "T" - trace n instructions
+02:E12E E350            	   165:             .word trace
+02:E130 55              	   166:             .byte "U"                   ; "U" - reset a breakpoint
+02:E131 E311            	   167:             .word rstbrk
+02:E133 45              	   168:             .byte "E"                   ; "E" - exortape cassett interface
+02:E134 E5FC            	   169:             .word exort
+02:E136 56              	   170:             .byte "V"                   ; "V" - set a breakpoint
+02:E137 E31D            	   171:             .word setbrk
+                        	   172: fctben:
+                        	   173: ; 
+                        	   174: ; initialization/reset code 
+                        	   175: ; 
+                        	   176: adrstr:
+02:E139 0100            	   177:             .word stack                 ; init for "SP"
+02:E13B E476            	   178:             .word swi15                 ; init for "SWI1"
+02:E13D E4A0            	   179:             .word brkinh                ; init for "SWI2"
+                        	   180: ; 
+02:E13F 2003            	   181:             bra brg                     ; "BRA" inst is replaced by
+02:E141 7EE4DE          	   182:             jmp brnogo                  ; cond bra inst in rout.
+02:E144 7EE4E2          	   183: brg:        jmp brgo                    ; which determines if
+                        	   184: ; bra is go/nogo 
+                        	   185: ; 
+                        	   186: ; build address 
+                        	   187: ; 
+02:E147 8D0C            	   188: baddr:      bsr byte                    ; read 2 frames
+02:E149 B7033E          	   189:             staa xhi
+02:E14C 8D07            	   190:             bsr byte
+02:E14E B7033F          	   191:             staa xlow
+02:E151 FE033E          	   192:             ldx xhi                     ; (x) address we built
+02:E154 39              	   193:             rts
+                        	   194: ; input byte (two frames) 
+02:E155 8D53            	   195: byte:       bsr inhex                   ; get hex char
+02:E157 48              	   196: byte2:      asla
+02:E158 48              	   197:             asla
+02:E159 48              	   198:             asla
+02:E15A 48              	   199:             asla
+02:E15B 16              	   200:             tab
+02:E15C 8D4C            	   201:             bsr inhex
+02:E15E 1B              	   202:             aba
+02:E15F 16              	   203:             tab
+02:E160 FB033C          	   204:             addb cksm
+02:E163 F7033C          	   205:             stab cksm
+02:E166 39              	   206:             rts
+02:E167 44              	   207: outhl:      lsra                        ; out hex left bcd digit
+02:E168 44              	   208:             lsra
+02:E169 44              	   209:             lsra
+02:E16A 44              	   210:             lsra
+02:E16B 840F            	   211: outhr:      anda #0xf                   ; out hex right bcd digit
+02:E16D 8B30            	   212:             adda #0x30
+02:E16F 8139            	   213:             cmpa #0x39
+02:E171 2302            	   214:             bls outch
+02:E173 8B07            	   215:             adda #0x7
+                        	   216: ; output one char 
+02:E175 7EE259          	   217: outch:      jmp outch1
+02:E178 7EE266          	   218: inch:       jmp inch1
+                        	   219: ; print data pointed at by x-reg 
+02:E17B 8DF8            	   220: pdata2:     bsr outch
+02:E17D 08              	   221:             inx
+02:E17E A600            	   222: pdata1:     ldaa 0,x
+02:E180 8104            	   223:             cmpa #4
+02:E182 26F7            	   224:             bne pdata2
+02:E184 39              	   225:             rts                         ; stop on eot
+                        	   226: ; 
+                        	   227: ; input address 
+                        	   228: ; 
+02:E185 8D17            	   229: getadd:     bsr pcrlf                   ; print cr lf
+02:E187 CEE5A5          	   230:             ldx #mcl4
+02:E18A 8DF2            	   231:             bsr pdata1                  ; ask for begaddr
+02:E18C 8DB9            	   232:             bsr baddr                   ; get beg addr
+02:E18E FF0302          	   233:             stx bega
+02:E191 8D0B            	   234:             bsr pcrlf                   ; print cr lf
+02:E193 CEE5B0          	   235:             ldx #mcl5
+02:E196 8DE6            	   236:             bsr pdata1                  ; ask for end addr
+02:E198 8DAD            	   237:             bsr baddr                   ; get end address
+02:E19A FF0304          	   238:             stx enda
+02:E19D 39              	   239:             rts                         ; *
+                        	   240: ; print cr lf 
+                        	   241: ; 
+02:E19E FF033E          	   242: pcrlf:      stx xhi                     ; save xr
+02:E1A1 CEE586          	   243:             ldx #mcl1
+02:E1A4 8DD8            	   244:             bsr pdata1                  ; print crlf
+02:E1A6 FE033E          	   245:             ldx xhi
+02:E1A9 39              	   246:             rts
+                        	   247: 
+                        	   248: ; 
+02:E1AA 8DCC            	   249: inhex:      bsr inch
+02:E1AC 8030            	   250: inhex2:     suba #0x30
+02:E1AE 2B6A            	   251:             bmi c1                      ; not hex
+02:E1B0 8109            	   252:             cmpa #0x09
+02:E1B2 2F0A            	   253:             ble in1hg
+02:E1B4 8111            	   254:             cmpa #0x11
+02:E1B6 2B62            	   255:             bmi c1                      ; not hex
+02:E1B8 8116            	   256:             cmpa #0x16
+02:E1BA 2E5E            	   257:             bgt c1                      ; not hex
+02:E1BC 8007            	   258:             suba #7
+02:E1BE 39              	   259: in1hg:      rts
+                        	   260: ; 
+02:E1BF A600            	   261: out2h:      ldaa 0,x                    ; output 2 hex char
+02:E1C1 8DA4            	   262: out2ha:     bsr outhl                   ; out left hex char
+02:E1C3 A600            	   263:             ldaa 0,x                    ; pick up byte again
+02:E1C5 08              	   264:             inx
+02:E1C6 20A3            	   265:             bra outhr                   ; output right hex char and rts
+02:E1C8 8DF5            	   266: out4hs:     bsr out2h                   ; output 4 hex char + space
+02:E1CA 8DF3            	   267: out2hs:     bsr out2h                   ; output 2 hex char + space
+02:E1CC 8620            	   268: outs:       ldaa #0x20                  ; space
+02:E1CE 20A5            	   269:             bra outch                   ; (bsr & rts)
+                        	   270: load:
+02:E1D0 8611            	   271:             ldaa #021
+02:E1D2 8DA1            	   272:             bsr outch                   ; output char
+                        	   273: ; 
+                        	   274: ; turn reader relay on 
+                        	   275: ; 
+02:E1D4 B60345          	   276:             ldaa aciat                  ; get acia control reg format
+02:E1D7 8A40            	   277:             oraa #0x40                  ; set rts to turn rdr relay on
+02:E1D9 B7E010          	   278:             staa acias                  ; turn it on
+                        	   279: ; 
+02:E1DC 7C0316          	   280:             inc outsw                   ; do not echo tape
+                        	   281: ; 
+02:E1DF 8D97            	   282: load3:      bsr inch
+02:E1E1 2003            	   283:             bra load4
+02:E1E3 7EE2A4          	   284: enter:      jmp ent1                    ; mikbug 1 entry point
+                        	   285: load4:
+02:E1E6 8153            	   286:             cmpa #'S'
+02:E1E8 26F5            	   287:             bne load3                   ; 1st char not (s)
+02:E1EA 8D8C            	   288:             bsr inch                    ; read char
+02:E1EC 8139            	   289:             cmpa #'9'
+02:E1EE 272A            	   290:             beq c1
+02:E1F0 8131            	   291:             cmpa #'1'
+02:E1F2 26EB            	   292:             bne load3                   ; 2nd char not (1)
+02:E1F4 7F033C          	   293:             clr cksm                    ; zero checksum
+02:E1F7 BDE155          	   294:             jsr byte                    ; read byte
+02:E1FA 8002            	   295:             suba #2
+02:E1FC B7033D          	   296:             staa bytect                 ; byte count
+                        	   297: ; build address 
+02:E1FF BDE147          	   298:             jsr baddr
+                        	   299: ; store data 
+02:E202 BDE155          	   300: load11:     jsr byte
+02:E205 7A033D          	   301:             dec bytect
+02:E208 2709            	   302:             beq load15                  ; zero byte count
+02:E20A A700            	   303:             staa 0,x                    ; store data
+02:E20C A100            	   304:             cmpa 0,x                    ; check data
+02:E20E 2606            	   305:             bne load19                  ; data not stored
+02:E210 08              	   306:             inx
+02:E211 20EF            	   307:             bra load11
+                        	   308: ; 
+                        	   309: ; does checksum check? 
+                        	   310: ; 
+02:E213 5C              	   311: load15:     incb
+02:E214 27C9            	   312:             beq load3
+02:E216 863F            	   313: load19:     ldaa #'?'                   ;  print question mark
+02:E218 8D3F            	   314:             bsr outch1
+02:E21A 7EE2BA          	   315: c1:         jmp contrl
+                        	   316: ; 
+                        	   317: ; change memory (m aaaa dd nn) 
+                        	   318: ; 
+02:E21D BDE147          	   319: change:     jsr baddr                   ; build address
+02:E220 8DAA            	   320:             bsr outs                    ; output space
+02:E222 FE033E          	   321: chang:      ldx xhi
+02:E225 8DA3            	   322:             bsr out2hs                  ; print data old
+02:E227 09              	   323:             dex
+02:E228 8D3C            	   324: cha1:       bsr inch1                   ; input char
+02:E22A 810A            	   325:             cmpa #0x0a
+02:E22C 2712            	   326:             beq lf                      ; check for line feed
+02:E22E 815E            	   327:             cmpa #0x5e
+02:E230 2711            	   328:             beq ua                      ; check for ^
+02:E232 BDE1AC          	   329:             jsr inhex2                  ; s bsr byte
+02:E235 BDE157          	   330:             jsr byte2                   ; get new byte
+02:E238 A700            	   331:             staa 0,x                    ; change memory
+02:E23A A100            	   332:             cmpa 0,x
+02:E23C 26D8            	   333:             bne load19                  ; no change
+02:E23E 20E8            	   334:             bra cha1
+02:E240 08              	   335: lf:         inx                         ; inc addr
+02:E241 2005            	   336:             bra ua1
+02:E243 860A            	   337: ua:         ldaa #0x0a
+02:E245 8D12            	   338:             bsr outch1                  ; output lf
+02:E247 09              	   339:             dex                         ; dec addr
+02:E248 FF033E          	   340: ua1:        stx xhi                     ; sav data addr
+02:E24B CEE57E          	   341:             ldx #mcl+1
+02:E24E BDE17E          	   342:             jsr pdata1                  ; print cr
+02:E251 CE033E          	   343:             ldx #xhi
+02:E254 BDE1C8          	   344:             jsr out4hs                  ; output data addr
+02:E257 20C9            	   345:             bra chang
+                        	   346: ; 
+02:E259 37              	   347: outch1:     pshb                        ; save breg
+02:E25A F6E010          	   348: outc1:      ldab acias
+02:E25D 57              	   349:             asrb
+02:E25E 57              	   350:             asrb
+02:E25F 24F9            	   351:             bcc outc1                   ; xmit not ready
+02:E261 B7E011          	   352:             staa aciad                  ; output char
+02:E264 33              	   353:             pulb
+02:E265 39              	   354:             rts
+                        	   355: ; 
+                        	   356: ; input one char to areg 
+02:E266 B6E010          	   357: inch1:      ldaa acias
+02:E269 47              	   358:             asra
+02:E26A 24FA            	   359:             bcc inch1                   ; receiver not ready
+02:E26C B6E011          	   360:             ldaa aciad                  ; input char
+02:E26F 847F            	   361:             anda #0x7f                  ; reset parity bit
+02:E271 817F            	   362:             cmpa #0x7f
+02:E273 27F1            	   363:             beq inch1                   ; rubout"del
+02:E275 7D0316          	   364:             tst outsw                   ; should input be echoed?
+02:E278 27DF            	   365:             beq outch1                  ; if so, output the char
+02:E27A 39              	   366:             rts                         ; else,return to caller of inch1
+                        	   367: ; 
+                        	   368: ; constant initialization 
+                        	   369: ; s = pointer to rom bytes to be copied to ram 
+                        	   370: ; x = pointer to ram bytes to be initialized 
+                        	   371: ; 
+                        	   372: start:                                  ; actual code start
+02:E27B 8EE138          	   373:             lds #adrstr-1               ; start of constant data
+02:E27E CE0308          	   374:             ldx #sp                     ; start of ram area
+                        	   375: ; 
+02:E281 32              	   376: inilp1:     pula                        ; get next constant byte
+02:E282 A700            	   377:             staa 0,x                    ; init next ram byte
+02:E284 08              	   378:             inx                         ; update pointer
+02:E285 8C0316          	   379:             cpx #branen                 ; end of constant ram area?
+02:E288 26F7            	   380:             bne inilp1                  ; no, continue initialization
+                        	   381: ; 
+                        	   382: ; initialization to 0 
+                        	   383: ; x holds index of 1st byte to be set to 0 
+                        	   384: ; 
+02:E28A 6F00            	   385: inilp2:     clr 0,x                     ; clear next byte of ram
+02:E28C 08              	   386:             inx                         ; update index
+02:E28D 8C0344          	   387:             cpx #endin0                 ; any more bytes to init?
+02:E290 26F8            	   388:             bne inilp2                  ; no, continue clearing
+                        	   389: ; 
+                        	   390: ; set cc so when we 'GO' to user pgm the 
+                        	   391: ; interupt mask is set 
+                        	   392: ; 
+02:E292 86D0            	   393:             ldaa #0xd0
+02:E294 B70343          	   394:             staa brktrc                 ; put in stack to be pulled jdh: not sure about this one
+                        	   395: ; 
+                        	   396: ; initialize acia 
+                        	   397: ; 
+02:E297 8603            	   398:             ldaa #3                     ; master reset code
+02:E299 B7E010          	   399:             staa acias                  ; reset acia
+                        	   400: ; 
+02:E29C 8611            	   401: inz:        ldaa #0b00010001            ; char len=8" no parity
+                        	   402: ; 2 stop bits 
+                        	   403: ; 
+02:E29E B70345          	   404: inz1:       staa aciat                  ; save for control loop acia in
+                        	   405: ; 
+02:E2A1 B7E010          	   406:             staa acias                  ; inz acia
+02:E2A4 BE0308          	   407: ent1:       lds sp
+02:E2A7 BDE19E          	   408:             jsr pcrlf
+02:E2AA 2002            	   409:             bra contb                   ; skip to insure mikbug : compat.
+02:E2AC 20B8            	   410: inch2:      bra inch1                   ; mikbug 1.0 input 1 character
+02:E2AE CEE58D          	   411: contb:      ldx #mcl2                   ; print header
+02:E2B1 BDE17E          	   412:             jsr pdata1                  ; print data string
+02:E2B4 CEE2EB          	   413:             ldx #nmi                    ; init pdn
+02:E2B7 FF0306          	   414:             stx nio
+                        	   415: ; 
+                        	   416: ; main command/control loop 
+                        	   417: ; 
+                        	   418: contrl:
+                        	   419: ; 
+                        	   420: ; restore stack pointer register 
+                        	   421: ; 
+02:E2BA BE0308          	   422:             lds sp                      ; sp was initialized earlier
+                        	   423: ; 
+02:E2BD B60345          	   424:             ldaa aciat                  ; get proper acia init bits
+                        	   425: ; for user's terminal 
+02:E2C0 B7E010          	   426:             staa acias                  ; inz acia
+                        	   427: ; 
+02:E2C3 7F0316          	   428:             clr outsw                   ; make sure input is echoed
+                        	   429: ; 
+02:E2C6 CEE57C          	   430:             ldx #mcloff                 ; terminal init string
+02:E2C9 BDE17E          	   431:             jsr pdata1                  ; print data string
+                        	   432: ; 
+02:E2CC 8D98            	   433:             bsr inch1                   ; read command character
+02:E2CE 16              	   434:             tab                         ; save character in b
+02:E2CF 2002            	   435:             bra cnta                    ; skip over mikbug 1.0 vector
+02:E2D1 2086            	   436: out2:       bra outch1                  ; mikbug 1.0 " output 1 char routine
+02:E2D3 BDE1CC          	   437: cnta:       jsr outs                    ; print space after command
+                        	   438: ; 
+                        	   439: ; b register holds character input by user 
+                        	   440: ; use jump table to go to appropriate routine. 
+                        	   441: ; 
+02:E2D6 CEE10F          	   442:             ldx #fctabl                 ; x:= address of jump table
+02:E2D9 E100            	   443: nxtchr:     cmpb 0,x                    ; does input char match?
+02:E2DB 270A            	   444:             beq goodch                  ; yes, goto apropriate routine
+02:E2DD 08              	   445:             inx                         ; else, update index into table
+02:E2DE 08              	   446:             inx
+02:E2DF 08              	   447:             inx
+02:E2E0 8CE139          	   448:             cpx #fctben                 ; end of table reached?
+02:E2E3 26F4            	   449:             bne nxtchr                  ; no, try next char
+02:E2E5 20D3            	   450:             bra contrl                  ; no match, reprompt user
+                        	   451: ; 
+                        	   452: ; 
+02:E2E7 EE01            	   453: goodch:     ldx 1,x                     ; get address from j.t.
+02:E2E9 6E00            	   454:             jmp 0,x                     ; goto appropriate routine
+                        	   455: ; 
+                        	   456: ; 
+                        	   457: ; nmi entry 
+                        	   458: ; 
+02:E2EB BF0308          	   459: nmi:        sts sp                      ; save stack
+02:E2EE BDE19E          	   460:             jsr pcrlf
+02:E2F1 8642            	   461:             ldaa #'B'                   ;  print b
+02:E2F3 8DDC            	   462:             bsr out2
+02:E2F5 BDE1CC          	   463:             jsr outs
+02:E2F8 8602            	   464:             ldaa #2                     ; remove breakpoints
+02:E2FA 8D6E            	   465:             bsr brksub
+02:E2FC 205E            	   466:             bra pstak1
+                        	   467: ; 
+                        	   468: ; set speed for user tty 
+                        	   469: ; 
+02:E2FE 8DAC            	   470: spd:        bsr inch2                   ; input char
+02:E300 8131            	   471:             cmpa #'1'
+02:E302 2798            	   472:             beq inz
+02:E304 8615            	   473:             ldaa #0x15
+02:E306 2096            	   474:             bra inz1                    ; set 2 stop bits
+                        	   475: ; 
+                        	   476: ; 
+02:E308 7EE147          	   477: baddrj:     jmp baddr                   ; go build address
+                        	   478: ; 
+                        	   479: ; 
+                        	   480: ; reset all breakpoints 
+                        	   481: ; 
+02:E30B 8601            	   482: delbrk:     ldaa #1                     ; reset breaks flag
+02:E30D 8D5B            	   483: bsrbrk:     bsr brksub                  ; break handling subr.
+02:E30F 2056            	   484:             bra cntrl2                  ; return to command level
+                        	   485: ; 
+                        	   486: ; reset 1 breakpoint 
+                        	   487: ; 
+02:E311 8DF5            	   488: rstbrk:     bsr baddrj                  ; puts user entered address
+                        	   489: ; into xhi,xlo 
+02:E313 4F              	   490:             clra                        ; reset 1 break flag
+02:E314 20F7            	   491:             bra bsrbrk                  ; go reset 1
+                        	   492: ; 
+                        	   493: ; print out all non-zero break addresses 
+                        	   494: ; 
+02:E316 BDE19E          	   495: pntbrk:     jsr pcrlf                   ; do cr"lf
+02:E319 8602            	   496:             ldaa #2                     ; print break addresses flags
+02:E31B 20F0            	   497:             bra bsrbrk                  ; go print
+                        	   498: ; 
+                        	   499: ; set one break 
+                        	   500: ; 
+02:E31D 8DE9            	   501: setbrk:     bsr baddrj                  ; get user entered address (xhi,xlo)
+02:E31F 8604            	   502:             ldaa #4                     ; set one break flag
+02:E321 8D47            	   503:             bsr brksub                  ; go set it
+02:E323 20F1            	   504:             bra pntbrk                  ; print all breakpoints
+                        	   505: ; 
+                        	   506: ; go to requested 
+                        	   507: ; 
+02:E325 8DE1            	   508: goto:       bsr baddrj                  ; go get address from user
+                        	   509: ; xhi,xlow hold address 
+02:E327 86FF            	   510:             ldaa #0xff                  ; flag for putting in breaks
+02:E329 8D3F            	   511:             bsr brksub                  ; go put in breaks
+02:E32B 30              	   512:             tsx
+02:E32C B6033E          	   513:             ldaa xhi                    ; save pch on stack
+02:E32F A705            	   514:             staa 5,x
+02:E331 B6033F          	   515:             ldaa xlow                   ; push pcl
+02:E334 A706            	   516:             staa 6,x
+02:E336 3B              	   517:             rti                         ; go to user prg
+                        	   518: ; 
+                        	   519: ; single instruction trace requested 
+                        	   520: ; 
+02:E337 CE0001          	   521: next:       ldx #1                      ; # instructions to trace
+02:E33A 7F0343          	   522: trace2:     clr brktrc                  ; clear flag indicating trace
+                        	   523: ; is due to break 
+02:E33D FF031A          	   524: trace3:     stx ntrace                  ; save # inst's to trace
+                        	   525: ; is due to break 
+02:E340 FE0308          	   526:             ldx sp                      ; x : = stack pointer
+02:E343 EE06            	   527:             ldx 6,x                     ; x : = address of instr to be ex
+02:E345 FF0317          	   528:             stx trcadr                  ; save in trace address store
+02:E348 A600            	   529:             ldaa 0,x                    ; get instruction to be traced
+02:E34A B70319          	   530:             staa trcins                 ; save in trace instruction store
+02:E34D 7EE4CB          	   531:             jmp contrc                  ; go to continue trace part of
+                        	   532: ; 
+                        	   533: ; multiple instruction trace 
+                        	   534: ; 
+02:E350 8DB6            	   535: trace:      bsr baddrj                  ; get # of instructions to trace
+02:E352 20E6            	   536:             bra trace2                  ; go trace'm
+                        	   537: ; 
+                        	   538: ; continue execution 
+                        	   539: ; 
+02:E354 7C0343          	   540: cont:       inc brktrc                  ; trace 1 to restore swi's
+02:E357 CE0001          	   541:             ldx #1                      ; one trace only
+02:E35A 20E1            	   542:             bra trace3
+                        	   543: ; 
+                        	   544: ; 
+                        	   545: ; r command 
+                        	   546: ; 
+                        	   547: ; print stack contents 
+                        	   548: ; 
+02:E35C BDE19E          	   549: pstak1:     jsr pcrlf                   ; print cr lf
+02:E35F CEE598          	   550:             ldx #mcl3                   ; print header
+02:E362 BDE17E          	   551:             jsr pdata1
+02:E365 8D7B            	   552: pstak:      bsr print                   ; print stack
+02:E367 7EE2BA          	   553: cntrl2:     jmp contrl                  ; return to command level
+                        	   554: ; 
+                        	   555: ; 
+                        	   556: ; brksub 
+                        	   557: ; 
+                        	   558: ; 
+                        	   559: ; this routine does a number of operations having 
+                        	   560: ; to do with breakpoints. 
+                        	   561: ; 
+                        	   562: ; the a register determines function performed: 
+                        	   563: ; 
+                        	   564: ; a = -1 => breaks are put into user's code 
+                        	   565: ; a = 0 => the breakpoint whose address is in 
+                        	   566: ; xhi, xlo is purged; 
+                        	   567: ; all breakpoints are temporarily removed 
+                        	   568: ; a = 1 => all breakpoints are purged 
+                        	   569: ; a = 2 => all breakpoints are printed out 
+                        	   570: ; all breakpoints are temporarily removed 
+                        	   571: ; a = 3 => all breakpoints are temporarily removed 
+                        	   572: ; a = 4 => the break address in xhi, xlo is 
+                        	   573: ; put into the first zero breakpoint 
+                        	   574: ; position; all breaks are temporarily removed 
+                        	   575: ; 
+                        	   576: ; 
+                        	   577: ; 
+                        	   578: brksub:
+02:E36A BF0340          	   579:             sts ssave                   ; save s so we can use
+02:E36D B7033C          	   580:             staa asave                  ; a holds the function #
+                        	   581: ; 
+02:E370 CE031C          	   582:             ldx #brkadr                 ; init x for loop through breaks
+                        	   583: ; 
+                        	   584: ; start of loop through break addresses 
+                        	   585: ; 
+02:E373 B6033C          	   586: brklp:      ldaa asave                  ; get function #
+02:E376 AE00            	   587:             lds 0,x                     ; s:=next address in brrkpt list
+02:E378 272D            	   588:             beq ln                      ; if 0, then not a valid break
+                        	   589: ; 
+02:E37A 7D0342          	   590:             tst brksin                  ; are breaks in user's code?
+02:E37D 2736            	   591:             beq nobrin                  ; branch, if not
+                        	   592: ; 
+                        	   593: ; breaks are in user's code 
+                        	   594: ; 
+02:E37F 4D              	   595:             tsta                        ; should breaks be in?
+02:E380 2B21            	   596:             bmi bkdone                  ; yes, return to caller
+                        	   597: ; 
+                        	   598: ; breaks are to be taken out of user's 
+                        	   599: ; code temporarily 
+                        	   600: ; 
+02:E382 A610            	   601: brk2:       ldaa 2*nbrbpt,x             ; get instr. belong-
+                        	   602: ; ing in user code 
+02:E384 36              	   603:             psha                        ; put it there
+                        	   604: ; 
+                        	   605: ; other loop actions to be performed each time through 
+                        	   606: ; loop when break address not equal to 0. 
+                        	   607: ; 
+02:E385 B6033C          	   608: bkcon1:     ldaa asave                  ; what function is to be done
+02:E388 2737            	   609:             beq fndrpl                  ; see if breakpoint needs to
+                        	   610: ; be replaced 
+02:E38A 8101            	   611:             cmpa #1                     ; is break address to be reset?
+02:E38C 2741            	   612:             beq clrbrk                  ; yes, set brkadr to 0
+                        	   613: ; 
+02:E38E 8102            	   614:             cmpa #2                     ; is brk addr to be printed?
+02:E390 2749            	   615:             beq prntbk                  ; yes, go print address
+                        	   616: ; 
+                        	   617: ; update loop index and loop if appropriate 
+                        	   618: ; 
+02:E392 08              	   619: bkcon2:     inx                         ; make x point to
+02:E393 08              	   620:             inx                         ; next break address
+02:E394 8C032C          	   621: bkcon3:     cpx #brkins                 ; any more breaks?
+02:E397 26DA            	   622:             bne brklp                   ; yes,loop
+                        	   623: ; 
+                        	   624: ; wrap-up processing and exit 
+                        	   625: ; 
+02:E399 4F              	   626:             clra                        ; a = breaks in flag
+02:E39A 7D033C          	   627:             tst asave                   ; is function = -1?
+02:E39D 2A01            	   628:             bpl bkput                   ; no, so brksin = 0
+02:E39F 4C              	   629:             inca                        ; fctn = -1 => brksin:=1
+02:E3A0 B70342          	   630: bkput:      staa brksin                 ; store appropriate flag
+                        	   631: ; 
+                        	   632: ; restore s-reg and return to caller 
+                        	   633: ; 
+02:E3A3 BE0340          	   634: bkdone:     lds ssave                   ; restore user s-reg
+02:E3A6 39              	   635:             rts                         ; return
+                        	   636: ; 
+                        	   637: ; 
+                        	   638: ; miscellaneous routines for brksub 
+                        	   639: ; 
+                        	   640: ; breakpoint address = 0 - if function = 4 then 
+                        	   641: ; put breakpoint address in current position 
+                        	   642: ; a holds the function #, x holds breakpoint index 
+                        	   643: ; 
+02:E3A7 8104            	   644: ln:         cmpa #4                     ; is function = 4
+02:E3A9 26E7            	   645:             bne bkcon2                  ; if not, then continue loop
+                        	   646: ; 
+02:E3AB BE033E          	   647:             lds xhi                     ; get new break address
+02:E3AE AF00            	   648:             sts 0,x                     ; put in current position
+                        	   649: ; 
+02:E3B0 7A033C          	   650:             dec asave                   ; do not place address more
+                        	   651: ; than once-cont to 
+                        	   652: ; take out breakpoints 
+02:E3B3 20DD            	   653:             bra bkcon2                  ; continue loop
+                        	   654: ; 
+                        	   655: ; breaks are not in and address is non-zero. 
+                        	   656: ; if function = -1 then swi's are to be put in. 
+                        	   657: ; a holds function number, s holds address 
+                        	   658: ; 
+02:E3B5 4D              	   659: nobrin:     tsta                        ; is function = -1
+02:E3B6 2ACD            	   660:             bpl bkcon1                  ; no, continue
+                        	   661: ; 
+02:E3B8 34              	   662:             des                         ; make address point to 1 less
+02:E3B9 32              	   663:             pula                        ; get user instruction
+02:E3BA A710            	   664:             staa 2*nbrbpt,x             ; save
+02:E3BC 863F            	   665:             ldaa #swiop                 ; get swi op code
+02:E3BE 36              	   666:             psha                        ; replace user instruction
+02:E3BF 20D1            	   667:             bra bkcon2                  ; continue loop
+                        	   668: ; 
+                        	   669: ; function=0 brk addr not = 0, user's instr 
+                        	   670: ; is in (not swi). 
+                        	   671: ; if address = xhi,xlo then set address = 0 
+02:E3C1 A600            	   672: fndrpl:     ldaa 0,x                    ; get top byte of address
+02:E3C3 B1033E          	   673:             cmpa xhi                    ; do top bytes compare
+02:E3C6 26CA            	   674:             bne bkcon2                  ; no,continue loop
+02:E3C8 E601            	   675:             ldab 1,x                    ; get low byte of addr
+02:E3CA F1033F          	   676:             cmpb xlow                   ; same for low bytes
+02:E3CD 26C3            	   677:             bne bkcon2
+                        	   678: ; 
+02:E3CF 6F00            	   679: clrbrk:     clr 0,x                     ; clear out break
+02:E3D1 6F01            	   680:             clr 1,x                     ; address field
+02:E3D3 20BD            	   681:             bra bkcon2                  ; continue loop
+                        	   682: ; 
+                        	   683: ; 
+02:E3D5 7EE1CA          	   684: ot2hs:      jmp out2hs
+02:E3D8 7EE1C8          	   685: ot4hs:      jmp out4hs
+                        	   686: ; 
+                        	   687: ; 
+                        	   688: ; print out break address 
+                        	   689: ; function = 2, break address not = 0, x = address in 
+                        	   690: ; 
+02:E3DB BE0340          	   691: prntbk:     lds ssave
+02:E3DE 8DF8            	   692:             bsr ot4hs                   ; output address and space
+02:E3E0 20B2            	   693:             bra bkcon3                  ; out4hs increments x,
+                        	   694: ; so bypas 2 inx's 
+                        	   695: ; 
+                        	   696: ; print contents of stack 
+                        	   697: ; 
+02:E3E2 BDE19E          	   698: print:      jsr pcrlf                   ; print cr lf
+02:E3E5 FE0308          	   699:             ldx sp                      ; print out stack
+02:E3E8 08              	   700:             inx
+02:E3E9 8DEA            	   701:             bsr ot2hs                   ; condition codes
+02:E3EB 8DE8            	   702:             bsr ot2hs                   ; acc-b
+02:E3ED 8DE6            	   703:             bsr ot2hs                   ; acc-a
+02:E3EF 8DE7            	   704:             bsr ot4hs                   ; x-reg
+02:E3F1 8DE5            	   705:             bsr ot4hs                   ; p-counter
+02:E3F3 CE0308          	   706:             ldx #sp
+02:E3F6 8DE0            	   707:             bsr ot4hs                   ; stack pointer
+02:E3F8 39              	   708:             rts
+                        	   709: 
+                        	   710: 
+                        	   711: ; punch dump 
+                        	   712: ; punch from beginning address (bega) thru ending 
+                        	   713: ; address (enda) 
+                        	   714: ; 
+                        	   715: 
+02:E3F9 0D              	   716: mtape1:     .byte 0xd,0xa,0,0,0,0,"S","1",4  ; punch format
+02:E3FA 0A
+02:E3FB 00
+02:E3FC 00
+02:E3FD 00
+02:E3FE 00
+02:E3FF 53
+02:E400 31
+02:E401 04
+                        	   717: 
+                        	   718: punch:
+                        	   719: 
+02:E402 BDE185          	   720:             jsr getadd                  ; get address
+02:E405 8612            	   721:             ldaa #0x12                  ; turn tty punch on
+02:E407 BDE175          	   722:             jsr outch                   ; out char
+                        	   723: ; 
+                        	   724: ; punch leader - 25 nulls 
+                        	   725: ; 
+02:E40A C619            	   726:             ldab #25                    ; b holds # nulls to punch
+02:E40C 4F              	   727: pnull:      clra                        ; a=0 (null char)
+02:E40D BDE175          	   728:             jsr outch                   ; go output null
+02:E410 5A              	   729:             decb                        ; decrement counter
+02:E411 26F9            	   730:             bne pnull                   ; if not done, then loop
+                        	   731: ; 
+02:E413 FE0302          	   732:             ldx bega
+02:E416 FF0340          	   733:             stx tw                      ; temp beginning address
+02:E419 B60305          	   734: pun11:      ldaa enda+1
+02:E41C B00341          	   735:             suba tw+1
+02:E41F F60304          	   736:             ldab enda
+02:E422 F20340          	   737:             sbcb tw
+02:E425 2604            	   738:             bne pun22
+02:E427 8110            	   739:             cmpa #16
+02:E429 2502            	   740:             bcs pun23
+02:E42B 860F            	   741: pun22:      ldaa #15
+02:E42D 8B04            	   742: pun23:      adda #4
+02:E42F B7033D          	   743:             staa mcont                  ; frame count this record
+02:E432 8003            	   744:             suba #3
+02:E434 B7033C          	   745:             staa temp                   ; byte count this record
+                        	   746: ; punch c/r,l/f,nulls,s,1 
+02:E437 CEE3F9          	   747:             ldx #mtape1
+02:E43A BDE17E          	   748:             jsr pdata1
+02:E43D 5F              	   749:             clrb                        ; zero checksum
+                        	   750: ; punch frame count 
+02:E43E CE033D          	   751:             ldx #mcont
+02:E441 8D2E            	   752:             bsr punt2                   ; punch 2 hex char
+                        	   753: ; punch address 
+02:E443 CE0340          	   754:             ldx #tw
+02:E446 8D29            	   755:             bsr punt2
+02:E448 8D27            	   756:             bsr punt2
+                        	   757: ; punch data 
+02:E44A FE0340          	   758:             ldx tw
+02:E44D 8D22            	   759: pun32:      bsr punt2                   ; punch one byte (2 frames)
+02:E44F 7A033C          	   760:             dec temp                    ; dec byte count
+02:E452 26F9            	   761:             bne pun32
+02:E454 FF0340          	   762:             stx tw
+02:E457 53              	   763:             comb
+02:E458 37              	   764:             pshb
+02:E459 30              	   765:             tsx
+02:E45A 8D15            	   766:             bsr punt2                   ; punch checksum
+02:E45C 33              	   767:             pulb                        ; restore stack
+02:E45D FE0340          	   768:             ldx tw
+02:E460 09              	   769:             dex
+02:E461 BC0304          	   770:             cpx enda
+02:E464 26B3            	   771:             bne pun11
+02:E466 BDE19E          	   772:             jsr pcrlf
+02:E469 CEE571          	   773:             ldx #meof
+02:E46C BDE17E          	   774:             jsr pdata1                  ; output eof
+02:E46F 2032            	   775:             bra ctrl                    ; branch to contrl
+                        	   776: 
+                        	   777: ; punch 2 hex char, update checksum 
+02:E471 EB00            	   778: punt2:      addb 0,x                    ; update checksum
+02:E473 7EE1BF          	   779:             jmp out2h                   ; output two hex chars and rts
+                        	   780: ; 
+                        	   781: ; swi-1 software interrupt level 1 processing 
+                        	   782: ; 
+                        	   783: swi15:
+02:E476 BF0308          	   784:             sts sp                      ; save user's sp
+                        	   785: ; 
+02:E479 8603            	   786:             ldaa #3
+02:E47B BDE36A          	   787:             jsr brksub                  ; go take out all the breaks
+                        	   788: ; 
+                        	   789: ; decrement p-counter 
+                        	   790: ; 
+02:E47E 30              	   791:             tsx                         ; x:=stack pointer - 1
+02:E47F 6D06            	   792:             tst 6,x                     ; if lower byte = 0 => borrow
+02:E481 2602            	   793:             bne swi151                  ; branch if borrow not req'd
+02:E483 6A05            	   794:             dec 5,x                     ; decrement upper byte
+02:E485 6A06            	   795: swi151:     dec 6,x                     ; decrement lower byte
+                        	   796: ; 
+                        	   797: ; test for address trace or break 
+                        	   798: ; 
+02:E487 EE05            	   799:             ldx 5,x                     ; x:=p counter
+02:E489 BC0317          	   800:             cpx trcadr                  ; is swi for trace?
+02:E48C 2718            	   801:             beq trcinh                  ; yes, go to trace int handler
+                        	   802: ; 
+02:E48E A600            	   803:             ldaa 0,x                    ; get instruction causing swi
+02:E490 813F            	   804:             cmpa #swiop                 ; was it replaced by call to break
+02:E492 260C            	   805:             bne brkinh                  ; yes, so must be a break
+                        	   806: ; 
+                        	   807: ; user swi-transfer through level 2 swi 
+                        	   808: ; 
+02:E494 30              	   809:             tsx                         ; x:=stack pointer
+02:E495 6C06            	   810:             inc 6,x                     ; update low byte of p-counter
+02:E497 2602            	   811:             bne incnov                  ; branch if no carry
+02:E499 6C05            	   812:             inc 5,x                     ; update high byte if necessary
+02:E49B FE030C          	   813: incnov:     ldx swi2                    ; x:=pointer to level 2 swi handler
+02:E49E 6E00            	   814:             jmp 0,x                     ; go to level 2 handler
+                        	   815: ; 
+                        	   816: ; 
+                        	   817: ; 
+                        	   818: ; 
+                        	   819: ; break interrupt handler 
+                        	   820: ; 
+                        	   821: brkinh:
+02:E4A0 BDE3E2          	   822:             jsr print                   ; stop and show regs to user
+02:E4A3 7EE2BA          	   823: ctrl:       jmp contrl                  ; return to control loop
+                        	   824: ; 
+                        	   825: ; trace interrupt handler 
+                        	   826: ; p-counter has been decremented to point at swi 
+                        	   827: ; trcins holds op code replaced by swi 
+                        	   828: ; x hold address where trace swi is 
+                        	   829: ; 
+02:E4A6 B60319          	   830: trcinh:     ldaa trcins                 ; get op code of traced instr
+02:E4A9 A700            	   831:             staa 0,x                    ; restore to user's code
+                        	   832: ; 
+02:E4AB 7D0343          	   833:             tst brktrc                  ; is processing to be
+                        	   834: ; immediately continued? 
+02:E4AE 270F            	   835:             beq nbktrc                  ; branch if not
+                        	   836: ; 
+                        	   837: ; processing is to 'CONTINUE' 
+                        	   838: ; 
+02:E4B0 7F0343          	   839:             clr brktrc                  ; reset continue flag
+02:E4B3 86FF            	   840:             ldaa #0xff                  ; flag to set breaks in code
+02:E4B5 BDE36A          	   841:             jsr brksub                  ; put breaks in
+02:E4B8 7F0317          	   842:             clr trcadr                  ; no more trace, so clear address
+02:E4BB 7F0318          	   843:             clr trcadr+1
+02:E4BE 3B              	   844:             rti                         ; continue
+                        	   845: ; 
+                        	   846: ; trace is due to n or t trace commands 
+                        	   847: ; 
+02:E4BF BDE3E2          	   848: nbktrc:     jsr print                   ; print stack
+02:E4C2 FE031A          	   849:             ldx ntrace                  ; get # instructions to trace
+02:E4C5 09              	   850:             dex                         ; decrement count
+02:E4C6 FF031A          	   851:             stx ntrace                  ; and restore
+02:E4C9 27D8            	   852:             beq ctrl                    ; branch if all traces done
+                        	   853: ; 
+                        	   854: ; trace not done - trace next instruction 
+                        	   855: ; 
+02:E4CB B60319          	   856: contrc:     ldaa trcins                 ; get current instruction
+02:E4CE B7030E          	   857:             staa brins                  ; save in case it's a branch
+02:E4D1 8D70            	   858:             bsr opcbyt                  ; go get # bytes"type
+02:E4D3 4D              	   859:             tsta                        ; check for branch
+02:E4D4 2A35            	   860:             bpl ckobra                  ; check for other than branch
+                        	   861: ; 
+                        	   862: ; relative branch type instruction 
+                        	   863: ; determine where to put swi 
+                        	   864: ; s- holds pointer to user stack after swi 
+02:E4D6 32              	   865:             pula                        ; get condition code
+02:E4D7 34              	   866:             des                         ; update stack pointer after pull
+02:E4D8 8A10            	   867:             oraa #0b00010000            ; make int's inhibited
+02:E4DA 06              	   868:             tap                         ; restore user's c. code reg
+02:E4DB 7E030E          	   869:             jmp brins                   ; go see how relative branch
+                        	   870: ; fares 
+                        	   871: ; 
+                        	   872: ; branch was nogo - put swi at next instruction 
+                        	   873: ; 
+02:E4DE 8602            	   874: brnogo:     ldaa #2                     ; a = # bytes after current instr
+02:E4E0 2029            	   875:             bra ckobra                  ; go put swi appropriately
+                        	   876: ; 
+                        	   877: ; branch was go, put swi at address being 
+                        	   878: ; jumped to 
+                        	   879: ; 
+02:E4E2 FE0317          	   880: brgo:       ldx trcadr                  ; x : = trace address
+02:E4E5 A601            	   881:             ldaa 1,x                    ; get branch offset
+02:E4E7 08              	   882:             inx                         ; offset is relative to
+02:E4E8 08              	   883:             inx                         ; instr following branch
+02:E4E9 2B12            	   884:             bmi brgodc                  ; branch if offset negative
+02:E4EB 8D16            	   885: brg1:       bsr incx_                   ; increment x by amount in
+                        	   886: ; a reg 
+02:E4ED FF0317          	   887: brg2:       stx trcadr                  ; save address of next
+                        	   888: ; instr to stop on 
+02:E4F0 A600            	   889:             ldaa 0,x                    ; get instruction to be replaced
+02:E4F2 B70319          	   890:             staa trcins                 ; save
+02:E4F5 863F            	   891:             ldaa #swiop                 ; get swi op code
+02:E4F7 A700            	   892:             staa 0,x                    ; replace instr with swi
+02:E4F9 BE0308          	   893:             lds sp                      ; get original stack pointer
+02:E4FC 3B              	   894:             rti                         ; trace another instr
+                        	   895: ; 
+                        	   896: ; x needs to be decremented (offset negative) 
+                        	   897: ; 
+02:E4FD 09              	   898: brgodc:     dex                         ; decrement address
+02:E4FE 4C              	   899:             inca                        ; increment counter
+02:E4FF 26FC            	   900:             bne brgodc                  ; if counter not 0, branch
+02:E501 20EA            	   901:             bra brg2                    ; if done, go return to user prog
+                        	   902: ; 
+                        	   903: ; subroutine to increment x by contents of a 
+                        	   904: ; 
+02:E503 4D              	   905: incx_:      tsta                        ; is a = 0?
+02:E504 2704            	   906:             beq incxr                   ; if so, inc done
+02:E506 08              	   907: inxlp:      inx                         ; else increment x
+02:E507 4A              	   908:             deca                        ; decrement count
+02:E508 26FC            	   909:             bne inxlp                   ; if count not yet 0, loop
+02:E50A 39              	   910: incxr:      rts                         ; return from this subroutine
+                        	   911: ; 
+                        	   912: ; instruction to be traced is not a branch 
+                        	   913: ; 
+02:E50B FE0317          	   914: ckobra:     ldx trcadr                  ; x : = trace address
+02:E50E E600            	   915:             ldab 0,x                    ; get instr to be traced
+02:E510 C16E            	   916:             cmpb #0x6e                  ; is it a jump, indexed?
+02:E512 271A            	   917:             beq jmpidx                  ; yes, go simulate jump idxed
+02:E514 C17E            	   918:             cmpb #0x7e                  ; jump, extended?
+02:E516 271D            	   919:             beq jmpext
+02:E518 C1AD            	   920:             cmpb #0xad                  ; jsr, indexed?
+02:E51A 2712            	   921:             beq jmpidx                  ; (jump idxed is same as
+                        	   922: ; transfer of control) 
+02:E51C C1BD            	   923:             cmpb #0xbd                  ; jsr, extended?
+02:E51E 2715            	   924:             beq jmpext
+02:E520 C13B            	   925:             cmpb #0x3b                  ; rti?
+02:E522 2715            	   926:             beq rtisim
+02:E524 C139            	   927:             cmpb #0x39                  ; rts?
+02:E526 2716            	   928:             beq rtssim
+02:E528 C18D            	   929:             cmpb #0x8d                  ; bsr?
+02:E52A 27B6            	   930:             beq brgo                    ; (branch processing)
+                        	   931: ; 
+                        	   932: ; not a branch, jump. rti, rts 
+                        	   933: ; a register holds # bytes in instruction 
+                        	   934: ; 
+02:E52C 20BD            	   935:             bra brg1                    ; put in new swi and
+                        	   936: ; trace next instruction 
+                        	   937: ; 
+                        	   938: ; jump, jsr indexed simulation 
+                        	   939: ; 
+02:E52E A601            	   940: jmpidx:     ldaa 1,x                    ; a : = address offset
+02:E530 30              	   941:             tsx
+02:E531 EE03            	   942:             ldx 3,x                     ; get targets x reg
+02:E533 20B6            	   943:             bra brg1                    ; update x, trace next instr
+                        	   944: ; 
+                        	   945: ; jump, jsr extended 
+                        	   946: ; 
+02:E535 EE01            	   947: jmpext:     ldx 1,x                     ; get address to be jumped to
+02:E537 20B4            	   948:             bra brg2                    ; go trace next instr.
+                        	   949: ; 
+                        	   950: ; rti encountered 
+                        	   951: ; 
+02:E539 30              	   952: rtisim:     tsx
+02:E53A EE0C            	   953:             ldx 12,x                    ; get p-counter from stack
+02:E53C 20AF            	   954:             bra brg2                    ; go trace next instr.
+                        	   955: ; 
+                        	   956: ; rts encountered 
+                        	   957: ; 
+02:E53E 30              	   958: rtssim:     tsx
+02:E53F EE07            	   959:             ldx 7,x                     ; get return p-reg from stack
+02:E541 20AA            	   960:             bra brg2                    ; go trace next instr
+                        	   961: ; 
+                        	   962: ; 
+                        	   963: ; opbcyt 
+                        	   964: ; 
+                        	   965: ; this routine determines the # of bytes in an instruction 
+                        	   966: ; given its op code. 
+                        	   967: ; 
+                        	   968: ; input: a holds the op code 
+                        	   969: ; 
+                        	   970: ; output: x holds the index of table element 
+                        	   971: ; b not restored 
+                        	   972: ; a holds # bytes in instruction 
+                        	   973: ; except for branches in which case is negative 
+                        	   974: ; 
+                        	   975: ; 
+                        	   976: ; 
+                        	   977: opcbyt:
+02:E543 16              	   978:             tab                         ; b:= op code
+02:E544 44              	   979:             lsra
+02:E545 44              	   980:             lsra
+02:E546 44              	   981:             lsra                        ; put 4 upper bits of op code in
+02:E547 44              	   982:             lsra                        ; lower 4 bits of a
+                        	   983: ; 
+02:E548 CEE561          	   984:             ldx #opbttb                 ; x:= address of table
+02:E54B 8DB6            	   985:             bsr incx_                   ; increment x to point to correct
+                        	   986: ; 
+02:E54D A600            	   987:             ldaa 0,x                    ; get table entry
+02:E54F 260F            	   988:             bne opbtrt                  ; if not 0 then no further
+                        	   989: ; processing needed 
+                        	   990: ; 
+                        	   991: ; if top 4 bits = 8 or c, then there are two classes 
+                        	   992: ; of instructions: 2 byte instructions and 
+                        	   993: ; ce, 8c and 8e which are 3 byte instructions 
+                        	   994: ; 
+02:E551 8602            	   995:             ldaa #2                     ; # bytes in most of 8# instructions
+02:E553 C18C            	   996:             cmpb #0x8c                  ; 3 byte instruction?
+02:E555 2708            	   997:             beq opbt3                   ; yes, update a
+02:E557 C1CE            	   998:             cmpb #0xce                  ; 3 byte instr?
+02:E559 2704            	   999:             beq opbt3                   ; yes, update a
+02:E55B C18E            	  1000:             cmpb #0x8e                  ; 3 byte instruction?
+02:E55D 2601            	  1001:             bne opbtrt                  ; no, return
+                        	  1002: ; 
+02:E55F 4C              	  1003: opbt3:      inca                        ; # bytes in instruction:=3
+                        	  1004: ; 
+02:E560 39              	  1005: opbtrt:     rts                         ; return to caller
+                        	  1006: ; 
+                        	  1007: ; op code to number of bytes conversion table 
+                        	  1008: ; 
+                        	  1009: ; # bytes top 4 bits of opcode 
+                        	  1010: ; ------- -------------------- 
+                        	  1011: ; 
+                        	  1012: opbttb:
+02:E561 01              	  1013:             .byte 1                     ; 0
+02:E562 01              	  1014:             .byte 1                     ; 1
+02:E563 82              	  1015:             .byte 2+0b10000000          ; 2 ( minus=> branches )
+02:E564 01              	  1016:             .byte 1                     ; 3
+02:E565 01              	  1017:             .byte 1                     ; 4
+02:E566 01              	  1018:             .byte 1                     ; 5
+02:E567 02              	  1019:             .byte 2                     ; 6
+02:E568 03              	  1020:             .byte 3                     ; 7
+02:E569 00              	  1021:             .byte 0                     ; 8 # bytes=2 except 8c,8e
+02:E56A 02              	  1022:             .byte 2                     ; 9
+02:E56B 02              	  1023:             .byte 2                     ; a
+02:E56C 03              	  1024:             .byte 3                     ; b
+02:E56D 00              	  1025:             .byte 0                     ; c # bytes = 2 except ce
+02:E56E 02              	  1026:             .byte 2                     ; d
+02:E56F 02              	  1027:             .byte 2                     ; e
+02:E570 03              	  1028:             .byte 3                     ; f
+                        	  1029: ; 
+                        	  1030: ; constant data 
+                        	  1031: ; 
+02:E571 5339303330303030	  1032: meof:       .byte "S9030000FC"
+02:E579 4643
+02:E57B 04              	  1033:             .byte 4
+02:E57C 13              	  1034: mcloff:     .byte 0x13                  ; reader off
+02:E57D 0A              	  1035: mcl:        .byte 0xa,0xd,0x14,0,0,0,0,"*",4  ; lf,cr,punch
+02:E57E 0D
+02:E57F 14
+02:E580 00
+02:E581 00
+02:E582 00
+02:E583 00
+02:E584 2A
+02:E585 04
+02:E586 0D              	  1036: mcl1:       .byte 0xd,0xa,0,0,0,0,4     ; cr lf
+02:E587 0A
+02:E588 00
+02:E589 00
+02:E58A 00
+02:E58B 00
+02:E58C 04
+02:E58D 4D494B4255472032	  1037: mcl2:       .byte "MIKBUG 2.0"
+02:E595 2E30
+02:E597 04              	  1038:             .byte 4
+02:E598 4343204220412058	  1039: mcl3:       .byte "CC B A X P S"
+02:E5A0 20502053
+02:E5A4 04              	  1040:             .byte 4
+02:E5A5 4245472041444452	  1041: mcl4:       .byte "BEG ADDR ?"
+02:E5AD 203F
+02:E5AF 04              	  1042:             .byte 4
+02:E5B0 454E442041444452	  1043: mcl5:       .byte "END ADDR ?"
+02:E5B8 203F
+02:E5BA 04              	  1044:             .byte 4
+                        	  1045: ; 
+                        	  1046: ; 
+                        	  1047: ; maximal software implementation of the 
+                        	  1048: ; ritter-zettner standards 
+                        	  1049: ; 
+                        	  1050: ; copyright (c) 1977 motorola inc. and t. f. ritter 
+                        	  1051: ; 
+                        	  1052: ; commands for exortape 
+                        	  1053: ; c l d s : 
+                        	  1054: ; c - check tape 
+                        	  1055: ; l - load from tape to memory 
+                        	  1056: ; d - dump from memory to tape 
+                        	  1057: ; s - set baud rate 
+                        	  1058: ; 
+                        	  1059: ; speed : 
+                        	  1060: ; enter 04 08 12 16 20 
+                        	  1061: ; 
+                        	  1062: ; file id : 
+                        	  1063: ; enter four hex characters 
+                        	  1064: ; 
+                        	  1065: ; startstop pages: 
+                        	  1066: ; enter starting page, two hex characters 
+                        	  1067: ; enter stoppage, two hex characters 
+                        	  1068: ; 
+                        	  1069: ; 
+                        	  1070: ; 
+                        	  1071: ; file specifications 
+                        	  1072: ; alc := undefined bit; automatic level control 
+                        	  1073: ; post := undefined bit; missing pulse protect 
+                        	  1074: ; start sequence := 89afh 
+                        	  1075: ; crc := cyclic redundency check bit; x16+x15+x2+x0 
+                        	  1076: ; headerecord := (32 alc) (start sequence) (08h) 
+                        	  1077: ; (16 file id) (8 # of good pages) (8 post) 
+                        	  1078: ; trailerecord := (16 alc) (start sequence) 
+                        	  1079: ; (20h) (8 # of bad pages) (8 post) 
+                        	  1080: ; dumpagerecord := (16 alc) (start sequence) (10h) 
+                        	  1081: ; (8 page #) (2048 data) (16 crc) (8 post) 
+                        	  1082: ; charecord := (32 alc) (start sequence) (40h) 
+                        	  1083: ; (8 length) (1-256 chars) (16 crc) (8 post) 
+                        	  1084: ; otherecord := neither header nor trailer record 
+                        	  1085: ; subfile := (headerecord) (0-n otherecords) 
+                        	  1086: ; file := (1-n subfiles) (trailerecord) 
+                        	  1087: ; 
+                        	  1088: ; 
+                        	  1089: ; data specifications 
+                        	  1090: ; synchronous data; no start or stop bits 
+                        	  1091: ; msb sent first (correct order on scope) 
+                        	  1092: ; voice messages may be present between files 
+                        	  1093: ; 
+                        	  1094: ; 
+                        	  1095: ; audio modulation specifications 
+                        	  1096: ; double-frequency return-to-bias modulation 
+                        	  1097: ; logic one = five element pattern: 0 1 0 1 0 
+                        	  1098: ; logic zero = five element pattern 0 1 0 0 0 
+                        	  1099: ; local el cheapo (realistic ctr-34) does 1200 baud 
+                        	  1100: ; (data rate equals 1650 baud 2-stop async) 
+                        	  1101: ; 0 erros in 2.6 million bits recovered 
+                        	  1102: ; from memorex mrx2 
+                        	  1103: ; 
+                        	  1104: ; 
+                        	  1105: ; audio hardware specifications 
+                        	  1106: ; output from pia b2 through 11:1 voltage divider 
+                        	  1107: ; (4.7k, 470) into mike jack 
+                        	  1108: ; input from spkr jack, through dc-restoring 
+                        	  1109: ; circuit and schmidtt trigger 
+                        	  1110: ; (mc14583 preferred) into pia b0 
+                        	  1111: ; recovered pulse phase matters, so use switch to 
+                        	  1112: ; select phase -- both available from mc14583 
+                        	  1113: ; 
+                        	  1114: ;baud rates: 400 800 1200 1600 2000 
+                        	  1115: ;equiv async: 550 1100 1650 2200 2750 
+                        	  1116: ;element (usec): 500 250 167 125 100 
+                        	  1117: ;totcnt: 35 1b 12 0d 0b 
+                        	  1118: ;patdel: 50 26 18 11 0d 
+                        	  1119: ; 
+                        	  1120: ;system storage 
+                        	  1121:             .equ ttycon, 0x8008         ; acia control
+                        	  1122:             .equ tty, 0x8009            ; tty acia
+                        	  1123:             .equ tp, 0x8004             ; tape port
+                        	  1124:             .equ tacon, 0x8005          ; tape control
+                        	  1125:             .equ esc, 0x1b              ; escape char
+                        	  1126: ; 
+                        	  1127: ; 
+                        	  1128: ; 
+                        	  1129: ; 
+                        	  1130: ; 
+                        	  1131:             .equ eot, 4
+                        	  1132: ; 
+                        	  1133: ; 
+                        	  1134: ; messages 
+                        	  1135: ; 
+                        	  1136: ; 
+02:E5BB 45584F5254415045	  1137: msg1:       .byte "EXORTAPE 4.3"
+02:E5C3 20342E33
+02:E5C7 04              	  1138:             .byte eot
+02:E5C8 43204C204420533A	  1139: msg2:       .byte "C L D S: "
+02:E5D0 20
+02:E5D1 04              	  1140:             .byte eot
+02:E5D2 46494C452049443A	  1141: msg3:       .byte "FILE ID: "
+02:E5DA 20
+02:E5DB 04              	  1142:             .byte eot
+02:E5DC 535441525453544F	  1143: msg4:       .byte "STARTSTOP PAGES: "
+02:E5E4 502050414745533A
+02:E5EC 20
+02:E5ED 04              	  1144:             .byte eot
+02:E5EE 53504545443A20  	  1145: msg5:       .byte "SPEED: "
+02:E5F5 04              	  1146:             .byte eot
+                        	  1147: ; 
+                        	  1148: ; print line with a preceeding cr/lf 
+                        	  1149: ; x point to string, string must 
+                        	  1150: ; terminate with a $4 character. 
+                        	  1151: ; 
+02:E5F6 BDE19E          	  1152: pdata:      jsr pcrlf
+02:E5F9 7EE17E          	  1153: pdat1p:     jmp pdata1
+                        	  1154: ; 
+                        	  1155: ; tins provides tape "IN'S" for mikbug keyboard 
+                        	  1156: ; control of tape system 
+                        	  1157: ; 
+                        	  1158: ; 
+                        	  1159: ; enter here 
+                        	  1160: ; 
+                        	  1161: ; 
+02:E5FC 8D08            	  1162: exort:      bsr exor                    ; call tape routine via a bsr
+02:E5FE 7EE2A4          	  1163:             jmp ent1                    ; return to exec
+                        	  1164: ; 
+                        	  1165: ; 
+                        	  1166: ; 
+                        	  1167: ; 
+                        	  1168: ; 
+                        	  1169: ; tin's error routine 
+                        	  1170: ; 
+02:E601 863F            	  1171: err:        ldaa #'?'                   ;  print '?'
+02:E603 BDE175          	  1172:             jsr outch
+                        	  1173: ; fall into tins 
+                        	  1174: ; 
+                        	  1175: ; 
+                        	  1176: ; 
+                        	  1177: exor:
+02:E606 CE1B26          	  1178: tins:       ldx #0x1b26                 ; standard speed
+02:E609 FF034A          	  1179:             stx totcnt
+                        	  1180: soft:
+02:E60C CEE5BB          	  1181: tinss:      ldx #msg1                   ; send pgm title
+02:E60F 8DE5            	  1182: ti1:        bsr pdata
+02:E611 CEE5EE          	  1183: ti2a:       ldx #msg5                   ; send speed question
+02:E614 8DE0            	  1184:             bsr pdata
+02:E616 BDE155          	  1185:             jsr byte                    ; input 2 hex characters
+02:E619 8120            	  1186:             cmpa #0x20                  ; 2000 baud?
+02:E61B 2605            	  1187:             bne tin1
+02:E61D CE0B0D          	  1188:             ldx #0x0b0d
+02:E620 2022            	  1189:             bra tin5
+02:E622 8116            	  1190: tin1:       cmpa #0x16                  ; 1600 baud?
+02:E624 2605            	  1191:             bne tin2
+02:E626 CE0D11          	  1192:             ldx #0x0d11
+02:E629 2019            	  1193:             bra tin5
+02:E62B 8112            	  1194: tin2:       cmpa #0x12                  ; 1200 baud?
+02:E62D 2605            	  1195:             bne tin3
+02:E62F CE1218          	  1196:             ldx #0x1218
+02:E632 2010            	  1197:             bra tin5
+02:E634 8104            	  1198: tin3:       cmpa #0x04                  ; 0400 baud?
+02:E636 2605            	  1199:             bne tin4
+02:E638 CE3550          	  1200:             ldx #0x3550
+02:E63B 2007            	  1201:             bra tin5
+02:E63D 8108            	  1202: tin4:       cmpa #0x08
+02:E63F 26C0            	  1203:             bne err                     ; not a valid speed
+02:E641 CE1B26          	  1204:             ldx #0x1b26                 ; 800 baud is normal
+                        	  1205: 
+                        	  1206: 
+                        	  1207: 
+                        	  1208: 
+                        	  1209: 
+                        	  1210: 
+02:E644 FF034A          	  1211: tin5:       stx totcnt
+02:E647 CEE5C8          	  1212: tin8:       ldx #msg2                   ; send mode question
+02:E64A 8DAA            	  1213: ti2:        bsr pdata                   ; c=check" l=load
+02:E64C BDE178          	  1214:             jsr inch                    ; d=dump" s= speed
+02:E64F 8153            	  1215:             cmpa #'S'
+02:E651 27BE            	  1216:             beq ti2a
+                        	  1217: ; 
+                        	  1218: ; 
+02:E653 B7034D          	  1219: tin6:       staa t1                     ; store mode char
+02:E656 CEE5D2          	  1220:             ldx #msg3                   ; send file id prompt
+02:E659 8D9B            	  1221: ti4:        bsr pdata
+02:E65B BDE147          	  1222:             jsr baddr                   ; get file id
+02:E65E FF0346          	  1223:             stx fidh
+02:E661 BDE19E          	  1224:             jsr pcrlf
+02:E664 B6034D          	  1225:             ldaa t1
+02:E667 8144            	  1226:             cmpa #'D'                   ;  dump mode?
+02:E669 2611            	  1227:             bne tin7
+02:E66B CEE5DC          	  1228:             ldx #msg4                   ; send start"stop prompt
+02:E66E 8D89            	  1229:             bsr pdat1p
+02:E670 BDE147          	  1230:             jsr baddr
+02:E673 FF0348          	  1231:             stx startp
+02:E676 BDE19E          	  1232:             jsr pcrlf
+02:E679 7EE82E          	  1233:             jmp master
+02:E67C 8143            	  1234: tin7:       cmpa #'C'                   ;  check mode?
+02:E67E 2709            	  1235:             beq check
+02:E680 814C            	  1236:             cmpa #'L'                   ;  check for load
+02:E682 2709            	  1237:             beq load2
+02:E684 7EE601          	  1238:             jmp err
+                        	  1239: ; 
+                        	  1240: ; fall into load 
+02:E687 2004            	  1241: loadv:      bra load2
+02:E689 8601            	  1242: check:      ldaa #0x01                  ; insert check command
+02:E68B 2002            	  1243:             bra c12
+02:E68D 86E7            	  1244: load2:      ldaa #0xe7                  ; insert load command
+02:E68F B7034D          	  1245: c12:        staa cl                     ; (store b indexed)
+02:E692 7F034E          	  1246:             clr cll                     ; nop"zero displacement
+02:E695 8639            	  1247:             ldaa #0x39                  ; insert rts
+02:E697 B7034F          	  1248:             staa clll
+                        	  1249: ; fall into getload 
+                        	  1250: ; 
+                        	  1251: ; getload searches for the desired file, 
+                        	  1252: ; then loads it into ram 
+                        	  1253: ; 
+                        	  1254: ; ram: q, r, s, h, l (scratch) 
+                        	  1255: ; totcnt, fidh, fidl (perm) 
+                        	  1256: ; 
+02:E69A BDE872          	  1257: getloa:     jsr lsetup                  ; set up pia
+02:E69D 8D5E            	  1258:             bsr getfil                  ; search for correct file
+02:E69F 2722            	  1259:             beq get4                    ; out iff escaped
+02:E6A1 8D54            	  1260: get2:       bsr startv                  ; get the next record-type
+02:E6A3 271E            	  1261:             beq get4                    ; out if escape
+02:E6A5 C120            	  1262:             cmpb #0x20                  ; trailerecord?
+02:E6A7 270A            	  1263:             beq get1
+02:E6A9 C110            	  1264:             cmpb #0x10                  ; dumpagerecord?
+02:E6AB 26F4            	  1265:             bne get2
+02:E6AD 8D15            	  1266:             bsr dumpr                   ; bring it in!
+02:E6AF 2712            	  1267:             beq get4                    ; out iff escape
+02:E6B1 20EE            	  1268:             bra get2
+02:E6B3 7D0356          	  1269: get1:       tst v                       ; check page count
+02:E6B6 270B            	  1270:             beq get4
+02:E6B8 2B04            	  1271:             bmi get3
+02:E6BA 862D            	  1272:             ldaa #'-'                   ;  '-'  for missing page(s)
+02:E6BC 2002            	  1273:             bra get5
+02:E6BE 862B            	  1274: get3:       ldaa #'+'                   ;  '+'  for extra page(s)
+02:E6C0 BDE175          	  1275: get5:       jsr outch                   ; print it!
+02:E6C3 39              	  1276: get4:       rts                         ; return
+                        	  1277: ; 
+                        	  1278: ; dumpr brings in a dumpage record 
+                        	  1279: ; 
+                        	  1280: ; ram: h, l (scratch) 
+                        	  1281: ; regs: acca, accb (scratch); ix (perm) 
+                        	  1282: ; exit: falls into crck 
+                        	  1283: ; 
+02:E6C4 8D2E            	  1284: dumpr:      bsr ldv                     ; get page number
+02:E6C6 F70350          	  1285:             stab h                      ; )
+02:E6C9 7F0351          	  1286:             clr l                       ; ) load ix!
+02:E6CC FE0350          	  1287:             ldx h                       ; )
+02:E6CF 8D23            	  1288: dum1:       bsr ldv
+02:E6D1 2749            	  1289:             beq g2                      ; out iff escape
+02:E6D3 BD034D          	  1290:             jsr cl                      ; check, or load
+02:E6D6 08              	  1291:             inx                         ; storage ptr
+02:E6D7 7C0351          	  1292:             inc l                       ; byte count
+02:E6DA 26F3            	  1293:             bne dum1
+02:E6DC 7A0356          	  1294:             dec v                       ; page count
+                        	  1295: ; fall into crck 
+                        	  1296: ; 
+                        	  1297: ; crck shecks the crc and print a char 
+                        	  1298: ; 
+                        	  1299: ; ram: q, r, s, totcnt (from loadbyte) 
+                        	  1300: ; regs: acca (scratch, accb (from loadbyte) 
+                        	  1301: ; 
+02:E6DF 8D13            	  1302: crck:       bsr ldv                     ; ) input crc chars
+02:E6E1 8D11            	  1303:             bsr ldv                     ; )
+02:E6E3 B60354          	  1304:             ldaa r                      ; check crc registers
+02:E6E6 BA0355          	  1305:             oraa s
+02:E6E9 2604            	  1306:             bne crck1
+02:E6EB 8647            	  1307:             ldaa #'G'                   ;  print g for good crc
+02:E6ED 2002            	  1308:             bra crck2
+02:E6EF 8642            	  1309: crck1:      ldaa #'B'                   ;  print b for bad crc
+02:E6F1 7EE86F          	  1310: crck2:      jmp ttyo1                   ; print it!
+02:E6F4 7EE866          	  1311: ldv:        jmp loadbv                  ; get a tape byte in accb
+02:E6F7 2024            	  1312: startv:     bra startf
+                        	  1313: ; 
+                        	  1314: ; getfile looks for: 
+                        	  1315: ; 1) a start sequence 
+                        	  1316: ; 2) a headerecord type 
+                        	  1317: ; 3) a file id match with fidh, fidl 
+                        	  1318: ; and returns when found, or escaped 
+                        	  1319: ; 
+                        	  1320: ; regs: acca, accb (scratch only) 
+                        	  1321: ; 
+02:E6F9 8658            	  1322: g1:         ldaa #'X'                   ;  indicate wrong file found
+02:E6FB 8DF4            	  1323:             bsr crck2                   ; send char to tty
+02:E6FD 8D1E            	  1324: getfil:     bsr startf
+02:E6FF 271B            	  1325:             beq g2                      ; out iff escape
+02:E701 C108            	  1326:             cmpb #0x08                  ; headerecord-type?
+02:E703 26F8            	  1327:             bne getfil                  ; branch if not
+02:E705 8DED            	  1328:             bsr ldv                     ; get byte in accb
+02:E707 F10346          	  1329:             cmpb fidh                   ; good file id(h)?
+02:E70A 26ED            	  1330:             bne g1
+02:E70C 8DE6            	  1331:             bsr ldv
+02:E70E F10347          	  1332:             cmpb fidl                   ; good file id(l)?
+02:E711 26E6            	  1333:             bne g1
+02:E713 8648            	  1334:             ldaa #'H'                   ;  indicate header found
+02:E715 8DDA            	  1335:             bsr crck2
+02:E717 8DDB            	  1336:             bsr ldv
+02:E719 F70356          	  1337:             stab v                      ; store page count
+02:E71C 39              	  1338: g2:         rts
+                        	  1339: ; 
+                        	  1340: ; startfind looks for the 16-bit start sequence 89af 
+                        	  1341: ; returns with the next byte, the record type, 
+                        	  1342: ; in q and accb. 
+                        	  1343: ; 
+                        	  1344: ; ram: q, r, s, totcnt (perm), h (scratch) 
+                        	  1345: ; regs: acca, accb (scratch only) 
+                        	  1346: ; exit: falls into loadbyte, which 
+                        	  1347: ; falls into loadbit, which 
+                        	  1348: ; falls into crc 
+                        	  1349: ; escape: esc in command port gets out 
+                        	  1350: ; (test done in crc) 
+                        	  1351: ; 
+02:E71D 7F0350          	  1352: startf:     clr h                       ; accumulates 16 bits
+02:E720 7F0352          	  1353:             clr q
+02:E723 780352          	  1354: sta1:       asl q                       ; shift the 16-bit register
+02:E726 790350          	  1355:             rol h
+02:E729 8D24            	  1356:             bsr loadb1
+02:E72B 27EF            	  1357:             beq g2                      ; out iff escaped
+02:E72D B60350          	  1358:             ldaa h
+02:E730 F60352          	  1359:             ldab q
+02:E733 8189            	  1360:             cmpa #0x89                  ; start sequence
+02:E735 26EC            	  1361:             bne sta1
+02:E737 C1AF            	  1362:             cmpb #0xaf
+02:E739 26E8            	  1363:             bne sta1
+02:E73B 7F0354          	  1364: sta2:       clr r                       ; clear the crc register
+02:E73E 7F0355          	  1365:             clr s
+                        	  1366: ; fall into loadbyte to return a byte 
+                        	  1367: ; 
+                        	  1368: ; loadbyte recovers of data in q and accb, and does crc 
+                        	  1369: ; 
+                        	  1370: ; ram: q, r, s, totcnt (perm) 
+                        	  1371: ; regs: acca, accb (scratch only) 
+                        	  1372: ; exit: falls into loadbit, which 
+                        	  1373: ; falls into crc 
+                        	  1374: ; 
+02:E741 C602            	  1375: loadby:     ldab #0x02                  ; set stop
+02:E743 F70352          	  1376:             stab q
+02:E746 8D07            	  1377: load1:      bsr loadb1
+02:E748 27D2            	  1378:             beq g2                      ; out iff escape
+02:E74A 780352          	  1379:             asl q                       ; stop into carry?
+02:E74D 24F7            	  1380:             bcc load1                   ; branch if no
+                        	  1381: ; fall into loadbit for last bit 
+                        	  1382: ; 
+                        	  1383: ; loadbit recovers one bit of data in q and accb, 
+                        	  1384: ; and does crc in r and s 
+                        	  1385: ; 
+                        	  1386: ; ram: q, r, s, totcnt (perm) 
+                        	  1387: ; regs: acca, accb (scratch only) 
+                        	  1388: ; exit: branches or falls into crc routine 
+                        	  1389: ; data bit goes into q lsb 
+                        	  1390: ; 
+02:E74F 5F              	  1391: loadb1:     clrb
+02:E750 5A              	  1392: loadb6:     decb
+02:E751 271F            	  1393:             beq loadb5
+02:E753 8D43            	  1394:             bsr tain1v                  ; get tape data in carry
+02:E755 25F9            	  1395:             bcs loadb6                  ; wait for low
+02:E757 5A              	  1396: loadb2:     decb
+02:E758 2718            	  1397:             beq loadb5
+02:E75A 8D3C            	  1398:             bsr tain1v                  ; wait for high
+02:E75C 24F9            	  1399:             bcc loadb2                  ; ) (front of sync el)
+02:E75E F6034A          	  1400:             ldab totcnt                 ; 3.5 els delay
+02:E761 5A              	  1401: loadb3:     decb
+02:E762 270E            	  1402:             beq loadb5
+02:E764 8D32            	  1403:             bsr tain1v                  ; ) wait for low
+02:E766 25F9            	  1404:             bcs loadb3                  ; ) (end of sync el)
+02:E768 5A              	  1405: loadb4:     decb
+02:E769 2707            	  1406:             beq loadb5                  ; done yet?
+02:E76B 8D2B            	  1407:             bsr tain1v
+02:E76D 24F9            	  1408:             bcc loadb4
+02:E76F 7C0352          	  1409:             inc q                       ; store a '1'  bit
+02:E772 B60352          	  1410: loadb5:     ldaa q                      ; get data for crc
+                        	  1411: ; fall into crc1 
+                        	  1412: ; 
+                        	  1413: ; crc enters a bit into crc registers r and s 
+                        	  1414: ; uses crc polynomial: x16 + x15 + x2 + x0 
+                        	  1415: ; 
+                        	  1416: ; entry: acca holds new bit 
+                        	  1417: ; ram: r, s (perm) 
+                        	  1418: ; regs: acca, accb (scratch) 
+                        	  1419: ; exit: accb = q, z = 1 iff esc 
+                        	  1420: ; 
+02:E775 46              	  1421: crc1:       rora                        ; lsb into carry
+02:E776 46              	  1422:             rora                        ; carry into msb
+02:E777 8480            	  1423: crc2:       anda #0x80                  ; mask msb (data bit)
+02:E779 B80354          	  1424:             eora r                      ; enter data bit
+02:E77C F60355          	  1425:             ldab s
+02:E77F 58              	  1426:             aslb                        ; shift 16 bits left
+02:E780 49              	  1427:             rola
+02:E781 2404            	  1428:             bcc crc3                    ; if b16 high. . .
+02:E783 8880            	  1429:             eora #0x80                  ; enter crc polynomial
+02:E785 C805            	  1430:             eorb #0x05
+02:E787 B70354          	  1431: crc3:       staa r
+02:E78A F70355          	  1432:             stab s
+02:E78D F60352          	  1433:             ldab q
+02:E790 BDE86C          	  1434:             jsr ttyin1                  ; check for escape
+02:E793 847F            	  1435:             anda #0x7f                  ; mask parity
+02:E795 811B            	  1436:             cmpa #esc
+02:E797 39              	  1437:             rts
+02:E798 7EE860          	  1438: tain1v:     jmp tain1
+                        	  1439: ; 
+                        	  1440: ; byteout sends byte in acca to tape 
+                        	  1441: ; 
+                        	  1442: ; ram: r, s (changed in crc) 
+                        	  1443: ; regs: acca, accb (destroyed) 
+                        	  1444: ; exit: acca = 0, accb undefined 
+                        	  1445: ; 
+                        	  1446: ; acca = data byte (shifted) 
+                        	  1447: ; accb = recording pattern (one bit) 
+                        	  1448: ; 
+02:E79B 36              	  1449: byteou:     psha                        ; save the data byte
+02:E79C 8DD9            	  1450:             bsr crc2                    ; ) do the crc first
+02:E79E 32              	  1451:             pula                        ; recover the data byte
+02:E79F 0D              	  1452:             sec                         ; set stop
+02:E7A0 49              	  1453:             rola                        ; data bit into carry
+02:E7A1 2006            	  1454:             bra by2
+02:E7A3 32              	  1455: by1:        pula                        ; recover from done test
+02:E7A4 36              	  1456:             psha                        ; save shifting byte
+02:E7A5 8DD0            	  1457:             bsr crc2
+02:E7A7 32              	  1458:             pula                        ; recover shifting byte
+02:E7A8 48              	  1459:             asla                        ; data bit into carry
+02:E7A9 C60A            	  1460: by2:        ldab #0x0a                  ; recording pattern
+02:E7AB BDE863          	  1461: by3:        jsr taou1                   ; send accb to tape
+02:E7AE 37              	  1462:             pshb                        ; save pattern
+02:E7AF F6034C          	  1463:             ldab patdel                 ; element delay
+02:E7B2 5A              	  1464: by4:        decb
+02:E7B3 26FD            	  1465:             bne by4                     ; branch if element not done
+02:E7B5 33              	  1466:             pulb                        ; recover pattern
+02:E7B6 59              	  1467:             rolb                        ; next element (data from carry)
+02:E7B7 24F2            	  1468:             bcc by3                     ; branch if pattern not done
+02:E7B9 36              	  1469:             psha                        ; save data byte before test
+02:E7BA 48              	  1470:             asla                        ; test acca
+02:E7BB 26E6            	  1471:             bne by1                     ; branch if byte not done
+02:E7BD 31              	  1472: by5:        ins                         ; restore stack
+02:E7BE 39              	  1473:             rts
+                        	  1474: ; 
+                        	  1475: ; preamble sends out alc bits, and the start sequence, 
+                        	  1476: ; then inits the crc registers 
+                        	  1477: ; 
+                        	  1478: ; ram: r, s (changed) 
+                        	  1479: ; regs: acca, accb (destroyed) 
+                        	  1480: ; exit: acca = 0, accb undefined 
+                        	  1481: ; 
+02:E7BF 8D2E            	  1482: preamb:     bsr bytov1                  ; alc bits
+02:E7C1 8D2C            	  1483:             bsr bytov1
+02:E7C3 8689            	  1484:             ldaa #0x89                  ; start sequence (h)
+02:E7C5 8D28            	  1485:             bsr bytov1
+02:E7C7 86AF            	  1486:             ldaa #0xaf                  ; start sequence (l)
+02:E7C9 8D24            	  1487:             bsr bytov1
+02:E7CB 7F0354          	  1488:             clr r                       ; ) clear the crc registers
+02:E7CE 7F0355          	  1489:             clr s                       ; )
+02:E7D1 39              	  1490:             rts
+                        	  1491: ; 
+                        	  1492: ; headerecord sends alc bits, the start sequence, 
+                        	  1493: ; headrecord-type, file id, and the number of 
+                        	  1494: ; pages to be dumped 
+                        	  1495: ; 
+                        	  1496: ; ram: fidh, fidl (unmodified) 
+                        	  1497: ; r, s (changed) 
+                        	  1498: ; regs: acca, accb (destroyed) 
+                        	  1499: ; exit: acca = 0, accb undefined 
+                        	  1500: ; 
+02:E7D2 8D1B            	  1501: header:     bsr bytov1                  ; alc bits
+02:E7D4 8D19            	  1502:             bsr bytov1
+02:E7D6 8DE7            	  1503:             bsr preamb                  ; start a record
+02:E7D8 8608            	  1504:             ldaa #0x08                  ; headertype
+02:E7DA 8D13            	  1505:             bsr bytov1
+02:E7DC B60346          	  1506:             ldaa fidh                   ; file id(h)
+02:E7DF 8D0E            	  1507:             bsr bytov1
+02:E7E1 B60347          	  1508:             ldaa fidl                   ; file id(l)
+02:E7E4 8D09            	  1509:             bsr bytov1
+02:E7E6 B60349          	  1510:             ldaa stoppg                 ; stopage
+02:E7E9 B00348          	  1511:             suba startp                 ; startpage
+02:E7EC 4C              	  1512:             inca
+02:E7ED 8D00            	  1513:             bsr bytov1                  ; send # pages
+02:E7EF 7EE869          	  1514: bytov1:     jmp byteov                  ; extra bits
+                        	  1515: ; 
+                        	  1516: ; trailerecord sends a trailerecord to tape 
+                        	  1517: ; 
+                        	  1518: ; ram: r, s (perm) 
+                        	  1519: ; regs: acca, abbc (destroyed) 
+                        	  1520: ; 
+02:E7F2 8DCB            	  1521: trailr:     bsr preamb                  ; start a record
+02:E7F4 8620            	  1522:             ldaa #0x20                  ; trailerecord type
+02:E7F6 8DF7            	  1523:             bsr bytov1
+02:E7F8 20F5            	  1524:             bra bytov1                  ; extra bits
+                        	  1525: ; 
+                        	  1526: ; dumpagerecord sends the start sequence, dumpage-type, 
+                        	  1527: ; page number, 2048 bits data, and the crc characters 
+                        	  1528: ; 
+                        	  1529: ; ram: h, r, s (perm); l (scratch) 
+                        	  1530: ; regs: acca, accb (destroyed), new ix 
+                        	  1531: ; exit: acca = 0 
+                        	  1532: ; 
+02:E7FA 8DC3            	  1533: dumpag:     bsr preamb                  ; start a record
+02:E7FC 8610            	  1534:             ldaa #0x10                  ; dumpage type
+02:E7FE 8DEF            	  1535:             bsr bytov1
+02:E800 B60350          	  1536:             ldaa h                      ; send page number
+02:E803 8DEA            	  1537:             bsr bytov1
+02:E805 7F0351          	  1538:             clr l                       ; do entire page
+02:E808 FE0350          	  1539:             ldx h                       ; point at the data
+02:E80B A600            	  1540: dump1:      ldaa 0,x
+02:E80D 8DE0            	  1541:             bsr bytov1                  ; send data
+02:E80F 08              	  1542:             inx
+02:E810 7C0351          	  1543:             inc l                       ; byte ctr
+02:E813 26F6            	  1544:             bne dump1
+02:E815 8D07            	  1545:             bsr sencrc
+02:E817 8644            	  1546:             ldaa #'D'                   ;  print d for each page dumped
+02:E819 8D54            	  1547:             bsr ttyo1
+02:E81B 4F              	  1548:             clra
+02:E81C 20D1            	  1549:             bra bytov1                  ; extra bits
+                        	  1550: ; 
+                        	  1551: ; sencrc sends the crc registers to tape 
+                        	  1552: ; 
+                        	  1553: ; 
+                        	  1554: ; ram: r, s (freed after this); l (scratch) 
+                        	  1555: ; regs: acca, accb (destroyed) 
+                        	  1556: ; 
+02:E81E B60355          	  1557: sencrc:     ldaa s
+02:E821 B70351          	  1558:             staa l                      ; temporary crc(l) storage
+02:E824 B60354          	  1559:             ldaa r
+02:E827 8DC6            	  1560:             bsr bytov1                  ; send crc(h)
+02:E829 B60351          	  1561:             ldaa l
+02:E82C 20C1            	  1562:             bra bytov1                  ; send crc(l)
+                        	  1563: ; 
+                        	  1564: ; masterdump sends a complete file to tape: 
+                        	  1565: ; headerecore, dumpagerecords (1-256), trailerecord 
+                        	  1566: ; 
+                        	  1567: ; ram: startp, stoppg (unmodified) 
+                        	  1568: ; h, l (temp) 
+                        	  1569: ; regs: new everything 
+                        	  1570: ; 
+02:E82E 8D45            	  1571: master:     bsr dsetup                  ; setup dump port
+02:E830 8DA0            	  1572:             bsr header                  ; send headerecord
+02:E832 B60348          	  1573:             ldaa startp                 ; get startpage
+02:E835 B70350          	  1574:             staa h                      ; present page
+02:E838 7A0350          	  1575:             dec h
+02:E83B 7C0350          	  1576: mast1:      inc h
+02:E83E 8DBA            	  1577:             bsr dumpag
+02:E840 B68009          	  1578:             ldaa tty
+02:E843 847F            	  1579:             anda #0x7f
+02:E845 811B            	  1580:             cmpa #esc
+02:E847 2708            	  1581:             beq mast3
+02:E849 F60349          	  1582:             ldab stoppg                 ; get stopage
+02:E84C F10350          	  1583:             cmpb h                      ; present page
+02:E84F 26EA            	  1584:             bne mast1                   ; branch if not done
+02:E851 8D9F            	  1585: mast3:      bsr trailr                  ; send trailerecord
+02:E853 39              	  1586: mast2:      rts
+02:E854 7F8005          	  1587: setup:      clr tacon                   ; into data direction reg.
+02:E857 8604            	  1588:             ldaa #0x04                  ; b2 an output, rest inputs
+02:E859 B78004          	  1589:             staa tp                     ; (only b0 used for input)
+02:E85C B78005          	  1590:             staa tacon                  ; back to data register
+02:E85F 39              	  1591:             rts
+                        	  1592: ; 
+                        	  1593: ; vectors- in other versions of this tape 
+                        	  1594: ; interface these vectors will be implemented 
+                        	  1595: ; in ram to allow the user access to 
+                        	  1596: ; the tape system. 
+                        	  1597: ; 
+02:E860 7EE878          	  1598: tain1:      jmp tain2                   ; tape in port vector
+02:E863 7EE885          	  1599: taou1:      jmp taou2                   ; tape out port vector
+02:E866 7EE741          	  1600: loadbv:     jmp loadby                  ; tape byte in vector
+02:E869 7EE79B          	  1601: byteov:     jmp byteou                  ; tape byte out vector
+02:E86C 7EE87D          	  1602: ttyin1:     jmp ttyin2                  ; control in port vector
+02:E86F 7EE881          	  1603: ttyo1:      jmp ttyo2                   ; control out port vector
+02:E872 7EE854          	  1604: lsetup:     jmp setup                   ; tape out pia init
+02:E875 7EE854          	  1605: dsetup:     jmp setup                   ; tape in pai init
+                        	  1606: ; 
+                        	  1607: ; 
+02:E878 B68004          	  1608: tain2:      ldaa tp                     ; acca from tape
+02:E87B 46              	  1609:             rora                        ; data bit in carry
+02:E87C 39              	  1610:             rts
+02:E87D B68009          	  1611: ttyin2:     ldaa tty                    ; acca from acia
+02:E880 39              	  1612:             rts
+02:E881 B78009          	  1613: ttyo2:      staa tty                    ; send acca to acia
+02:E884 39              	  1614:             rts
+02:E885 F78004          	  1615: taou2:      stab tp                     ; accb to tape
+02:E888 39              	  1616:             rts
+                        	  1617: ; 
+                        	  1618: ; copyright (c) 1977 motorola inc - austin texas 
+                        	  1619: ; 
+                        	  1620: ; 
+                        	  1621: ; 
+                        	  1622: ; 
+                        	  1623: ; unsigned multiply ----- 
+                        	  1624: ; 
+                        	  1625: ; this routine multiplies the unsigned number in the 
+                        	  1626: ; a register with the unsigned number in the b 
+                        	  1627: ; register and puts the answers in the concatenated 
+                        	  1628: ; a:b where a is the msb. the routine is 
+                        	  1629: ; re-entrant and position independent as well 
+                        	  1630: ; as being romable. the x register is destroyed 
+                        	  1631: ; by the routine. 
+                        	  1632: ; 
+                        	  1633: ; during execution the stack contains: 
+                        	  1634: ; 0,x = loop counter 
+                        	  1635: ; 1,x = multiplier (b reg on entry) 
+                        	  1636: ; 
+                        	  1637: ; the algorithm used may not appear the fastest 
+                        	  1638: ; on paper because it always requires 8 passes 
+                        	  1639: ; the the loop but because of the fact all 
+                        	  1640: ; calculations can be done in the registers it 
+                        	  1641: ; is faster except for when the multiplicand 
+                        	  1642: ; is very small (<10). the method is a shift and 
+                        	  1643: ; add technique that begings with the ms bit 
+                        	  1644: ; and works down to the ls bit. 
+                        	  1645: ; 
+                        	  1646: ; execution time: (29 + zeroes19 + ones26) cycles 
+                        	  1647: ; where zeroes and ones are the 0'S AND 1's in 
+                        	  1648: ; the a-reg on call. 
+                        	  1649: ; 
+                        	  1650: ; average execution time: 209 cycles 
+                        	  1651: ; 
+                        	  1652: ; 
+                        	  1653: ; 
+02:E889 37              	  1654: mul_:       pshb
+02:E88A C608            	  1655:             ldab #8                     ; put counter on stack
+02:E88C 37              	  1656:             pshb
+02:E88D 30              	  1657:             tsx                         ; set x to point to stack
+02:E88E 5F              	  1658:             clrb                        ; clear place to start answer
+02:E88F 58              	  1659: ml1:        aslb                        ; shift ans 1 left and into a
+02:E890 49              	  1660:             rola                        ; shift whats left of the multiplier
+02:E891 2404            	  1661:             bcc ml2                     ; branch if no add needed
+02:E893 EB01            	  1662:             addb 1,x                    ; add multiplier at this position
+02:E895 8900            	  1663:             adca #0                     ; add carry to a if any
+02:E897 6A00            	  1664: ml2:        dec 0,x                     ; done?
+02:E899 26F4            	  1665:             bne ml1                     ; nope
+02:E89B 31              	  1666:             ins                         ; yes,clean up the stack
+02:E89C 31              	  1667:             ins
+02:E89D 39              	  1668:             rts
+                        	  1669: ; 
+                        	  1670: ; 
+                        	  1671: ; 
+                        	  1672: ; signed multiply ----- 
+                        	  1673: ; 
+                        	  1674: ; this routine multiplies the two signed numbers in 
+                        	  1675: ; the a and b registers and puts the signed 
+                        	  1676: ; 16 bit answer in the concatenated a:b where 
+                        	  1677: ; the a register is the msb. this routine destroys 
+                        	  1678: ; the caller's x-register. 
+                        	  1679: ; 
+                        	  1680: ; during execution the stack contains: 
+                        	  1681: ; 0,x = flag 
+                        	  1682: ; 
+                        	  1683: ; the routine is pure,re-entrant and position independent. 
+                        	  1684: ; 
+                        	  1685: ; the method use evaluates each argument and if it 
+                        	  1686: ; is negative it is 2's complemented and the flag is 
+                        	  1687: ; incremented. if after evaluating both arguments the 
+                        	  1688: ; flag is even (0 or 2) then the answer will be positive, 
+                        	  1689: ; else,the answer will need to be 2's complemented. 
+                        	  1690: ; unsigned multiple routine is used to multiply the 
+                        	  1691: ; corrected registers 
+                        	  1692: ; 
+                        	  1693: ; average executions times: 
+                        	  1694: ; a-reg b-reg 
+                        	  1695: ; + + 268 average 
+                        	  1696: ; + - 283 average 
+                        	  1697: ; - + 283 average 
+                        	  1698: ; - - 286 average 
+                        	  1699: ; 
+                        	  1700: ; 
+                        	  1701: ; 
+                        	  1702: ; 
+02:E89E 34              	  1703: smul:       des                         ; carve out a place on the stack f...
+02:E89F 30              	  1704:             tsx                         ; get pointer to that place
+02:E8A0 6F00            	  1705:             clr 0,x                     ; clear flag
+02:E8A2 4D              	  1706:             tsta                        ; check multiplier
+02:E8A3 2A03            	  1707:             bpl sml1                    ; positive, no comp. needed
+02:E8A5 40              	  1708:             nega                        ; 2's comp. argument
+02:E8A6 6C00            	  1709:             inc 0,x                     ; incr flag
+02:E8A8 5D              	  1710: sml1:       tstb                        ; test other arg
+02:E8A9 2A03            	  1711:             bpl sml2                    ; no comp needed
+02:E8AB 50              	  1712:             negb
+02:E8AC 6C00            	  1713:             inc 0,x                     ; incr flag
+02:E8AE 8DD9            	  1714: sml2:       bsr mul_                    ; go do unsigned multiply
+02:E8B0 30              	  1715:             tsx                         ; get back ptr to flag
+02:E8B1 6600            	  1716:             ror 0,x                     ; see if flag is even or odd
+02:E8B3 2404            	  1717:             bcc sml3                    ; even answer is okay 'cause its f...
+02:E8B5 40              	  1718:             nega                        ; dbl precision 2's comp
+02:E8B6 50              	  1719:             negb
+02:E8B7 8200            	  1720:             sbca #0
+02:E8B9 31              	  1721: sml3:       ins                         ; cleanup stack
+02:E8BA 39              	  1722:             rts                         ; return to caller
+                        	  1723: ; 
+                        	  1724: ; 
+                        	  1725: ; 
+                        	  1726: ; postive divide ----- 
+                        	  1727: ; 
+                        	  1728: ; this routine divides the 16 bit positive dividend 
+                        	  1729: ; in the a:b registers (a is the msb) by an 8 
+                        	  1730: ; bit positive divisor pointed to by the x-register. 
+                        	  1731: ; the quotient is in b on exit and the remainder 
+                        	  1732: ; is in the a-register. the x-register is 
+                        	  1733: ; destroyed. 
+                        	  1734: ; if division by zero was attempted or the 
+                        	  1735: ; quotient will not fit in 8 bits the overflow 
+                        	  1736: ; bit is set on exit. also v is set if either 
+                        	  1737: ; the dividend or the divisor is negative on call. 
+                        	  1738: ; otherwise v is cleared. 
+                        	  1739: ; 
+                        	  1740: ; 
+                        	  1741: ; the routing is pure,re-entrant and position independent. 
+                        	  1742: ; 
+                        	  1743: ; during execution the stack contains 
+                        	  1744: ; 0,x = loop counter 
+                        	  1745: ; 1,x = divisor 
+                        	  1746: ; 2,x = dividend msb (only used for temp store) 
+                        	  1747: ; 
+                        	  1748: ; the method used is non restoring divide where the 
+                        	  1749: ; dividend and divisor and known to be positive. this 
+                        	  1750: ; method proved fastest since it can be carried out 
+                        	  1751: ; essentially in the accumulators. the algorithm tries 
+                        	  1752: ; to get the remainder as near zero as possible 
+                        	  1753: ; and sometimes adds the divisor and sometimes 
+                        	  1754: ; subtracts it depending on which side of zero the 
+                        	  1755: ; partial remainder resides at any time. for more 
+                        	  1756: ; info read: 'AN ALGORITHM FOR NON RESTORING DIVISION' 
+                        	  1757: ; s. sanyal ; 'COMPUTER DESIGN' / may 1997. 
+                        	  1758: ; 
+                        	  1759: ; execution time average (no overflows): 289 cycles 
+                        	  1760: ; this time is relatively independent of the 
+                        	  1761: ; calling values. 
+                        	  1762: ; 
+                        	  1763: ; 
+                        	  1764: ; 
+                        	  1765: ; 
+02:E8BB 36              	  1766: div:        psha                        ; save dividend msb a second
+02:E8BC A600            	  1767:             ldaa 0,x                    ; fetch the divisor
+02:E8BE 2B29            	  1768:             bmi divov2                  ; negative divisor is a no-no
+02:E8C0 36              	  1769:             psha                        ; push it
+02:E8C1 8608            	  1770:             ldaa #8                     ; push loop ctr
+02:E8C3 36              	  1771:             psha
+02:E8C4 30              	  1772:             tsx                         ; point x to stack
+02:E8C5 A602            	  1773:             ldaa 2,x                    ; restore original dividend msb
+02:E8C7 A101            	  1774:             cmpa 1,x                    ; will quotient overflow? (als d!
+02:E8C9 241C            	  1775:             bcc divovf                  ; yes,go set v and exit
+02:E8CB 58              	  1776: dloop:      aslb                        ; shift dividend-answer left
+02:E8CC 49              	  1777:             rola
+02:E8CD 2404            	  1778:             bcc dl2                     ; is dividend ms bit set?
+02:E8CF AB01            	  1779:             adda 1,x                    ; yes,add divisor to msb
+02:E8D1 2003            	  1780:             bra dl3
+02:E8D3 A001            	  1781: dl2:        suba 1,x                    ; no,sub divisor from msb
+02:E8D5 5C              	  1782:             incb                        ; set bit in result
+02:E8D6 6A00            	  1783: dl3:        dec 0,x                     ; done?
+02:E8D8 26F1            	  1784:             bne dloop                   ; no
+02:E8DA 0D              	  1785:             sec                         ; shift a 1 in ls bit of quotient
+02:E8DB 59              	  1786:             rolb                        ; case thats okay, correct latter
+02:E8DC 4D              	  1787:             tsta                        ; is remainder negative?
+02:E8DD 2A04            	  1788:             bpl dl4                     ; no,everything's okay
+02:E8DF 5A              	  1789:             decb                        ; reset quotient ls bit
+02:E8E0 AB01            	  1790:             adda 1,x                    ; add divisor to get + remainder
+02:E8E2 0A              	  1791:             clv                         ; insure v is cleared
+02:E8E3 31              	  1792: dl4:        ins                         ; clean up the stack
+02:E8E4 31              	  1793:             ins
+02:E8E5 31              	  1794:             ins
+02:E8E6 39              	  1795:             rts                         ; return
+                        	  1796: ; 
+02:E8E7 31              	  1797: divovf:     ins                         ; clean up stack
+02:E8E8 31              	  1798:             ins
+02:E8E9 31              	  1799: divov2:     ins
+02:E8EA 0B              	  1800:             sev                         ; set the overflow flag
+02:E8EB 39              	  1801:             rts
+                        	  1802: ; 
+                        	  1803: ; interrupt vectors 
+                        	  1804: ; 
+                        	  1805:             .org 0xFFF8
+                        	  1806: 
+03:FFF8 E100            	  1807:             .word io
+03:FFFA E10A            	  1808:             .word sfei
+03:FFFC E105            	  1809:             .word powdwn
+03:FFFE E27B            	  1810:             .word start
+                        	  1811: 
+
+
+Symbols by name:
+RAM_PTR                          S:0357
+aciad                            A:E011
+acias                            A:E010
+aciat                            S:0345
+adrstr                           A:E139
+asave                            S:033C
+baddr                            A:E147
+baddrj                           A:E308
+baseorg                          A:E100
+bega                             S:0302
+bkcon1                           A:E385
+bkcon2                           A:E392
+bkcon3                           A:E394
+bkdone                           A:E3A3
+bkput                            A:E3A0
+branen                           S:0316
+brg                              A:E144
+brg1                             A:E4EB
+brg2                             A:E4ED
+brgo                             A:E4E2
+brgodc                           A:E4FD
+brins                            S:030E
+brk2                             A:E382
+brkadr                           S:031C
+brkinh                           A:E4A0
+brkins                           S:032C
+brklp                            A:E373
+brksin                           S:0342
+brksub                           A:E36A
+brktrc                           S:0343
+brnogo                           A:E4DE
+bsrbrk                           A:E30D
+by1                              A:E7A3
+by2                              A:E7A9
+by3                              A:E7AB
+by4                              A:E7B2
+by5                              A:E7BD
+byte                             A:E155
+byte2                            A:E157
+bytect                           S:033D
+byteou                           A:E79B
+byteov                           A:E869
+bytov1                           A:E7EF
+c1                               A:E21A
+c12                              A:E68F
+cha1                             A:E228
+chang                            A:E222
+change                           A:E21D
+check                            A:E689
+ckobra                           A:E50B
+cksm                             S:033C
+cl                               S:034D
+cll                              S:034E
+clll                             S:034F
+clrbrk                           A:E3CF
+cnta                             A:E2D3
+cntrl2                           A:E367
+cont                             A:E354
+contb                            A:E2AE
+contrc                           A:E4CB
+contrl                           A:E2BA
+crc1                             A:E775
+crc2                             A:E777
+crc3                             A:E787
+crck                             A:E6DF
+crck1                            A:E6EF
+crck2                            A:E6F1
+ctrl                             A:E4A3
+delbrk                           A:E30B
+div                              A:E8BB
+divov2                           A:E8E9
+divovf                           A:E8E7
+dl2                              A:E8D3
+dl3                              A:E8D6
+dl4                              A:E8E3
+dloop                            A:E8CB
+dsetup                           A:E875
+dum1                             A:E6CF
+dump1                            A:E80B
+dumpag                           A:E7FA
+dumpr                            A:E6C4
+enda                             S:0304
+endin0                           S:0344
+ent1                             A:E2A4
+enter                            A:E1E3
+eot                              S:0004
+err                              A:E601
+esc                              S:001B
+exor                             A:E606
+exort                            A:E5FC
+fctabl                           A:E10F
+fctben                           A:E139
+fidh                             S:0346
+fidl                             S:0347
+fndrpl                           A:E3C1
+g1                               A:E6F9
+g2                               A:E71C
+get1                             A:E6B3
+get2                             A:E6A1
+get3                             A:E6BE
+get4                             A:E6C3
+get5                             A:E6C0
+getadd                           A:E185
+getfil                           A:E6FD
+getloa                           A:E69A
+goodch                           A:E2E7
+goto                             A:E325
+h                                S:0350
+header                           A:E7D2
+in1hg                            A:E1BE
+inch                             A:E178
+inch1                            A:E266
+inch2                            A:E2AC
+incnov                           A:E49B
+incx_                            A:E503
+incxr                            A:E50A
+inhex                            A:E1AA
+inhex2                           A:E1AC
+inilp1                           A:E281
+inilp2                           A:E28A
+inxlp                            A:E506
+inz                              A:E29C
+inz1                             A:E29E
+io                               A:E100
+iov                              S:0300
+jmpext                           A:E535
+jmpidx                           A:E52E
+l                                S:0351
+ldv                              A:E6F4
+lf                               A:E240
+ln                               A:E3A7
+load                             A:E1D0
+load1                            A:E746
+load11                           A:E202
+load15                           A:E213
+load19                           A:E216
+load2                            A:E68D
+load3                            A:E1DF
+load4                            A:E1E6
+loadb1                           A:E74F
+loadb2                           A:E757
+loadb3                           A:E761
+loadb4                           A:E768
+loadb5                           A:E772
+loadb6                           A:E750
+loadbv                           A:E866
+loadby                           A:E741
+loadv                            A:E687
+lsetup                           A:E872
+mast1                            A:E83B
+mast2                            A:E853
+mast3                            A:E851
+master                           A:E82E
+mcl                              A:E57D
+mcl1                             A:E586
+mcl2                             A:E58D
+mcl3                             A:E598
+mcl4                             A:E5A5
+mcl5                             A:E5B0
+mcloff                           A:E57C
+mcont                            S:033D
+meof                             A:E571
+ml1                              A:E88F
+ml2                              A:E897
+msg1                             A:E5BB
+msg2                             A:E5C8
+msg3                             A:E5D2
+msg4                             A:E5DC
+msg5                             A:E5EE
+mtape1                           A:E3F9
+mul_                             A:E889
+nbktrc                           A:E4BF
+nbrbpt                           S:0008
+next                             A:E337
+nio                              S:0306
+nmi                              A:E2EB
+nobrin                           A:E3B5
+ntrace                           S:031A
+nxtchr                           A:E2D9
+opbt3                            A:E55F
+opbtrt                           A:E560
+opbttb                           A:E561
+opcbyt                           A:E543
+ot2hs                            A:E3D5
+ot4hs                            A:E3D8
+out2                             A:E2D1
+out2h                            A:E1BF
+out2ha                           A:E1C1
+out2hs                           A:E1CA
+out4hs                           A:E1C8
+outc1                            A:E25A
+outch                            A:E175
+outch1                           A:E259
+outhl                            A:E167
+outhr                            A:E16B
+outs                             A:E1CC
+outsw                            S:0316
+patdel                           S:034C
+pcrlf                            A:E19E
+pdat1p                           A:E5F9
+pdata                            A:E5F6
+pdata1                           A:E17E
+pdata2                           A:E17B
+pntbrk                           A:E316
+pnull                            A:E40C
+powdwn                           A:E105
+preamb                           A:E7BF
+print                            A:E3E2
+prntbk                           A:E3DB
+pstak                            A:E365
+pstak1                           A:E35C
+pun11                            A:E419
+pun22                            A:E42B
+pun23                            A:E42D
+pun32                            A:E44D
+punch                            A:E402
+punt2                            A:E471
+q                                S:0352
+r                                S:0354
+rstbrk                           A:E311
+rtisim                           A:E539
+rtssim                           A:E53E
+s                                S:0355
+sencrc                           A:E81E
+setbrk                           A:E31D
+setup                            A:E854
+sfei                             A:E10A
+sml1                             A:E8A8
+sml2                             A:E8AE
+sml3                             A:E8B9
+smul                             A:E89E
+soft                             A:E60C
+sp                               S:0308
+spd                              A:E2FE
+ssave                            S:0340
+sta1                             A:E723
+sta2                             A:E73B
+stack                            S:0100
+start                            A:E27B
+startf                           A:E71D
+startp                           S:0348
+startv                           A:E6F7
+stoppg                           S:0349
+swi1                             S:030A
+swi15                            A:E476
+swi151                           A:E485
+swi2                             S:030C
+swiop                            S:003F
+t1                               S:034D
+tacon                            S:8005
+tain1                            A:E860
+tain1v                           A:E798
+tain2                            A:E878
+taou1                            A:E863
+taou2                            A:E885
+temp                             S:033C
+ti1                              A:E60F
+ti2                              A:E64A
+ti2a                             A:E611
+ti4                              A:E659
+tin1                             A:E622
+tin2                             A:E62B
+tin3                             A:E634
+tin4                             A:E63D
+tin5                             A:E644
+tin6                             A:E653
+tin7                             A:E67C
+tin8                             A:E647
+tins                             A:E606
+tinss                            A:E60C
+totcnt                           S:034A
+tp                               S:8004
+trace                            A:E350
+trace2                           A:E33A
+trace3                           A:E33D
+trailr                           A:E7F2
+trcadr                           S:0317
+trcinh                           A:E4A6
+trcins                           S:0319
+tty                              S:8009
+ttyin1                           A:E86C
+ttyin2                           A:E87D
+ttyo1                            A:E86F
+ttyo2                            A:E881
+tw                               S:0340
+ua                               A:E243
+ua1                              A:E248
+v                                S:0356
+xhi                              S:033E
+xlow                             S:033F
+
+Symbols by value:
+0004 eot
+0008 nbrbpt
+001B esc
+003F swiop
+0100 stack
+0300 iov
+0302 bega
+0304 enda
+0306 nio
+0308 sp
+030A swi1
+030C swi2
+030E brins
+0316 outsw
+0316 branen
+0317 trcadr
+0319 trcins
+031A ntrace
+031C brkadr
+032C brkins
+033C temp
+033C cksm
+033C asave
+033D bytect
+033D mcont
+033E xhi
+033F xlow
+0340 ssave
+0340 tw
+0342 brksin
+0343 brktrc
+0344 endin0
+0345 aciat
+0346 fidh
+0347 fidl
+0348 startp
+0349 stoppg
+034A totcnt
+034C patdel
+034D cl
+034D t1
+034E cll
+034F clll
+0350 h
+0351 l
+0352 q
+0354 r
+0355 s
+0356 v
+0357 RAM_PTR
+8004 tp
+8005 tacon
+8009 tty
+E010 acias
+E011 aciad
+E100 io
+E100 baseorg
+E105 powdwn
+E10A sfei
+E10F fctabl
+E139 adrstr
+E139 fctben
+E144 brg
+E147 baddr
+E155 byte
+E157 byte2
+E167 outhl
+E16B outhr
+E175 outch
+E178 inch
+E17B pdata2
+E17E pdata1
+E185 getadd
+E19E pcrlf
+E1AA inhex
+E1AC inhex2
+E1BE in1hg
+E1BF out2h
+E1C1 out2ha
+E1C8 out4hs
+E1CA out2hs
+E1CC outs
+E1D0 load
+E1DF load3
+E1E3 enter
+E1E6 load4
+E202 load11
+E213 load15
+E216 load19
+E21A c1
+E21D change
+E222 chang
+E228 cha1
+E240 lf
+E243 ua
+E248 ua1
+E259 outch1
+E25A outc1
+E266 inch1
+E27B start
+E281 inilp1
+E28A inilp2
+E29C inz
+E29E inz1
+E2A4 ent1
+E2AC inch2
+E2AE contb
+E2BA contrl
+E2D1 out2
+E2D3 cnta
+E2D9 nxtchr
+E2E7 goodch
+E2EB nmi
+E2FE spd
+E308 baddrj
+E30B delbrk
+E30D bsrbrk
+E311 rstbrk
+E316 pntbrk
+E31D setbrk
+E325 goto
+E337 next
+E33A trace2
+E33D trace3
+E350 trace
+E354 cont
+E35C pstak1
+E365 pstak
+E367 cntrl2
+E36A brksub
+E373 brklp
+E382 brk2
+E385 bkcon1
+E392 bkcon2
+E394 bkcon3
+E3A0 bkput
+E3A3 bkdone
+E3A7 ln
+E3B5 nobrin
+E3C1 fndrpl
+E3CF clrbrk
+E3D5 ot2hs
+E3D8 ot4hs
+E3DB prntbk
+E3E2 print
+E3F9 mtape1
+E402 punch
+E40C pnull
+E419 pun11
+E42B pun22
+E42D pun23
+E44D pun32
+E471 punt2
+E476 swi15
+E485 swi151
+E49B incnov
+E4A0 brkinh
+E4A3 ctrl
+E4A6 trcinh
+E4BF nbktrc
+E4CB contrc
+E4DE brnogo
+E4E2 brgo
+E4EB brg1
+E4ED brg2
+E4FD brgodc
+E503 incx_
+E506 inxlp
+E50A incxr
+E50B ckobra
+E52E jmpidx
+E535 jmpext
+E539 rtisim
+E53E rtssim
+E543 opcbyt
+E55F opbt3
+E560 opbtrt
+E561 opbttb
+E571 meof
+E57C mcloff
+E57D mcl
+E586 mcl1
+E58D mcl2
+E598 mcl3
+E5A5 mcl4
+E5B0 mcl5
+E5BB msg1
+E5C8 msg2
+E5D2 msg3
+E5DC msg4
+E5EE msg5
+E5F6 pdata
+E5F9 pdat1p
+E5FC exort
+E601 err
+E606 tins
+E606 exor
+E60C tinss
+E60C soft
+E60F ti1
+E611 ti2a
+E622 tin1
+E62B tin2
+E634 tin3
+E63D tin4
+E644 tin5
+E647 tin8
+E64A ti2
+E653 tin6
+E659 ti4
+E67C tin7
+E687 loadv
+E689 check
+E68D load2
+E68F c12
+E69A getloa
+E6A1 get2
+E6B3 get1
+E6BE get3
+E6C0 get5
+E6C3 get4
+E6C4 dumpr
+E6CF dum1
+E6DF crck
+E6EF crck1
+E6F1 crck2
+E6F4 ldv
+E6F7 startv
+E6F9 g1
+E6FD getfil
+E71C g2
+E71D startf
+E723 sta1
+E73B sta2
+E741 loadby
+E746 load1
+E74F loadb1
+E750 loadb6
+E757 loadb2
+E761 loadb3
+E768 loadb4
+E772 loadb5
+E775 crc1
+E777 crc2
+E787 crc3
+E798 tain1v
+E79B byteou
+E7A3 by1
+E7A9 by2
+E7AB by3
+E7B2 by4
+E7BD by5
+E7BF preamb
+E7D2 header
+E7EF bytov1
+E7F2 trailr
+E7FA dumpag
+E80B dump1
+E81E sencrc
+E82E master
+E83B mast1
+E851 mast3
+E853 mast2
+E854 setup
+E860 tain1
+E863 taou1
+E866 loadbv
+E869 byteov
+E86C ttyin1
+E86F ttyo1
+E872 lsetup
+E875 dsetup
+E878 tain2
+E87D ttyin2
+E881 ttyo2
+E885 taou2
+E889 mul_
+E88F ml1
+E897 ml2
+E89E smul
+E8A8 sml1
+E8AE sml2
+E8B9 sml3
+E8BB div
+E8CB dloop
+E8D3 dl2
+E8D6 dl3
+E8E3 dl4
+E8E7 divovf
+E8E9 divov2
