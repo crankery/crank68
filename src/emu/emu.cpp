@@ -16,10 +16,6 @@ struct termios orig_termios;
 
 void reset_terminal_mode()
 {
-    char exitString[20];
-    strcpy(exitString, "\r\n\r\n(Exit)\r\n");
-    write(1, exitString, strlen(exitString));
-
     tcsetattr(0, TCSANOW, &orig_termios);
 }
 
@@ -86,7 +82,7 @@ void run()
         }
 
         // slow it down, logs are huge
-        usleep(500);
+        usleep(5000);
     }
 }
 
@@ -129,11 +125,16 @@ int main(int argc, char **argv)
     }
     catch (const std::exception &e)
     {
-        fprintf(stderr, "CPU stopped: %s\n", e.what());
+        reset_terminal_mode();
+        fprintf(stderr, "%s", e.what());
         result = 1;
     }
 
     Machine::instance().endTrace();
+
+    reset_terminal_mode();
+
+    printf("\r\n(exit)\r\n");
 
     return result;
 }

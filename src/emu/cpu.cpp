@@ -257,10 +257,10 @@ void Cpu::reset()
 [[noreturn]] void Cpu::unimplemented(uint8_t opcode) const
 {
     char message[256];
-    snprintf(message, sizeof(message), "---\n\n failure: unimplemented opcode 0x%02x at 0x%04x\n\n---\n", opcode, s_.pc - 1);
+    snprintf(message, sizeof(message), "\r\n---\r\n\r\nunimplemented opcode 0x%02x at 0x%04x\r\n\r\n---\r\n", opcode, s_.pc - 1);
     Machine::instance().trace(message);
 
-    throw std::runtime_error("unimplemented opcode");
+    throw std::runtime_error(message);
 }
 
 uint8_t Cpu::do_shift8(uint8_t value, ShiftOp op)

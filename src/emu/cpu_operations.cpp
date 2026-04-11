@@ -22,7 +22,7 @@ bool Cpu::op_addb(uint8_t opcode, op_names op, addr_mode mode)
 
 bool Cpu::op_aba(uint8_t opcode, op_names op, addr_mode mode)
 {
-    add8(s_.a, s_.b, false);
+    s_.a = add8(s_.a, s_.b, false);
     return true;
 }
 
@@ -513,13 +513,27 @@ bool Cpu::op_decb(uint8_t opcode, op_names op, addr_mode mode)
     return true;
 }
 
-bool Cpu::op_incb(uint8_t opcode, op_names op, addr_mode mode)
+bool Cpu::op_inca(uint8_t opcode, op_names op, addr_mode mode)
 {
     switch (mode)
     {
     case addr_mode::inh:
     {
         s_.a = add8(s_.a, 1);
+        return true;
+    }
+    default:
+        return false;
+    }
+}
+
+bool Cpu::op_incb(uint8_t opcode, op_names op, addr_mode mode)
+{
+    switch (mode)
+    {
+    case addr_mode::inh:
+    {
+        s_.b = add8(s_.b, 1);
         return true;
     }
     default:
@@ -1081,6 +1095,30 @@ bool Cpu::op_tpa(uint8_t opcode, op_names op, addr_mode mode)
         s_.a = s_.cc;
         set_nz8(s_.a);
 
+        return true;
+    default:
+        return false;
+    }
+}
+
+bool Cpu::op_tsx(uint8_t opcode, op_names op, addr_mode mode)
+{
+    switch (mode)
+    {
+    case addr_mode::inh:
+        s_.x = s_.sp;
+        return true;
+    default:
+        return false;
+    }
+}
+
+bool Cpu::op_txs(uint8_t opcode, op_names op, addr_mode mode)
+{
+    switch (mode)
+    {
+    case addr_mode::inh:
+        s_.sp = s_.x;
         return true;
     default:
         return false;
