@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <string>
 #include <map>
+#include <optional>
 
 #include "cpu_defs.g.h"
 
@@ -63,7 +64,7 @@ private:
     uint8_t add8(uint8_t lhs, uint8_t rhs, bool carry_in = false);
     uint8_t sub8(uint8_t lhs, uint8_t rhs, bool carry_in = false);
     uint16_t sub16(uint16_t lhs, uint16_t rhs, bool carry_in = false);
-    
+
     [[noreturn]] void infiniteloop() const;
     [[noreturn]] void unimplemented(uint8_t opcode) const;
 
@@ -71,6 +72,33 @@ private:
     void trace(uint16_t pc);
 
     uint32_t cycles_ = 0;
+
+    enum class ShiftOp
+    {
+        asl,
+        asr,
+        lsr,
+        rol,
+        ror
+    };
+
+    uint8_t do_shift8(uint8_t value, ShiftOp op);
+    uint8_t do_rol8(uint8_t value);
+    uint8_t do_ror8(uint8_t value);
+
+    bool shift_a(ShiftOp op);
+    bool shift_b(ShiftOp op);
+    bool shift_mem(addr_mode mode, ShiftOp op);
+
+    bool branch_if(bool condition, addr_mode mode);
+
+    void do_test(uint8_t value);
+
+    bool load16(uint16_t &dst, addr_mode mode);
+    bool store16(uint16_t value, addr_mode mode);
+
+    std::optional<uint8_t> read_operand8(addr_mode mode);
+    std::optional<uint16_t> resolve_operand_addr(addr_mode mode);
 
 #include "cpu_operations.g.h"
 };

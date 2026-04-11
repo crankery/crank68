@@ -6,11 +6,9 @@
 *
 
 *>
-*>	.section .stack, "a", @nobits
+*>	.section .stack, "au", @nobits
 *>
 *>stack:	.space 0x100
-*>
-*>	.section .stack, "a", @nobits
 *>
 
 *       NAM    MIKBUG
@@ -48,14 +46,14 @@
 
 *<       ORG    $F800
 *<BASORG   EQU    *        BASE ORIGIN
-*>	.section .rom, "a", @nobits
+*>	.section .mmio, "au", @nobits
 *>
 *>acias:	.space 0x01
 *>aciad:	.space 0x01
 *>
 *>	.space 0x100-0x02
 *>
-*<	.section .rom, "ax"
+*>	.section .rom, "ax"
 *>
 *>baseorg:
 
@@ -1744,7 +1742,6 @@ DIVOV2 INS
 *
 *<*      ORG    BASORG+$7F8
 *>	.section .vectors, "ax"
-*>;	.org 0xfff8
 
       FDB    IO
       FDB    SFEI
@@ -1756,7 +1753,7 @@ DIVOV2 INS
 *
 *
 *<*       ORG    $A000    START OF RAM .
-*>	.section .variables "au", @nobits
+*>	.section .ram "ax"
 *>
 NBRBPT EQU    8        # OF BREAKPOINTS SUPPORTED
 *

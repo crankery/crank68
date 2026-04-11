@@ -17085,6 +17085,18 @@
 		)
 		(uuid "cc843915-7a59-4f26-9192-fc2482787f49")
 	)
+	(text "The AVR is basically emulating a Mostek MK5009 timer.\n\nInputs:\n\nPIA AVR  Name  Direction (AVR standpoint)\nPB0 PB0: 2^{0} In\nPB1 PB1: 2^{1} In\nPB2 PB2: 2^{2} In\nPB3 PB3: 2^{3} In\n\nCB1 PB4: R_{O} Out\n\nThe MK5009 was being fed a 1MHz signal on the SWTPC MP-T Timer Interrupt board"
+		(exclude_from_sim no)
+		(at 321.31 93.98 0)
+		(effects
+			(font
+				(face "Courier")
+				(size 1.27 1.27)
+			)
+			(justify left top)
+		)
+		(uuid "dad6445a-cb15-44a2-964b-409d23c42f5b")
+	)
 	(junction
 		(at 219.71 170.18)
 		(diameter 0)

@@ -263,6 +263,255 @@ void Cpu::reset()
     throw std::runtime_error("unimplemented opcode");
 }
 
+uint8_t Cpu::do_shift8(uint8_t value, ShiftOp op)
+{
+    uint8_t result = value;
+
+    switch (op)
+    {
+    case ShiftOp::asl:
+    {
+        const bool old7 = (value & 0x80) != 0;
+        result = static_cast<uint8_t>(value << 1);
+        set_flag(C, old7);
+        set_nz8(result);
+        set_flag(V, get_flag(N) ^ get_flag(C));
+        break;
+    }
+    case ShiftOp::asr:
+    {
+        const bool old0 = (value & 0x01) != 0;
+        const uint8_t msb = value & 0x80;
+        result = static_cast<uint8_t>((value >> 1) | msb);
+        set_flag(C, old0);
+        set_nz8(result);
+        set_flag(V, get_flag(N) ^ get_flag(C));
+        break;
+    }
+    case ShiftOp::lsr:
+    {
+        const bool old0 = (value & 0x01) != 0;
+        result = static_cast<uint8_t>(value >> 1);
+        set_flag(C, old0);
+        set_nz8(result);
+        set_flag(V, get_flag(N) ^ get_flag(C));
+        break;
+    }
+    case ShiftOp::rol:
+    {
+        const bool old7 = (value & 0x80) != 0;
+        const bool oldC = get_flag(C);
+        result = static_cast<uint8_t>((value << 1) | (oldC ? 1 : 0));
+        set_flag(C, old7);
+        set_nz8(result);
+        set_flag(V, get_flag(N) ^ get_flag(C));
+        break;
+    }
+    case ShiftOp::ror:
+    {
+        const bool old0 = (value & 0x01) != 0;
+        const bool oldC = get_flag(C);
+        result = static_cast<uint8_t>((value >> 1) | (oldC ? 0x80 : 0x00));
+        set_flag(C, old0);
+        set_nz8(result);
+        set_flag(V, get_flag(N) ^ get_flag(C));
+        break;
+    }
+    }
+
+    return result;
+}
+
+uint8_t Cpu::do_rol8(uint8_t value)
+{
+    const bool old7 = (value & 0x80) != 0;
+    const bool oldC = get_flag(C);
+
+    uint8_t result = static_cast<uint8_t>((value << 1) | (oldC ? 1 : 0));
+
+    set_flag(C, old7);
+    set_nz8(result);
+    set_flag(V, get_flag(N) ^ get_flag(C));
+
+    return result;
+}
+
+uint8_t Cpu::do_ror8(uint8_t value)
+{
+    const bool old0 = (value & 0x01) != 0;
+    const bool oldC = get_flag(C);
+
+    uint8_t result = static_cast<uint8_t>((value >> 1) | (oldC ? 0x80 : 0x00));
+
+    set_flag(C, old0);
+    set_nz8(result);
+    set_flag(V, get_flag(N) ^ get_flag(C));
+
+    return result;
+}
+
+bool Cpu::shift_a(ShiftOp op)
+{
+    s_.a = do_shift8(s_.a, op);
+    return true;
+}
+
+bool Cpu::shift_b(ShiftOp op)
+{
+    s_.b = do_shift8(s_.b, op);
+    return true;
+}
+
+bool Cpu::shift_mem(addr_mode mode, ShiftOp op)
+{
+    uint16_t addr = 0;
+
+    switch (mode)
+    {
+    case addr_mode::idx:
+    {
+        uint8_t off = fetch8();
+        addr = static_cast<uint16_t>(s_.x + off);
+        break;
+    }
+    case addr_mode::ext:
+    {
+        addr = fetch16();
+        break;
+    }
+    default:
+        return false;
+    }
+
+    uint8_t value = read8(addr);
+    value = do_shift8(value, op);
+    write8(addr, value);
+    return true;
+}
+
+bool Cpu::branch_if(bool condition, addr_mode mode)
+{
+    if (mode != addr_mode::rel)
+        return false;
+
+    int8_t off = static_cast<int8_t>(fetch8());
+
+    if (condition)
+        s_.pc = static_cast<uint16_t>(s_.pc + off);
+
+    return true;
+}
+
+void Cpu::do_test(uint8_t value)
+{
+    set_nz8(value);
+    set_flag(V, false);
+    set_flag(C, false);
+}
+
+bool Cpu::load16(uint16_t &dst, addr_mode mode)
+{
+    uint16_t value;
+
+    switch (mode)
+    {
+    case addr_mode::imw:
+        value = fetch16();
+        break;
+
+    case addr_mode::idx:
+    {
+        uint8_t off = fetch8();
+        value = read16(s_.x + off);
+        break;
+    }
+
+    case addr_mode::ext:
+        value = read16(fetch16());
+        break;
+
+    default:
+        return false;
+    }
+
+    dst = value;
+    set_nz16(dst);
+    set_flag(V, false);
+    return true;
+}
+
+bool Cpu::store16(uint16_t value, addr_mode mode)
+{
+    uint16_t addr;
+
+    switch (mode)
+    {
+    case addr_mode::idx:
+    {
+        uint8_t off = fetch8();
+        addr = s_.x + off;
+        break;
+    }
+
+    case addr_mode::ext:
+        addr = fetch16();
+        break;
+
+    default:
+        return false;
+    }
+
+    write16(addr, value);
+
+    set_nz16(value);
+    set_flag(V, false);
+    return true;
+}
+
+std::optional<uint16_t> Cpu::resolve_operand_addr(addr_mode mode)
+{
+    switch (mode)
+    {
+    case addr_mode::dir:
+        return static_cast<uint16_t>(fetch8());
+
+    case addr_mode::idx:
+    {
+        uint8_t off = fetch8();
+        return static_cast<uint16_t>(s_.x + off);
+    }
+
+    case addr_mode::ext:
+        return fetch16();
+
+    default:
+        return std::nullopt;
+    }
+}
+
+std::optional<uint8_t> Cpu::read_operand8(addr_mode mode)
+{
+    switch (mode)
+    {
+    case addr_mode::imb:
+        return fetch8();
+
+    case addr_mode::dir:
+    case addr_mode::idx:
+    case addr_mode::ext:
+    {
+        auto addr = resolve_operand_addr(mode);
+        if (!addr)
+            return std::nullopt;
+
+        return read8(*addr);
+    }
+
+    default:
+        return std::nullopt;
+    }
+}
+
 [[noreturn]] void Cpu::infiniteloop() const
 {
     char message[256];

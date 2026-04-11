@@ -1,10 +1,10 @@
 BIN_DIR := bin
 
 VASM_DIR := vasm
-VASM_DAILY := http://sun.hasenbraten.de/vasm/daily/vasm.tar.gz
+VASM_REL := http://sun.hasenbraten.de/vasm/release/vasm.tar.gz
 VASM := vasm6800_std
 VOBJDUMP := vobjdump
-VLINK_DAILY := http://sun.hasenbraten.de/vlink/daily/vlink.tar.gz
+VLINK_REL := http://sun.hasenbraten.de/vlink/release/vlink.tar.gz
 VLINK := vlink
 
 TARGET_VASM := $(BIN_DIR)/$(VASM)
@@ -24,10 +24,10 @@ tools: $(TARGETS)
 all: tools
 
 $(VASM_DIR):
-	wget -O - $(VASM_DAILY) | tar -xz
+	wget -O - $(VASM_REL) | tar -xz
 
 $(VLINK_DIR):
-	wget -O - $(VLINK_DAILY) | tar -xz
+	wget -O - $(VLINK_REL) | tar -xz
 
 $(TARGET_VLINK): $(VLINK_OUT) $(BIN_DIR)
 	cp $(VLINK_OUT) $(TARGET_VLINK)

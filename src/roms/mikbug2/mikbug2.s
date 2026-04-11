@@ -1,3 +1,7 @@
+;
+; jdh
+; this file is a working file to test ditching vlink. it is a copy of the generated .s
+; from the .asm file
 ; 
 ; converted to an assembly file from a crappy pdf by 
 ; members of the motorola 6809 / 6309, 6800 assembly 
@@ -6,12 +10,79 @@
 ; 
 
 
-            .section .stack, "A", @nobits
+; 
+; 
+; ram - locations devoted to variable information 
+; 
+; 
 
-stack:      .space 0x100
+    .equ RAM_PTR, 0x0300
 
-            .section .stack, "A", @nobits
+    .macro  ALLOC name, size
+    .equ \name, RAM_PTR
+    .equ RAM_PTR, RAM_PTR + \size
+    .endm
 
+    .equ nbrbpt, 8              ; # of breakpoints supported
+
+ALLOC iov, 2 
+ALLOC bega, 2
+ALLOC enda, 2
+ALLOC nio, 2
+ALLOC sp, 2
+ALLOC swi1, 2
+ALLOC swi2, 2
+ALLOC brins, 8
+    .equ branen, RAM_PTR
+
+ALLOC outsw, 1
+ALLOC trcadr, 2
+ALLOC trcins, 1
+ALLOC ntrace, 2
+
+ALLOC brkadr, nbrbpt*2
+ALLOC brkins, nbrbpt*2
+ALLOC cksm, 1
+    .equ asave, cksm
+    .equ temp, cksm
+ALLOC bytect, 1
+    .equ mcont, bytect
+ALLOC xhi, 1
+ALLOC xlow, 1
+ALLOC ssave, 2
+    .equ tw, ssave
+ALLOC brksin, 1
+ALLOC brktrc, 1
+ALLOC endin0, 1
+    .equ aciat, endin0
+
+ALLOC aciat, 1
+ALLOC fidh, 1
+ALLOC fidl, 1
+ALLOC startp, 1
+ALLOC stoppg, 1
+ALLOC totcnt, 1
+ALLOC patdel, 1
+ALLOC patdel, 1
+ALLOC cl, 1
+ALLOC cll, 1
+ALLOC clll, 1
+
+; TAPE TEMPORARIES
+
+ALLOC h, 1
+ALLOC l, 1
+ALLOC q, 1
+ALLOC r, 1
+ALLOC r, 1
+ALLOC s, 1
+ALLOC v, 1
+
+    .equ t1, cl
+
+; stack is at 0x100
+
+    .equ stack, 0x100
 
 ; nam mikbug 
 ; ttl 2.0 with audio cassette 
@@ -42,15 +113,14 @@ stack:      .space 0x100
 ; 
             .equ swiop, 0x3f            ; swi op code
 
-            .section .rom, "A", @nobits
+            .org 0xe000 ; slot 0
 
+            .org 0xe010 ; slot 1
 acias:      .space 0x01
 aciad:      .space 0x01
 
-            .space 0x100-0x02
-
-
-baseorg:
+            .org 0xe100
+baseorg:    
 
 ; 
 ; i/o interrupt sequence 
@@ -1732,94 +1802,9 @@ divov2:     ins
 ; 
 ; interrupt vectors 
 ; 
-            .section .vectors, "AX"
-;	.org 0xfff8
+            .org 0xFFF8
 
             .word io
             .word sfei
             .word powdwn
             .word start
-; 
-; 
-; ram - locations devoted to variable information 
-; 
-; 
-            .section .variables "AU", @nobits
-
-            .equ nbrbpt, 8              ; # of breakpoints supported
-; 
-; the following are initialized at start 
-; 
-iov:        .space 2                    ; i"o interrupt pointer
-bega:       .space 2                    ; begin address print"punch
-enda:       .space 2                    ; end address print"punch
-nio:        .space 2                    ; nmi interrupt pointer
-sp:         .space 2                    ; user stack pointer
-swi1:       .space 2                    ; level 1 swi vector
-swi2:       .space 2                    ; level 2 swi vector
-brins:      .space 8                    ; storage for conditional branch routine
-branen:
-
-; 
-; the following are initialized to zero at start 
-; 
-; 
-outsw:      .space 1                    ; output switch
-; (zero => echo input) 
-trcadr:     .space 2                    ; trace address
-trcins:     .space 1                    ; op code replaced by swi
-ntrace:     .space 2                    ; no. of instructions to trace
-; 
-brkadr:     .space nbrbpt*2             ; breakpoint address table
-brkins:     .space nbrbpt*2             ; op codes for break replacement
-; (upper byte of each 
-; pair used only) 
-cksm:                                   ; checksum
-asave:                                  ; a reg save
-temp:                                   ; char count(inadd)
-            .space 1
-; 
-; 
-bytect:                                 ; byte count
-mcont:                                  ; tmp
-            .space 1
-; 
-; 
-xhi:        .space 1                    ; x reg high (temp)
-xlow:       .space 1                    ; x reg low
-; 
-; 
-ssave:                                  ; s reg save
-tw:                                     ; temp double byte
-            .space 2
-; 
-; 
-brksin:     .space 1                    ; 1=>breaks are in user program
-; 
-brktrc:     .space 1                    ; 1=>p-counter is at breakpoint
-; and user wants to continue- 
-; one trace will be done and 
-; breakpoint restored 
-endin0:                                 ; end of var'S INTZ'd to 0
-; 
-aciat:      .space 1                    ; save acis control reg for
-; control loop initialize 
-; exortape ram 
-;auxiliary register storage 
-fidh:       .space 1
-fidl:       .space 1
-startp:     .space 1
-stoppg:     .space 1
-totcnt:     .space 1                    ; window width
-patdel:     .space 1                    ; pattern-element length
-cl:         .space 1                    ; check"load sub
-cll:        .space 1
-clll:       .space 1                    ; rts
-;tape temporaries 
-h:          .space 1                    ; load ix, etc.
-l:          .space 1
-q:          .space 1                    ; q holds last byte recovered
-r:          .space 1                    ; r,s is crc register
-s:          .space 1
-v:          .space 1                    ; page count
-            .equ t1, cl

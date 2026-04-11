@@ -2,8 +2,12 @@ SHELL := /bin/bash
 
 NAME := mikbug2
 
+PYTHON := python3
+
 TOOLS_DIR := ../../tools
 TOOLS_BIN_DIR := ${TOOLS_DIR}/bin
+
+XLATE := $(TOOLS_DIR)/translate.py
 
 VASM := vasm6800_std
 VASM_BIN := $(TOOLS_BIN_DIR)/$(VASM)
@@ -11,21 +15,26 @@ VASM_BIN := $(TOOLS_BIN_DIR)/$(VASM)
 VLINK := vlink
 VLINK_BIN := $(TOOLS_BIN_DIR)/$(VLINK)
 
-SRCS := $(filter-out defs.s, $(wildcard *.s))
-OUTS := $(SRCS:%.s=%.o)
-LSTS := $(SRCS:%.s=%.lst)
+ASM := $(NAME).asm
+SRC := $(NAME)_g.s
+# OUT := $(NAME).o
+LST := $(NAME).lst
+# MAP := $(NAME).map
 
 TARGET := $(NAME).rom
-LINKER_SCRIPT = ${NAME}.ln
+# LINKER_SCRIPT = ${NAME}.ln
 
 .PHONY: all clean
 
 all: $(TARGET)
 
-$(TARGET): $(OUTS) $(LINKER_SCRIPT)
-	$(VLINK_BIN) -b rawbin -T $(LINKER_SCRIPT) -M$(NAME).map -o $(TARGET) $(OUTS)
+$(SRC): $(ASM) $(XLATE)
+	$(PYTHON) $(XLATE) $(ASM) > $(SRC)
 
-%.o: %.s | 
+$(TARGET): $(OUT) $(LINKER_SCRIPT)
+	$(VLINK_BIN) -b ihex -T $(LINKER_SCRIPT) -M$(NAME).map -o $(TARGET) $(OUT)
+
+$(OUT): $(SRC) | 
 	$(VASM_BIN) -Fvobj -L $(@:.o=.lst) -o $@ $<
 	cat $(@:.o=.lst)
 
@@ -33,4 +42,4 @@ $(VLINK_BIN) $(VASM_BIN):
 	$(MAKE) -C $(TOOLS_DIR)
 
 clean:
-	rm -rf $(TARGET) $(LSTS) $(OUTS)
+	rm -rf $(TARGET) *.lst $(OUT) $(SRC) $(LST) $(MAP)

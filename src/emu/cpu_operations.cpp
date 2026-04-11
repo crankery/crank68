@@ -1,5 +1,31 @@
 #include "cpu.h"
 
+bool Cpu::op_adda(uint8_t opcode, op_names op, addr_mode mode)
+{
+    auto value = read_operand8(mode);
+    if (!value)
+        return false;
+
+    add8(s_.a, *value, false);
+    return true;
+}
+
+bool Cpu::op_addb(uint8_t opcode, op_names op, addr_mode mode)
+{
+    auto value = read_operand8(mode);
+    if (!value)
+        return false;
+
+    add8(s_.b, *value, false);
+    return true;
+}
+
+bool Cpu::op_aba(uint8_t opcode, op_names op, addr_mode mode)
+{
+    add8(s_.a, s_.b, false);
+    return true;
+}
+
 bool Cpu::op_anda(uint8_t opcode, op_names op, addr_mode mode)
 {
     uint8_t v;
@@ -48,44 +74,34 @@ bool Cpu::op_andb(uint8_t opcode, op_names op, addr_mode mode)
 
     return true;
 }
-
-bool Cpu::op_nop(uint8_t opcode, op_names op, addr_mode mode)
+bool Cpu::op_asla(uint8_t opcode, op_names op, addr_mode mode)
 {
-    switch (mode)
-    {
-    case addr_mode::inh:
-        return true;
-    default:
-        return false;
-    }
+    return mode == addr_mode::inh ? shift_a(ShiftOp::asl) : false;
 }
 
-bool Cpu::op_inx(uint8_t opcode, op_names op, addr_mode mode)
+bool Cpu::op_aslb(uint8_t opcode, op_names op, addr_mode mode)
 {
-    switch (mode)
-    {
-    case addr_mode::inh:
-        s_.x++;
-        break;
-    default:
-        return false;
-    }
-
-    set_flag(Z, s_.x == 0);
-    return true;
+    return mode == addr_mode::inh ? shift_b(ShiftOp::asl) : false;
 }
 
-bool Cpu::op_dex(uint8_t opcode, op_names op, addr_mode mode)
+bool Cpu::op_asl(uint8_t opcode, op_names op, addr_mode mode)
 {
-    switch (mode)
-    {
-    case addr_mode::inh:
-        s_.x--;
-        set_flag(Z, s_.x == 0);
-        return true;
-    default:
-        return false;
-    }
+    return shift_mem(mode, ShiftOp::asl);
+}
+
+bool Cpu::op_asra(uint8_t opcode, op_names op, addr_mode mode)
+{
+    return mode == addr_mode::inh ? shift_a(ShiftOp::asr) : false;
+}
+
+bool Cpu::op_asrb(uint8_t opcode, op_names op, addr_mode mode)
+{
+    return mode == addr_mode::inh ? shift_b(ShiftOp::asr) : false;
+}
+
+bool Cpu::op_asr(uint8_t opcode, op_names op, addr_mode mode)
+{
+    return shift_mem(mode, ShiftOp::asr);
 }
 
 bool Cpu::op_clc(uint8_t opcode, op_names op, addr_mode mode)
@@ -98,6 +114,32 @@ bool Cpu::op_clc(uint8_t opcode, op_names op, addr_mode mode)
     default:
         return false;
     }
+}
+
+bool Cpu::op_clr(uint8_t opcode, op_names op, addr_mode mode)
+{
+    uint16_t addr;
+
+    switch (mode)
+    {
+    case addr_mode::ext:
+        addr = fetch16();
+        break;
+    case addr_mode::idx:
+        addr = static_cast<uint16_t>(s_.x + fetch8());
+        break;
+    default:
+        return false;
+    }
+
+    write8(addr, 0);
+
+    set_flag(N, false);
+    set_flag(Z, true);
+    set_flag(V, false);
+    set_flag(C, false);
+
+    return true;
 }
 
 bool Cpu::op_clra(uint8_t opcode, op_names op, addr_mode mode)
@@ -153,6 +195,34 @@ bool Cpu::op_cli(uint8_t opcode, op_names op, addr_mode mode)
     }
 }
 
+bool Cpu::op_inx(uint8_t opcode, op_names op, addr_mode mode)
+{
+    switch (mode)
+    {
+    case addr_mode::inh:
+        s_.x++;
+        break;
+    default:
+        return false;
+    }
+
+    set_flag(Z, s_.x == 0);
+    return true;
+}
+
+bool Cpu::op_dex(uint8_t opcode, op_names op, addr_mode mode)
+{
+    switch (mode)
+    {
+    case addr_mode::inh:
+        s_.x--;
+        set_flag(Z, s_.x == 0);
+        return true;
+    default:
+        return false;
+    }
+}
+
 bool Cpu::op_sei(uint8_t opcode, op_names op, addr_mode mode)
 {
     switch (mode)
@@ -166,137 +236,91 @@ bool Cpu::op_sei(uint8_t opcode, op_names op, addr_mode mode)
     }
 }
 
-bool Cpu::op_adda(uint8_t opcode, op_names op, addr_mode mode)
+bool Cpu::op_bcc(uint8_t opcode, op_names op, addr_mode mode)
 {
-    switch (mode)
-    {
-    case addr_mode::imb:
-    {
-        uint8_t v = fetch8();
-        s_.a = add8(s_.a, v);
-        return true;
-    }
-    default:
-        return false;
-    }
+    return branch_if(!get_flag(C), mode);
 }
 
 bool Cpu::op_bcs(uint8_t opcode, op_names op, addr_mode mode)
 {
-    switch (mode)
-    {
-    case addr_mode::rel:
-    {
-        int8_t off = static_cast<int8_t>(fetch8());
-        if (get_flag(C))
-            s_.pc = static_cast<uint16_t>(s_.pc + off);
-        return true;
-    }
-    default:
-        return false;
-    }
-}
-
-bool Cpu::op_bhi(uint8_t opcode, op_names op, addr_mode mode)
-{
-    switch (mode)
-    {
-    case addr_mode::rel:
-    {
-        int8_t off = static_cast<int8_t>(fetch8());
-
-        if (!(get_flag(C) || get_flag(Z)))
-            s_.pc = static_cast<uint16_t>(s_.pc + off);
-
-        return true;
-    }
-    default:
-        return false;
-    }
+    return branch_if(get_flag(C), mode);
 }
 
 bool Cpu::op_beq(uint8_t opcode, op_names op, addr_mode mode)
 {
-    switch (mode)
-    {
-    case addr_mode::rel:
-    {
-        int8_t off = static_cast<int8_t>(fetch8());
-        if (get_flag(Z))
-            s_.pc = static_cast<uint16_t>(s_.pc + off);
-        return true;
-    }
-    default:
-        return false;
-    }
-}
-
-bool Cpu::op_blt(uint8_t opcode, op_names op, addr_mode mode)
-{
-    switch (mode)
-    {
-    case addr_mode::rel:
-    {
-        int8_t off = static_cast<int8_t>(fetch8());
-        if (get_flag(N) ^ get_flag(V))
-            s_.pc = static_cast<uint16_t>(s_.pc + off);
-        return true;
-    }
-    default:
-        return false;
-    }
-}
-
-bool Cpu::op_bls(uint8_t opcode, op_names op, addr_mode mode)
-{
-    switch (mode)
-    {
-    case addr_mode::rel:
-    {
-        int8_t off = static_cast<int8_t>(fetch8());
-        if (get_flag(N) ^ get_flag(V))
-            s_.pc = static_cast<uint16_t>(s_.pc + off);
-        return true;
-    }
-    default:
-        return false;
-    }
+    return branch_if(get_flag(Z), mode);
 }
 
 bool Cpu::op_bne(uint8_t opcode, op_names op, addr_mode mode)
 {
-    switch (mode)
-    {
-    case addr_mode::rel:
-    {
-        int8_t off = static_cast<int8_t>(fetch8());
-        if (!get_flag(Z))
-        {
-            s_.pc = static_cast<uint16_t>(s_.pc + off);
-        }
+    return branch_if(!get_flag(Z), mode);
+}
 
-        return true;
-    }
-    default:
-        return false;
-    }
+bool Cpu::op_bmi(uint8_t opcode, op_names op, addr_mode mode)
+{
+    return branch_if(get_flag(N), mode);
+}
+
+bool Cpu::op_bpl(uint8_t opcode, op_names op, addr_mode mode)
+{
+    return branch_if(!get_flag(N), mode);
+}
+
+bool Cpu::op_bvc(uint8_t opcode, op_names op, addr_mode mode)
+{
+    return branch_if(!get_flag(V), mode);
+}
+
+bool Cpu::op_bvs(uint8_t opcode, op_names op, addr_mode mode)
+{
+    return branch_if(get_flag(V), mode);
+}
+
+bool Cpu::op_bhi(uint8_t opcode, op_names op, addr_mode mode)
+{
+    return branch_if(!get_flag(C) && !get_flag(Z), mode);
+}
+
+bool Cpu::op_bls(uint8_t opcode, op_names op, addr_mode mode)
+{
+    return branch_if(get_flag(C) || get_flag(Z), mode);
+}
+
+bool Cpu::op_bge(uint8_t opcode, op_names op, addr_mode mode)
+{
+    return branch_if(get_flag(N) == get_flag(V), mode);
+}
+
+bool Cpu::op_blt(uint8_t opcode, op_names op, addr_mode mode)
+{
+    return branch_if(get_flag(N) != get_flag(V), mode);
+}
+
+bool Cpu::op_bgt(uint8_t opcode, op_names op, addr_mode mode)
+{
+    return branch_if(!get_flag(Z) && (get_flag(N) == get_flag(V)), mode);
+}
+
+bool Cpu::op_ble(uint8_t opcode, op_names op, addr_mode mode)
+{
+    return branch_if(get_flag(Z) || (get_flag(N) != get_flag(V)), mode);
 }
 
 bool Cpu::op_bra(uint8_t opcode, op_names op, addr_mode mode)
+{
+    return branch_if(true, mode);
+}
+
+bool Cpu::op_bsr(uint8_t opcode, op_names op, addr_mode mode)
 {
     switch (mode)
     {
     case addr_mode::rel:
     {
-        uint16_t instAddr = s_.pc - 1;
         int8_t off = static_cast<int8_t>(fetch8());
+        push16(s_.pc);
         uint16_t destAddr = static_cast<uint16_t>(s_.pc + off);
         s_.pc = destAddr;
-
-        if (instAddr == destAddr)
-        {
-            infiniteloop();
-        }
 
         return true;
     }
@@ -507,6 +531,11 @@ bool Cpu::op_jmp(uint8_t opcode, op_names op, addr_mode mode)
 {
     switch (mode)
     {
+    case addr_mode::idx:
+    {
+        s_.pc = static_cast<uint16_t>(s_.x + fetch8());
+        return true;
+    }
     case addr_mode::ext:
     {
         s_.pc = fetch16();
@@ -609,49 +638,12 @@ bool Cpu::op_ldab(uint8_t opcode, op_names op, addr_mode mode)
 
 bool Cpu::op_lds(uint8_t opcode, op_names op, addr_mode mode)
 {
-    switch (mode)
-    {
-    case addr_mode::imw:
-    {
-        s_.sp = fetch16();
-        set_nz16(s_.sp);
-        set_flag(V, false);
-        return true;
-    }
-    default:
-        return false;
-    }
+    return load16(s_.sp, mode);
 }
 
 bool Cpu::op_ldx(uint8_t opcode, op_names op, addr_mode mode)
 {
-    switch (mode)
-    {
-    case addr_mode::imw:
-    {
-        s_.x = fetch16();
-        break;
-    }
-    case addr_mode::dir:
-    {
-        uint8_t zp = fetch8();
-        s_.x = read16(zp);
-        break;
-    }
-    case addr_mode::ext:
-    {
-        uint16_t addr = fetch16();
-        s_.x = read16(addr);
-        break;
-    }
-    default:
-        return false;
-    }
-
-    set_nz16(s_.x);
-    set_flag(V, false);
-
-    return true;
+    return load16(s_.x, mode);
 }
 
 bool Cpu::op_lsra(uint8_t opcode, op_names op, addr_mode mode)
@@ -675,6 +667,17 @@ bool Cpu::op_lsra(uint8_t opcode, op_names op, addr_mode mode)
     set_flag(V, get_flag(N) ^ get_flag(C)); // this boils down to C
     set_flag(Z, s_.a == 0);
     return true;
+}
+
+bool Cpu::op_nop(uint8_t opcode, op_names op, addr_mode mode)
+{
+    switch (mode)
+    {
+    case addr_mode::inh:
+        return true;
+    default:
+        return false;
+    }
 }
 
 bool Cpu::op_psha(uint8_t opcode, op_names op, addr_mode mode)
@@ -737,6 +740,92 @@ bool Cpu::op_pulb(uint8_t opcode, op_names op, addr_mode mode)
     default:
         return false;
     }
+}
+
+bool Cpu::op_rola(uint8_t opcode, op_names op, addr_mode mode)
+{
+    if (mode != addr_mode::inh)
+        return false;
+    s_.a = do_rol8(s_.a);
+    return true;
+}
+
+bool Cpu::op_rolb(uint8_t opcode, op_names op, addr_mode mode)
+{
+    if (mode != addr_mode::inh)
+        return false;
+    s_.b = do_rol8(s_.b);
+    return true;
+}
+
+bool Cpu::op_rora(uint8_t opcode, op_names op, addr_mode mode)
+{
+    if (mode != addr_mode::inh)
+        return false;
+    s_.a = do_ror8(s_.a);
+    return true;
+}
+
+bool Cpu::op_rorb(uint8_t opcode, op_names op, addr_mode mode)
+{
+    if (mode != addr_mode::inh)
+        return false;
+    s_.b = do_ror8(s_.b);
+    return true;
+}
+
+bool Cpu::op_rol(uint8_t opcode, op_names op, addr_mode mode)
+{
+    uint16_t addr;
+
+    switch (mode)
+    {
+    case addr_mode::idx:
+    {
+        uint8_t off = fetch8();
+        addr = s_.x + off;
+        break;
+    }
+    case addr_mode::ext:
+    {
+        addr = fetch16();
+        break;
+    }
+    default:
+        return false;
+    }
+
+    uint8_t val = read8(addr);
+    val = do_rol8(val);
+    write8(addr, val);
+    return true;
+}
+
+bool Cpu::op_ror(uint8_t opcode, op_names op, addr_mode mode)
+{
+    uint16_t addr;
+
+    switch (mode)
+    {
+    case addr_mode::idx:
+    {
+        uint8_t off = fetch8();
+        addr = s_.x + off;
+        break;
+    }
+    case addr_mode::ext:
+    {
+        addr = fetch16();
+        break;
+    }
+    default:
+        return false;
+    }
+
+    uint8_t val = read8(addr);
+    val = do_ror8(val);
+    write8(addr, val);
+    return true;
 }
 
 bool Cpu::op_rts(uint8_t opcode, op_names op, addr_mode mode)
@@ -839,37 +928,12 @@ bool Cpu::op_stab(uint8_t opcode, op_names op, addr_mode mode)
 
 bool Cpu::op_stx(uint8_t opcode, op_names op, addr_mode mode)
 {
-    switch (mode)
-    {
-    case addr_mode::idx:
-    {
-        uint8_t off = fetch8();
-        uint16_t addr = static_cast<uint16_t>(s_.x + off);
-        write8(addr, s_.x & 0xFF);
-        write8(static_cast<uint16_t>(addr + 1), s_.x >> 8);
-        break;
-    }
-    case addr_mode::dir:
-    {
-        uint8_t zp = fetch8();
-        write8(static_cast<uint8_t>(zp), (uint8_t)(s_.x >> 8));
-        write8(static_cast<uint8_t>(zp + 1), (uint8_t)s_.x & 0xff);
-        break;
-    }
-    case addr_mode::ext:
-    {
-        uint8_t addr = fetch16();
-        write16(addr, s_.x);
-        break;
-    }
-    default:
-        return false;
-    }
+    return store16(s_.x, mode);
+}
 
-    set_nz16(s_.x);
-    set_flag(V, false);
-
-    return true;
+bool Cpu::op_sts(uint8_t opcode, op_names op, addr_mode mode)
+{
+    return store16(s_.sp, mode);
 }
 
 bool Cpu::op_suba(uint8_t opcode, op_names op, addr_mode mode)
@@ -917,26 +981,72 @@ bool Cpu::op_swi(uint8_t opcode, op_names op, addr_mode mode)
 
 bool Cpu::op_tap(uint8_t opcode, op_names op, addr_mode mode)
 {
-
     switch (mode)
     {
     case addr_mode::inh:
         s_.cc = s_.a;
-
         return true;
     default:
         return false;
     }
+}
+
+bool Cpu::op_tst(uint8_t opcode, op_names op, addr_mode mode)
+{
+    uint16_t addr;
+
+    switch (mode)
+    {
+    case addr_mode::idx:
+        addr = static_cast<uint16_t>(s_.x + fetch8());
+        break;
+    case addr_mode::ext:
+        addr = fetch16();
+        break;
+    default:
+        return false;
+    }
+
+    uint8_t value = read8(addr);
+    do_test(value);
+
+    return true;
 }
 
 bool Cpu::op_tsta(uint8_t opcode, op_names op, addr_mode mode)
 {
+    if (mode == addr_mode::inh)
+    {
+        do_test(s_.a);
+        return true;
+    }
+
+    return false;
+}
+
+bool Cpu::op_tstb(uint8_t opcode, op_names op, addr_mode mode)
+{
+    if (mode == addr_mode::inh)
+    {
+        do_test(s_.a);
+        return true;
+    }
+
+    return false;
+}
+
+bool Cpu::op_tab(uint8_t opcode, op_names op, addr_mode mode)
+{
     switch (mode)
     {
     case addr_mode::inh:
     {
-        set_nz8(s_.a);
+        s_.b = s_.a;
+
+        set_nz8(s_.b);
         set_flag(V, false);
+        // C unchanged
+
         return true;
     }
     default:
@@ -944,35 +1054,23 @@ bool Cpu::op_tsta(uint8_t opcode, op_names op, addr_mode mode)
     }
 }
 
-bool Cpu::op_tstb(uint8_t opcode, op_names op, addr_mode mode)
+bool Cpu::op_tba(uint8_t opcode, op_names op, addr_mode mode)
 {
     switch (mode)
     {
     case addr_mode::inh:
     {
-        set_nz8(s_.b);
+        s_.a = s_.b;
+
+        set_nz8(s_.a);
         set_flag(V, false);
-        break;
-    }
-    case addr_mode::imb:
-    {
-        uint8_t zp = fetch8();
-        write8(zp, s_.b);
-        break;
-    }
-    case addr_mode::imw:
-    {
-        uint16_t addr = fetch16();
-        write8(addr, s_.b);
-        break;
+        // C unchanged
+
+        return true;
     }
     default:
         return false;
     }
-
-    set_nz8(s_.b);
-    set_flag(V, false);
-    return true;
 }
 
 bool Cpu::op_tpa(uint8_t opcode, op_names op, addr_mode mode)

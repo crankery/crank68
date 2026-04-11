@@ -1,27 +1,17 @@
 MEMORY {
-    MMIO: ORIGIN = 0xE000, LENGTH = 0x0100
-
-    ROM: ORIGIN = 0xE100, LENGTH = 0x1EF8
-
-    VECTORS: ORIGIN = 0xFFF8, LENGTH = 0x0008
-
-    ZPAGE: ORIGIN = 0x0000, LENGTH = 0x0100
-
-    STACK: ORIGIN=0x100, LENGTH = 0x0100
-
-    VARIABLES: ORIGIN=0x300, LENGTH = 0xBD00
+    STACK: ORIGIN = 0x0100, LEN = 0x100
+    RAM: ORIGIN = 0x0300, LEN = 0x100
+    ROM: ORIGIN = 0xE000, LEN = 0x2000
 }
 
 SECTIONS {
-    .zpage(NOLOAD) : { *(.zpage) } >ZPAGE
-
     .stack(NOLOAD) : {  *(.stack) } >STACK
 
-    .variables(NOLOAD)  : { *(.variables) } >VARIABLES
+    .ram(NOLOAD)  : { *(.ram) } >RAM
 
-    .mmio : { *(.mmio) } >MMIO
+    .mmio : { *(.mmio) } > ROM
 
-    .mikbug : { *(.mikbug) } >ROM
+    .rom : { *(.rom) } > ROM
 
-    .vectors : { *(.vectors) } >VECTORS
+    .vectors : { *(.vectors) } > ROM
 }
