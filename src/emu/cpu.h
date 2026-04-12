@@ -83,6 +83,7 @@ private:
 
     bool branch_if(bool condition, addr_mode mode);
 
+    bool do_jump(addr_mode mode, bool subroutine);
     void do_test(uint8_t value);
 
     bool load16(uint16_t &dst, addr_mode mode);

@@ -99,8 +99,7 @@ def emit_defs_cpp(cpp_path: Path, cpp_template_path: Path, entries: dict[int, Op
     print(f"wrote {cpp_path}")
 
 
-def emit_dispatch_cpp(dispatch_cpp_path: Path, operations_cpp_path: Path, dispatch_cpp_template_path: Path, entries: dict[int, OpInfo]) -> None:
-    impl = operations_cpp_path.read_text(encoding="utf-8")
+def emit_dispatch_cpp(dispatch_cpp_path: Path, dispatch_cpp_template_path: Path, entries: dict[int, OpInfo]) -> None:
     template = dispatch_cpp_template_path.read_text(encoding="utf-8")
 
     lines = []
@@ -108,11 +107,10 @@ def emit_dispatch_cpp(dispatch_cpp_path: Path, operations_cpp_path: Path, dispat
     op_names = get_op_names(entries)
     for op_name in op_names:
         decl = f"op_{op_name}(uint8_t opcode, op_names op, addr_mode mode)"
-        implemented = impl.find(decl) >= 0
 
-        lines.append(f"    {"" if implemented else "// "}case op_names::{op_name}:\n")
-        lines.append(f"    {"" if implemented else "// "}    result = op_{op_name}(op, op_info.op_name, op_info.addr_mode);\n")            
-        lines.append(f"    {"" if implemented else "// "}    break;\n")
+        lines.append(f"    case op_names::{op_name}:\n")
+        lines.append(f"        result = op_{op_name}(op, op_info.op_name, op_info.addr_mode);\n")            
+        lines.append(f"        break;\n")
 
     out = "".join(lines)
     template = template.replace("{{dispatch_cpp}}", out)
@@ -121,17 +119,15 @@ def emit_dispatch_cpp(dispatch_cpp_path: Path, operations_cpp_path: Path, dispat
     print(f"wrote {dispatch_cpp_path}")
 
 
-def emit_operations_header(operations_header_path: Path, operations_cpp_path: Path, operations_header_template_path: Path,entries: dict[int, OpInfo]) -> None:
-    impl = operations_cpp_path.read_text(encoding="utf-8")
+def emit_operations_header(operations_header_path: Path, operations_header_template_path: Path,entries: dict[int, OpInfo]) -> None:
     template = operations_header_template_path.read_text(encoding="utf-8")
     lines = []
 
     op_names = get_op_names(entries)
     for op_name in op_names:
         decl = f"op_{op_name}(uint8_t opcode, op_names op, addr_mode mode)"
-        implemented = impl.find(decl)
 
-        lines.append(f"    {"" if implemented >= 0 else "// "}bool {decl};\n");
+        lines.append(f"    bool {decl};\n");
 
     out = "".join(lines)
     template = template.replace("{{operations}}", out)
@@ -163,8 +159,8 @@ def main() -> None:
 
     emit_defs_header(CPU_DEFS_H, CPU_DEFS_H_IN, entries)
     emit_defs_cpp(CPU_DEFS_CPP, CPU_DEFS_CPP_IN, entries)
-    emit_dispatch_cpp(CPU_DISPATCH_CPP, CPU_OPERATIONS_CPP, CPU_DISPATCH_CPP_IN, entries)
-    emit_operations_header(CPU_OPERATIONS_H, CPU_OPERATIONS_CPP, CPU_OPERATIONS_H_IN, entries)
+    emit_dispatch_cpp(CPU_DISPATCH_CPP, CPU_DISPATCH_CPP_IN, entries)
+    emit_operations_header(CPU_OPERATIONS_H, CPU_OPERATIONS_H_IN, entries)
 
 if __name__ == "__main__":
     main()

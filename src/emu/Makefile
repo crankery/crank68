@@ -20,7 +20,7 @@ TARGET = $(BUILD_DIR)/emu
 all: $(TARGET)
 
 GEN_TEMPLATES = $(wildcard *.in)
-GEN_INPUTS = cpu_operations.csv cpu_operations.cpp
+GEN_INPUTS = cpu_operations.csv
 GEN_OUTS_CPP = cpu_defs.g.cpp cpu_dispatch.g.cpp
 GEN_OUTS_H = cpu_defs.g.h cpu_operations.g.h
 GEN_OUTS = $(GEN_OUTS_CPP) $(GEN_OUTS_H)

@@ -3,6 +3,7 @@
 
 #include "cpu.h"
 #include "machine.h"
+#include "cpu_defs.g.h"
 
 void Cpu::step()
 {
@@ -346,34 +347,6 @@ bool Cpu::load16(uint16_t &dst, addr_mode mode)
 
     dst = value;
     set_nz16(dst);
-    set_flag(V, false);
-    return true;
-}
-
-bool Cpu::store16(uint16_t value, addr_mode mode)
-{
-    uint16_t addr;
-
-    switch (mode)
-    {
-    case addr_mode::idx:
-    {
-        uint8_t off = fetch8();
-        addr = s_.x + off;
-        break;
-    }
-
-    case addr_mode::ext:
-        addr = fetch16();
-        break;
-
-    default:
-        return false;
-    }
-
-    write16(addr, value);
-
-    set_nz16(value);
     set_flag(V, false);
     return true;
 }
