@@ -950,40 +950,6 @@ bool Cpu::op_sts(uint8_t opcode, op_names op, addr_mode mode)
     return store16(s_.sp, mode);
 }
 
-bool Cpu::op_suba(uint8_t opcode, op_names op, addr_mode mode)
-{
-    switch (mode)
-    {
-    case addr_mode::imb:
-    {
-        uint8_t v = fetch8();
-        s_.a = sub8(s_.a, v);
-        break;
-    }
-    default:
-        return false;
-    }
-
-    return true;
-}
-
-bool Cpu::op_subb(uint8_t opcode, op_names op, addr_mode mode)
-{
-    switch (mode)
-    {
-    case addr_mode::imb:
-    {
-        uint8_t v = fetch8();
-        s_.b = sub8(s_.b, v);
-        break;
-    }
-    default:
-        return false;
-    }
-
-    return true;
-}
-
 bool Cpu::op_swi(uint8_t opcode, op_names op, addr_mode mode)
 {
     switch (mode)
@@ -1123,4 +1089,74 @@ bool Cpu::op_txs(uint8_t opcode, op_names op, addr_mode mode)
     default:
         return false;
     }
+}
+
+bool Cpu::op_suba(uint8_t opcode, op_names op, addr_mode mode)
+{
+    auto value = read_operand8(mode);
+    if (!value)
+        return false;
+
+    s_.a = sub8(s_.a, *value, false);
+    return true;
+}
+
+bool Cpu::op_sba(uint8_t opcode, op_names op, addr_mode mode)
+{
+    s_.a = sub8(s_.a, s_.b, false);
+    return true;
+}
+
+bool Cpu::op_subb(uint8_t opcode, op_names op, addr_mode mode)
+{
+    auto value = read_operand8(mode);
+    if (!value)
+        return false;
+
+    s_.b = sub8(s_.b, *value, false);
+    return true;
+}
+
+bool Cpu::op_sbca(uint8_t opcode, op_names op, addr_mode mode)
+{
+    auto value = read_operand8(mode);
+    if (!value)
+        return false;
+
+    s_.a = sub8(s_.a, *value, get_flag(C));
+    return true;
+}
+
+bool Cpu::op_sbcb(uint8_t opcode, op_names op, addr_mode mode)
+{
+    auto value = read_operand8(mode);
+    if (!value)
+        return false;
+
+    s_.b = sub8(s_.b, *value, get_flag(C));
+    return true;
+}
+
+bool Cpu::op_coma(uint8_t opcode, op_names op, addr_mode mode)
+{
+    s_.a = ~s_.a;
+
+    set_flag(N, (s_.a & 0x80) != 0);
+    set_flag(Z, s_.a == 0);
+    set_flag(V, false);
+    set_flag(C, true);
+
+    return true;
+}
+
+bool Cpu::op_comb(uint8_t opcode, op_names op, addr_mode mode)
+{
+    s_.b = ~s_.b;
+
+    set_flag(N, (s_.b & 0x80) != 0);
+    set_flag(Z, s_.b == 0);
+    set_flag(V, false);
+    set_flag(C, true);
+
+    return true;
 }

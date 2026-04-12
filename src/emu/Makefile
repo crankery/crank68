@@ -31,12 +31,13 @@ $(GEN_OUTS_CPP:.cpp=.o): $(GEN_OUTS)
 
 # Source files (all .cpp in current directory)
 SRCS = $(wildcard *.cpp)
+DOT_HS = $(wildcard *.h)
 
 # Object files
 OBJS = $(SRCS:%.cpp=$(BUILD_DIR)/%.o)
 
 # Linker
-$(TARGET): $(OBJS)
+$(TARGET): $(OBJS) $(DOT_HS)
 	$(CXX) $(CXXFLAGS) $(OBJS) -o $@
 
 # Compile

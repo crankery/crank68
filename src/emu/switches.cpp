@@ -6,7 +6,7 @@ uint8_t Switches::in(uint8_t port)
 {
     char buf[80];
     snprintf(buf, sizeof(buf), "%s in: %02x\n", name(), value_);
-    Machine::instance().trace(buf);
+    Machine::instance().log(buf);
 
     return value_;
 }

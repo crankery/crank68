@@ -18,71 +18,77 @@
 
     .equ RAM_PTR, 0x0300
 
-    .macro  ALLOC name, size
+.macro ALLOC name, size
     .equ \name, RAM_PTR
     .equ RAM_PTR, RAM_PTR + \size
-    .endm
+.endm
 
-    .equ nbrbpt, 8              ; # of breakpoints supported
+    .equ nbrbpt, 8
 
-ALLOC iov, 2 
-ALLOC bega, 2
-ALLOC enda, 2
-ALLOC nio, 2
-ALLOC sp, 2
-ALLOC swi1, 2
-ALLOC swi2, 2
-ALLOC brins, 8
+; initialized from rom at start
+    ALLOC iov, 2
+    ALLOC bega, 2
+    ALLOC enda, 2
+    ALLOC nio, 2
+    ALLOC sp, 2
+    ALLOC swi1, 2
+    ALLOC swi2, 2
+    ALLOC brins, 8
     .equ branen, RAM_PTR
 
-ALLOC outsw, 1
-ALLOC trcadr, 2
-ALLOC trcins, 1
-ALLOC ntrace, 2
+; initialized to zero at start
+    ALLOC outsw, 1
+    ALLOC trcadr, 2
+    ALLOC trcins, 1
+    ALLOC ntrace, 2
 
-ALLOC brkadr, nbrbpt*2
-ALLOC brkins, nbrbpt*2
-ALLOC cksm, 1
+    ALLOC brkadr, nbrbpt*2
+    ALLOC brkins, nbrbpt*2
+
+    ALLOC cksm, 1
     .equ asave, cksm
     .equ temp, cksm
-ALLOC bytect, 1
+
+    ALLOC bytect, 1
     .equ mcont, bytect
-ALLOC xhi, 1
-ALLOC xlow, 1
-ALLOC ssave, 2
+
+    ALLOC xhi, 1
+    ALLOC xlow, 1
+
+    ALLOC ssave, 2
     .equ tw, ssave
-ALLOC brksin, 1
-ALLOC brktrc, 1
-ALLOC endin0, 1
-    .equ aciat, endin0
 
-ALLOC aciat, 1
-ALLOC fidh, 1
-ALLOC fidl, 1
-ALLOC startp, 1
-ALLOC stoppg, 1
-ALLOC totcnt, 1
-ALLOC patdel, 1
-ALLOC patdel, 1
-ALLOC cl, 1
-ALLOC cll, 1
-ALLOC clll, 1
+    ALLOC brksin, 1
+    ALLOC brktrc, 1
 
-; TAPE TEMPORARIES
+    .equ endin0, RAM_PTR
+    ALLOC aciat, 1
 
-ALLOC h, 1
-ALLOC l, 1
-ALLOC q, 1
-ALLOC r, 1
-ALLOC r, 1
-ALLOC s, 1
-ALLOC v, 1
+    ; EXORTAPE RAM
+    ALLOC fidh, 1
+    ALLOC fidl, 1
+    ALLOC startp, 1
+    ALLOC stoppg, 1
+    ALLOC totcnt, 1
+    ALLOC patdel, 1
+    ALLOC cl, 1
+    ALLOC cll, 1
+    ALLOC clll, 1
+
+    ; tape temporaries
+    ALLOC h, 1
+    ALLOC l, 1
+    ALLOC q, 1
+    ALLOC r, 1
+    ALLOC s, 1
+    ALLOC v, 1
 
     .equ t1, cl
 
 ; stack is at 0x100
 
-    .equ stack, 0x100
+    .equ stackpage, 0x100
+    .equ stack, stackpage + 0xff
 
 ; nam mikbug 
 ; ttl 2.0 with audio cassette 
@@ -165,7 +171,7 @@ fctabl:
             .word trace
             .byte "U"                   ; "U" - reset a breakpoint
             .word rstbrk
-            .byte "E"                   ; "E" - exortape cassett interface
+            .byte "E"                   ; "E" - exortape cassette interface
             .word exort
             .byte "V"                   ; "V" - set a breakpoint
             .word setbrk
@@ -370,7 +376,7 @@ inch1:      ldaa acias
 ; x = pointer to ram bytes to be initialized 
 ; 
 start:                                  ; actual code start
-            lds #adrstr-1               ; start of constant data
+            lds #adrstr                 ; start of constant data
             ldx #sp                     ; start of ram area
 ; 
 inilp1:     pula                        ; get next constant byte

@@ -11,7 +11,7 @@ uint8_t Acia::in(uint8_t port)
         uint8_t status = getStatusByte();
 
         snprintf(buf, sizeof(buf), "%s status in %02x\n", name(), status);
-        Machine::instance().trace(buf);
+        Machine::instance().log(buf);
 
         return status;
     }
@@ -68,7 +68,7 @@ void Acia::out(uint8_t port, uint8_t value)
         // 0b11 = reset - set to 0x11 to reset device then select clock divisor
 
         snprintf(buf, sizeof(buf), "%s control out %02x\n", name(), value);
-        Machine::instance().trace(buf);
+        Machine::instance().log(buf);
         // control
         controlByte = value;
         break;
@@ -76,7 +76,7 @@ void Acia::out(uint8_t port, uint8_t value)
     case 1:
     {
         snprintf(buf, sizeof(buf), "%s data out %02x\n", name(), value);
-        Machine::instance().trace(buf);
+        Machine::instance().log(buf);
 
         terminalInAciaOutBuffer.push(value);
         break;

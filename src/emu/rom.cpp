@@ -1,47 +1,20 @@
 #include "rom.h"
 #include "machine.h"
 
-// the physical rom is 8KB. we ignore the 1st 256 bytes
-// TODO: consider making reads work on this area of the rom, overlaying the latches for write
-#define ROM_SIZE 0x2000
-
 uint8_t Rom::read(uint16_t addr) const
 {
-    if (addr >= StartAddress && addr <= EndAddress)
+    if (addr >= startAddress_ && addr <= endAddress_)
     {
-        return memory_[addr - StartAddress];
+        return memory_[addr - startAddress_];
     }
 
     return 0xff;
 }
 
-bool Rom::load(const char *path, uint16_t skip)
+void Rom::write(uint16_t addr, uint8_t value)
 {
-    uint8_t buf[ROM_SIZE];
-    FILE *f = fopen(path, "rb");
-
-    if (f == NULL)
+    if (addr >= startAddress_ && addr <= endAddress_)
     {
-        printf("unable to open %s\n", path);
-        return false;
+        memory_[addr - startAddress_] = value;
     }
-
-    fseek(f, 0, SEEK_END);
-    uint16_t fileSize = ftell(f);
-    rewind(f);
-    if (fileSize != ROM_SIZE)
-    {
-        return false;
-    }
-
-    fseek(f, skip, 0);
-    fread(buf, 1, Size, f);
-    fclose(f);
-
-    for (int i = 0; i < Size; ++i)
-    {
-        memory_[i] = buf[i];
-    }
-
-    return true;
 }

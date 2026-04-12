@@ -17,11 +17,7 @@ public:
     }
 
     virtual uint8_t read(uint16_t addr) const override;
-    virtual void write(uint16_t addr, uint8_t value) override
-    {
-    }
-
-    bool load(const char *path, uint16_t skip);
+    virtual void write(uint16_t addr, uint8_t value) override;
 
 private:
     std::array<uint8_t, Size> memory_;

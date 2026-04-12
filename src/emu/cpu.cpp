@@ -13,7 +13,7 @@ void Cpu::step()
 
     bool result = dispatch(opcode, op_info);
 
-    trace(pc);
+    Machine::instance().trace(pc);
 
     if (!result)
     {
@@ -21,104 +21,14 @@ void Cpu::step()
     }
 }
 
-// 8 bit read on the machine's bus
 uint8_t Cpu::read8(uint16_t addr) const
 {
     return Machine::instance().read(addr);
 }
 
-// 8 bit write on the machine's bus
 void Cpu::write8(uint16_t addr, uint8_t value)
 {
     Machine::instance().write(addr, value);
-}
-
-void Cpu::trace(uint16_t pc)
-{
-    uint8_t op = read8(pc);
-    OpInfo op_info = cpu_op_table[op];
-    const char *op_name_s = op_info.op_name_s;
-    addr_mode addr_mode = op_info.addr_mode;
-
-    int argc = addr_mode == inh                                           ? 0
-               : addr_mode == rel || addr_mode == imb || addr_mode == idx ? 1
-                                                                          : 2;
-    uint8_t argv[2];
-    for (int i = 0; i < argc; i++)
-    {
-        argv[i] = read8(pc + i + 1);
-    }
-
-    char args[10];
-    char op_formatted[16];
-    args[0] = '\0';
-    if (argc == 1)
-    {
-        snprintf(args, sizeof(args), "%02x", read8(pc + 1));
-    }
-    else
-    {
-        snprintf(args, sizeof(args), "%02x%02x", read8(pc + 1), read8(pc + 2));
-    }
-
-    switch (addr_mode)
-    {
-    case inh:
-        snprintf(op_formatted, sizeof(op_formatted), "%s", op_name_s);
-        break;
-    case imb:
-        snprintf(op_formatted, sizeof(op_formatted), "%s #$%02x", op_name_s, read8(pc + 1));
-        break;
-    case imw:
-        snprintf(op_formatted, sizeof(op_formatted), "%s #$%04x", op_name_s, (read8(pc + 1) << 8) | read8(pc + 2));
-        break;
-    case idx:
-        snprintf(op_formatted, sizeof(op_formatted), "%s $%02x,x", op_name_s, read8(pc + 1));
-        break;
-    case dir:
-        snprintf(op_formatted, sizeof(op_formatted), "%s $%02x", op_name_s, read8(pc + 1));
-        break;
-    case ext:
-        snprintf(op_formatted, sizeof(op_formatted), "%s $%04x", op_name_s, (read8(pc + 1) << 8) | read8(pc + 2));
-        break;
-    case rel:
-        snprintf(op_formatted, sizeof(op_formatted), "%s $%04x", op_name_s, pc + 2 + ((int8_t)read8(pc + 1)));
-        break;
-    default:
-        break;
-    }
-
-    char message[256];
-    // char stack[64];
-
-    // stack[0] = '\0';
-    // int count = 0;
-    // for (int sp = s_.sp; sp < 0xbfff; ++sp)
-    // {
-    //     snprintf(stack, sizeof(stack), "%s %02x", stack, read8(sp));
-    //     if (++count > 8)
-    //         break;
-    // }
-
-    snprintf(message,
-             sizeof(message),
-             "%04x:%02x%-4s %-12s|%c%c%c%c%c%c|a%02x|b%02x|x%04x|s%04x\n",
-             pc,
-             op,
-             args,
-             op_formatted,
-             s_.cc & C ? 'C' : ' ',
-             s_.cc & V ? 'V' : ' ',
-             s_.cc & Z ? 'Z' : ' ',
-             s_.cc & N ? 'N' : ' ',
-             s_.cc & I ? 'I' : ' ',
-             s_.cc & H ? 'H' : ' ',
-             s_.a,
-             s_.b,
-             s_.x,
-             s_.sp);
-
-    Machine::instance().trace(message);
 }
 
 uint16_t Cpu::read16(uint16_t addr) const
@@ -244,7 +154,7 @@ void Cpu::reset()
 
     char message[256];
     snprintf(message, sizeof(message), "---\nreset pc=%04x\n---\n", reset_vector);
-    Machine::instance().trace(message);
+    Machine::instance().log(message);
 
     s_.a = 0;
     s_.b = 0;
@@ -258,7 +168,7 @@ void Cpu::reset()
 {
     char message[256];
     snprintf(message, sizeof(message), "\r\n---\r\n\r\nunimplemented opcode 0x%02x at 0x%04x\r\n\r\n---\r\n", opcode, s_.pc - 1);
-    Machine::instance().trace(message);
+    Machine::instance().log(message);
 
     throw std::runtime_error(message);
 }
@@ -516,7 +426,7 @@ std::optional<uint8_t> Cpu::read_operand8(addr_mode mode)
 {
     char message[256];
     snprintf(message, sizeof(message), "---\ninfinite loop at %04x\n---\n", s_.pc);
-    Machine::instance().trace(message);
+    Machine::instance().log(message);
 
     throw std::runtime_error("infinite loop");
 }

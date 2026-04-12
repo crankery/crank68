@@ -8,20 +8,11 @@
 #include <optional>
 
 #include "cpu_defs.g.h"
+#include "cc.h"
 
 class Cpu
 {
 public:
-    enum CC : uint8_t
-    {
-        C = 0x01, // Carry
-        V = 0x02, // Overflow
-        Z = 0x04, // Zero
-        N = 0x08, // Negative
-        I = 0x10, // IRQ mask
-        H = 0x20  // Half-carry
-    };
-
     struct State
     {
         uint8_t a = 0;
@@ -42,13 +33,16 @@ public:
     const State &state() const { return s_; }
     State &state() { return s_; }
 
-private:
     State s_;
 
-    uint8_t fetch8();
-    uint16_t fetch16();
+    // todo: move to machine
     uint8_t read8(uint16_t addr) const;
     uint16_t read16(uint16_t addr) const;
+    uint32_t cycles_ = 0;
+
+private:
+    uint8_t fetch8();
+    uint16_t fetch16();
     void write8(uint16_t addr, uint8_t value);
     void write16(uint16_t addr, uint16_t value);
     void push8(uint8_t v);
@@ -69,9 +63,6 @@ private:
     [[noreturn]] void unimplemented(uint8_t opcode) const;
 
     bool dispatch(uint8_t op, OpInfo op_info);
-    void trace(uint16_t pc);
-
-    uint32_t cycles_ = 0;
 
     enum class ShiftOp
     {
