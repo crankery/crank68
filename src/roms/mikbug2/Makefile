@@ -18,8 +18,8 @@ TARGET := $(NAME).rom
 all: $(TARGET)
 
 $(TARGET): $(SRC) | 
-	$(VASM_BIN) -Fbin -L ${LST} -o $@ $<
-	cat $(@:.o=.lst)
+	$(VASM_BIN) -Fbin -L $(LST) -o $@ $<
+	cat $(LST)
 
 clean:
-	rm -rf $(TARGET) ${LST} $(OUT) $(LST)
+	rm -rf $(TARGET) $(LST)
