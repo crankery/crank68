@@ -14,7 +14,7 @@ bool Cpu::op_adda(uint8_t opcode, op_names op, addr_mode mode)
         return false;
     }
 
-    add8(s_.a, *value, false);
+    s_.a = add8(s_.a, *value, false);
     return true;
 }
 
@@ -26,7 +26,7 @@ bool Cpu::op_addb(uint8_t opcode, op_names op, addr_mode mode)
         return false;
     }
 
-    add8(s_.b, *value, false);
+    s_.b = add8(s_.b, *value, false);
     return true;
 }
 

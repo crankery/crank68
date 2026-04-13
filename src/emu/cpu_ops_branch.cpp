@@ -118,15 +118,17 @@ bool Cpu::do_jump(addr_mode mode, bool subroutine)
         s_.pc = addr;
         return true;
     }
-    case addr_mode::dir:
+    case addr_mode::idx:
     {
-        uint8_t zp = fetch8();
+        uint8_t off = fetch8();
+        uint16_t addr = static_cast<uint16_t>(s_.x + off);
+
         if (subroutine)
         {
             push16(s_.pc);
         }
 
-        s_.pc = zp;
+        s_.pc = addr;
         return true;
     }
     default:

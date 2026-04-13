@@ -89,6 +89,8 @@ private:
     bool load16(uint16_t &dst, addr_mode mode);
     bool store16(uint16_t value, addr_mode mode);
 
+    uint8_t logic8(uint8_t result);
+
     std::optional<uint8_t> read_operand8(addr_mode mode);
     std::optional<uint16_t> resolve_operand_addr(addr_mode mode);
 

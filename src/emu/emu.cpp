@@ -21,6 +21,7 @@ struct LoadRequest
 std::vector<LoadRequest> loads_;
 std::vector<uint16_t> halt_addresses_;
 struct termios orig_termios_;
+bool show_control = false;
 
 std::optional<uint16_t> parse_hex16(std::string_view text)
 {
@@ -120,6 +121,12 @@ int parse_args(int argc, char **argv)
     for (int i = 1; i < argc; ++i)
     {
         std::string arg = argv[i];
+
+        if (arg == "--show-control")
+        {
+            show_control = true;
+            continue;
+        }
 
         if (arg == "--halt")
         {
@@ -257,24 +264,26 @@ void run()
                 case '\r':
                 case '\n':
                 case '\t':
-                case 0x0c: // ^L
+                    printf("%c", v);
                     break;
                 default:
-                    v = 0;
+                {
+                    if (show_control)
+                    {
+                        printf("\\%02x", v);
+                    }
+
+                    break;
+                }
                 }
             }
-            else if (v > 127)
+            else
             {
-                v = 0;
-            }
-
-            if (v)
-            {
-                write(1, &c.value(), 1);
+                printf("%c", v);
             }
         }
 
-        usleep(2500);
+        // usleep(2500);
     }
 }
 

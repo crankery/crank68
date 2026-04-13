@@ -55,6 +55,7 @@ public:
     void trace(uint16_t pc);
 
     void load(uint16_t baseAddr, uint8_t data);
+
     void startLog();
     void endLog(bool quiet = false);
     void log(std::string_view message);

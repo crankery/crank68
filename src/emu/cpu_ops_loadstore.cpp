@@ -58,6 +58,13 @@ bool Cpu::op_ldab(uint8_t opcode, op_names op, addr_mode mode)
         s_.b = read8(addr);
         break;
     }
+    case addr_mode::idx:
+    {
+        uint8_t off = fetch8();
+        uint16_t addr = static_cast<uint16_t>(s_.x + off);
+        s_.b = read8(addr);
+        break;
+    }
     default:
         return false;
     }
