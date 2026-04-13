@@ -1,8 +1,17 @@
-;
-; jdh
-; this file is a working file to test ditching vlink. it is a copy of the generated .s
-; from the .asm file
+; vasm buildable hack
+; dave hamilton, 2026
 ; 
+; this was originally generated from the copy of mikbug2.asm and the translate.py script in the tools directory
+; gettig the variable address equates properly setup was a bit too much to bother trying to automate.
+; 
+; i claim no ownership of this file and if the rightful owners object to my posting it I will remove it.
+
+; anyway, this builds on vasm6800_std, no vlink required
+; it should be possible to move the main binary. i removed all the hard coded addresses (there were two of them)
+; you might want to change baseorg, RAM_PTR and stack the io area (currently 0xE000-0xE0FF)
+; for your M6800 machine :) haha
+; - dave
+
 ; converted to an assembly file from a crappy pdf by 
 ; members of the motorola 6809 / 6309, 6800 assembly 
 ; language programming facebook group 
