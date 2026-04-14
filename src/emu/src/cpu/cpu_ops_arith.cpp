@@ -97,7 +97,7 @@ bool Cpu::op_cmpa(uint8_t opcode, op_names op, addr_mode mode)
         v = fetch8();
         break;
     }
-    case idx:
+    case addr_mode::idx:
     {
         uint8_t off = fetch8();
         uint16_t addr = static_cast<uint16_t>(s_.x + off);
@@ -124,12 +124,17 @@ bool Cpu::op_cmpb(uint8_t opcode, op_names op, addr_mode mode)
 
     switch (mode)
     {
+    case addr_mode::dir:
+    {
+        v = read8(fetch8());
+        break;
+    }
     case addr_mode::imb:
     {
         v = fetch8();
         break;
     }
-    case idx:
+    case addr_mode::idx:
     {
         uint8_t off = fetch8();
         uint16_t addr = static_cast<uint16_t>(s_.x + off);

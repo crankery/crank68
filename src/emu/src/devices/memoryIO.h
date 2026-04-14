@@ -7,6 +7,7 @@
 #include "memoryIODevice.h"
 #include "latch.h"
 #include "acia.h"
+#include "pia.h"
 #include "switches.h"
 
 class MemoryIO : public Mem
@@ -14,13 +15,28 @@ class MemoryIO : public Mem
 public:
     MemoryIO()
         : Mem(StartAddress, EndAddress),
-          banked_memory_latch_(0, OffsetBankedMemoryLatch),
-          config_switches_(0, OffsetConfigSwitches),
-          acia_0_(1, OffsetAcia0)
+          banked_memory_latch_(0x0, 0x0),
+          config_switches_(0x0, 0x1),
+          acia_1_0_(0x1, 0x0),
+          pia_2_0_(0x2, 0x0),
+          pia_2_1_(0x2, 0x4),
+          acia_2_0_(0x2, 0x8),
+          acia_2_1_(0x2, 0xA)
     {
+        // slot 0
         devices_.push_back(&banked_memory_latch_);
         devices_.push_back(&config_switches_);
-        devices_.push_back(&acia_0_);
+
+        // slot 1
+        devices_.push_back(&acia_1_0_);
+
+        // slot 2
+        devices_.push_back(&pia_2_0_);
+        devices_.push_back(&pia_2_1_);
+        devices_.push_back(&acia_2_0_);
+        devices_.push_back(&acia_2_1_);
+
+        printf("done\r\n");
     }
 
     virtual uint8_t read(uint16_t addr) const override
@@ -49,18 +65,22 @@ public:
         }
     }
 
+    // slot 0, latches and such
     Latch banked_memory_latch_;
     Switches config_switches_;
-    Acia acia_0_;
+
+    // slot 1, terminal card
+    Acia acia_1_0_;
+
+    // slot 2, io card
+    Pia pia_2_0_;
+    Pia pia_2_1_;
+    Acia acia_2_0_;
+    Acia acia_2_1_;
 
 private:
     static const uint16_t StartAddress = 0xE000;
     static const uint16_t EndAddress = 0xE0FF;
-
-    static const uint8_t OffsetBankedMemoryLatch = 0;
-    static const uint8_t OffsetConfigSwitches = 1;
-
-    static const uint8_t OffsetAcia0 = 0;
 
     std::vector<MemoryIODevice *> devices_;
 };

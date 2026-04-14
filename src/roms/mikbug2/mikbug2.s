@@ -25,7 +25,7 @@
 ; 
 ; 
 
-    .equ RAM_PTR, 0x0300
+    .equ RAM_PTR, 0xBF00
 
 .macro ALLOC name, size
     .equ \name, RAM_PTR

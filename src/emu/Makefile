@@ -15,7 +15,7 @@ CXX := g++
 PYTHON := python3
 
 # Compiler flags
-CXXFLAGS := -std=c++17 -Wall -O2 -Imame -g -I$(SRC_DIR)
+CXXFLAGS := -std=c++17 -Wall -O2 -Imame -g -I$(SRC_DIR) -MMD -MP
 
 # Target executable
 TARGET := $(BIN_DIR)/emu
@@ -35,7 +35,7 @@ $(GEN_OUTS): $(GENERATOR) ${GEN_TEMPLATES} ${GEN_INPUTS}
 $(GEN_OUTS_CPP:.cpp=.o): $(GEN_OUTS)
 
 # Source files
-SRCS = $(shell find src -name '*.cpp')
+SRCS = $(shell find src -name '*.cpp' ! -path '$(GEN_DIR)/*') $(GEN_OUTS_CPP)
 
 # Header files
 DOT_HS = $(shell find src -name '*.h')
@@ -45,6 +45,7 @@ OBJS = $(patsubst src/%.cpp,$(OBJ_DIR)/%.o,$(SRCS))
 
 # Linker
 $(TARGET): $(OBJS)
+	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) $(OBJS) -o $@
 
 # Compile
@@ -64,5 +65,7 @@ generated: ${GEN_OUTS}
 regen:
 	rm -f $(CPU_DEFS_H) $(CPU_DEFS_CPP)
 	$(MAKE) generated
+
+-include $(DEPS)
 
 .PHONY: all clean generated

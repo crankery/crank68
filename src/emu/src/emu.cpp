@@ -309,7 +309,11 @@ void run()
                 usleep(5000);
             }
 
-            getch();
+            if (getch() == (']' & 0x1f))
+            {
+                // exit if they pressed the exit key.
+                return;
+            }
 
             lastBreakpoint = true;
             continue;
@@ -355,10 +359,10 @@ void run()
                     ? (c ^ 0x20)
                     : c;
 
-            Machine::instance().memory_io_.acia_0_.terminalOutAciaIn(c);
+            Machine::instance().memory_io_.acia_1_0_.terminalOutAciaIn(c);
         }
 
-        auto c = Machine::instance().memory_io_.acia_0_.terminalInAciaOut();
+        auto c = Machine::instance().memory_io_.acia_1_0_.terminalInAciaOut();
         if (c.has_value())
         {
             uint8_t v = c.value();
