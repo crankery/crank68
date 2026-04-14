@@ -1,0 +1,1960 @@
+; micro basic plus source listing 
+; 
+; micro basic plus 
+; copyright (c) 1976 by 
+; 
+; technical systems consultants 
+; box 2574 
+; w. lafayette indiana 47906 
+; 
+; 
+
+
+.macro ALLOC name, size
+    .equ \name, RAM_PTR
+    .equ RAM_PTR, RAM_PTR + \size
+.endm
+
+; equates 
+	.equ stack, 0x02ff
+	.equ piaadr, 0xe208
+	.equ pfilbg, 0x2000 ; start of loaded file
+	.equ pfilen, 0x8000 ; end of loaded file
+	; .equ extern, 0x1f00 ; switched this to just the end of code
+	.equ monitr, 0xe0e3 ; ??
+	.equ monpc, 0xa048 ; ??
+	.equ stkbot, 0x0200
+
+; temporary storage 
+    .equ RAM_PTR, 0x0000
+ALLOC rndm,   4
+ALLOC bufpnt, 2
+ALLOC forstk, 2
+ALLOC dimpnt, 2
+ALLOC xtemp3, 2
+ALLOC datast, 2
+ALLOC datapt, 2
+ALLOC tryval, 2
+ALLOC crflag, 1
+ALLOC qmflag, 1
+ALLOC rowvar, 1
+ALLOC rowcon, 1
+ALLOC colcon, 1
+ALLOC tabflg, 1
+ALLOC dimflg, 1
+ALLOC runflg, 1
+ALLOC datafl, 1
+ALLOC subcnt, 1
+ALLOC letflg, 1
+ALLOC fldcnt, 1
+ALLOC nxpntr, 2
+ALLOC xtemp,  2
+ALLOC xsave,  2
+ALLOC xsave2, 2
+ALLOC numcnt, 1
+ALLOC negflg, 1
+ALLOC noexfl, 1
+ALLOC extra,  2
+ALLOC count,  1
+ALLOC stkcnt, 1
+ALLOC auxcnt, 1
+ALLOC sign,   1
+ALLOC axsign, 1
+ALLOC ovflbf, 1
+ALLOC xtemp2, 2
+ALLOC xtemp4, 2
+ALLOC xtemp5, 2
+ALLOC cpx1,   2
+ALLOC cpx2,   2
+ALLOC stkend, 3
+ALLOC chrcnt, 1
+ALLOC opstak, 32
+ALLOC ac,     3
+ALLOC number, 3
+ALLOC ax,     3
+ALLOC buffer, 72
+
+; lable table 
+
+ALLOC lbltbl, 78
+ALLOC stktop, 2
+
+	.equ stopclearing, RAM_PTR
+; constants 
+
+	.equ backsp, 0x8
+	.equ delcod, 0x18
+	.equ prmptc, 0x21
+
+; place the code at 0x400
+
+	.org 0x0400
+
+; main program 
+
+start:	jmp micbas	; jmp to begin
+restrt:	jmp filbuf
+
+; external i-o routines 
+
+outeee:	jmp 0xe175 ; don't have this label, must be the same as mikbug outch?
+inch:	jsr 0xe178 ; mikbug inch
+break:	jmp fakebrk ; should be intbrk
+memend:	.word 0xbfff
+fakebrk:	rts		; just return.
+
+; keyword and jump table 
+
+keytbl:
+    .byte "PRI"
+    .word print
+
+    .byte "INP"
+    .word input
+
+    .byte "IF "
+    .word if
+
+    .byte "LET"
+letadr:
+    .word let
+
+    .byte "FOR"
+    .word for
+
+    .byte "NEX"
+    .word next
+
+    .byte "GOT"
+    .word goto
+
+    .byte "GOS"
+    .word gosub
+
+    .byte "ON "
+    .word ongoto
+
+    .byte "RET"
+    .word return
+
+    .byte "REA"
+    .word read
+
+    .byte "DAT"
+    .word data
+
+    .byte "RES"
+    .word restor
+
+    .byte "DIM"
+    .word dim
+
+    .byte "EXT"
+    .word extrnl
+
+    .byte "MON"
+    .word monitr
+
+    .byte "END"
+    .word filbuf
+
+    .byte "REM"
+    .word runexc
+
+    .byte "RUN"
+    .word run
+
+    .byte "LIS"
+    .word list
+
+    .byte "SCR"
+    .word micbas
+
+    .byte 0
+
+fcttbl:
+    .byte "RND"
+    .word eval88
+
+    .byte "ABS"
+    .word eval85
+
+    .byte "SGN"
+    .word eval86
+
+    .byte 0
+
+; initialization 
+
+clrbeg:	ldx #stopclearing
+	stx xtemp3	; save x
+clrbg2:	ldx #datast	; set start
+	bra clear	; go clear
+
+clrend:	ldx memend	; set end
+	stx xtemp3	; save
+	ldx endstr
+clear:	clra	; clear acc.
+clear2:	staa 0,x	; clear byte
+	inx	; bump the pointer
+	cpx xtemp3	; done?
+	bne clear2
+	rts	; return
+
+micbas:	lds #stack
+	bsr clrbeg	; go clear
+	ldx #storsp
+	stx endstr	; set end storage:
+	bsr clrend	; go clear
+
+; get line into input buffer 
+
+filbuf:	ldx #restrt
+	stx monpc	; set up return pointer
+	lds #stack
+	ldx #buffer
+	stx xtemp3	; save bound
+	bsr clrbg2
+	ldx #endstr	; set puhch limits
+	stx pfilbg
+	ldx 0,x	; set end
+	stx pfilen
+	stx dimpnt
+	ldx #buffer	; point to buffer
+	jsr pcrlf	; out a cr & lf
+	ldaa #prmptc
+	jsr outch	; output prompt
+filbu2:	jsr inchar	; get a character
+	beq filbuf
+	staa 0,x	; save char.
+	cmpa #0x0d	; is it a c.r. ?
+	beq filbu6
+	inx	; bump the pointer
+	cpx #buffer+72
+	bne filbu2	; end of buffer?
+	bra filbuf
+filbu6:	ldx #buffer	; reset pointer
+	jsr bcdco1	; line no. conv.
+	stx xtemp2	; save pointer
+	jsr fndkey	; check key word
+	tsta
+	bne filbu8	; if nonzero then ok
+	ldx bufpnt	; point to buffer
+	ldaa 0,x	; get character
+	cmpa #0xd	; is it a c.r.?
+	bne filbu7
+	ldab noexfl	; dir. execution?
+	beq filbuf
+	staa crflag	; set flag
+	bra filbu8	; it is ok
+filbu7:	jsr tstlet	; let?
+	beq filbu8
+filb75:	ldaa #0x10
+	jmp mistak	; report error #0
+filbu8:	ldaa chrcnt	; get char. count
+	suba numcnt	; sub line # digits
+	staa chrcnt	; save
+	ldab noexfl	; direct execute ?
+	bne stufln	; if not go put line
+	jsr pcrlf	; output c.r. l.f.
+	jmp runex4	; go to routine
+
+; put line in program storage 
+
+stufln:	ldx memend
+	stx cpx1
+	ldx xtemp2	; set pointer
+	stx bufpnt	; save pointer
+	jsr fndlin	; go find line in store
+	stx xsave	; save pointer
+	tstb	; did we find it?
+	bne insert	; if not go insert
+
+
+; replace existing line with new one 
+
+replac:	incb	; inc the counter
+	ldaa 0,x	; get a character
+	inx	; bump the pointer
+	cmpa #0xd	; is it a c.r,?
+	bne replac
+repla4:	stab ofset2+1	; setup offset
+	ldaa #0xff	; get count
+	negb	; 2's comp. it
+	bsr adjend	; go fix end pntr
+	ldx xsave	; restore the pointer
+repla5:	cpx endstr	; end of storage?
+	beq repla6
+ofset2:	ldaa 0,x
+	staa 0,x	; move a character
+	inx	; bump the pointer
+	bra repla5	; repeat
+repla6:	ldx xsave	; restore the pointer
+
+; insert a line into program storage 
+
+insert:	ldaa crflag	; lone c.r. ?
+	bne inser6
+	ldx endstr
+	ldab chrcnt	; get char. count
+	addb #2	; bias for line num.
+	stab offset+1	; setup offset
+	bsr adjend	; fix end pntr
+inser2:	cpx xsave	; done?
+	beq inser3
+	dex	; dec the pointer
+	ldaa 0,x	; get a char,
+offset:	staa 0,x
+	bra inser2	; move it
+inser3:	dex
+	jsr putlb2	; put lab
+	inx	; bump the pointer
+	inx
+inser4:	stx xsave	; save pointer
+	ldx bufpnt
+	ldaa 0,x	; get char*
+	inx	; bump the pointer
+	stx bufpnt	; save
+	ldx xsave	; restor pntr
+	inx
+	staa 0,x	; save it
+	cmpa #0xd	; is it a c.r.?
+	bne inser4
+inser6:	jmp filbuf	; 60 to main loop
+
+; adjust the end of program pointer 
+
+adjend:	addb endstr+1
+	adca endstr	; add in value
+	stab cpx2+1
+	staa cpx2	; set end pointer
+	jsr cmpx1
+	bcc adjen2
+	stab endstr+1
+	staa endstr	; save new pointer
+	rts	; return
+adjen2:	ldaa #0x90	; set error
+	jmp mistak
+
+; try to find line 
+
+fndlin:	ldaa number+2
+	ldab number+1
+findln:	ldx #storsp	; setup pointer
+findl1:	cpx endstr	; end of storage?
+	bne findl4
+findl2:	incb
+	rts	; return
+findl4:	cmpb 0,x	; check m.s. digits
+	bhi findl6
+	bne findl2
+	cmpa 1,x	; check l.s, digits
+	bhi findl6
+	bne findl2
+	clrb	; cear flag
+	rts	; return
+findl6:	bsr fndcrt	; go find c.r,
+	inx	; bump the pointer
+	bra findl1	; repeat
+
+; find a c,r, in storage 
+
+fndcrt:	psha	; save a
+	ldaa #0xd
+fndval:	inx	; bump the pointer
+	cmpa 0,x	; test for c.r.
+	bne fndval
+	pula	; restore a
+	rts	; return
+
+; input 
+
+inchar:	jsr inch	; get the char.
+	cmpa #backsp	; is it a backspace?
+	bne inchr2
+	cpx #buffer	; beginning of buf ?
+	beq inchr4
+	dex	; backup one pos.
+	dec chrcnt	; dec char. count
+	bra inchar
+inchr2:	cmpa #delcod	; delete line ?
+	beq inchr4
+	inc chrcnt
+inchr4:	rts	; return
+
+; print carriage return & linefeed 
+
+pcrlf:	stx xsave	; save x reg
+	ldx #crlfst	; point to string
+pdata1:	ldaa 0,x	; get char
+	cmpa #4	; is it 4?
+	beq pcrlf2
+	jsr outch	; output char
+	inx	; bump the pointer
+	bra pdata1	; repeat
+pcrlf2:	ldx xsave	; restore x reg
+	clr fldcnt	; zero field count
+	rts	; return
+
+crlfst:	.byte 0xd,0xa,0,0,0,0,4
+
+; test for statement terminator 
+
+tsttrm:	cmpa #0xd	; c,r,?
+	beq tsttr2
+	cmpa #':'	;  colon?
+tsttr2:	rts	; return
+
+; clear number through number+2 
+
+upsclr:	jsr stakup
+clrnum:	clra
+	staa number
+	staa number+1
+	staa number+2
+	rts
+
+; convert number to packed bcd 
+
+bcdcon:	bsr clrnum	; clear number
+	staa noexfl
+	staa negflg
+	staa numcnt
+	jsr skipsp	; skip spaces
+	cmpa #'+'	;  is it a +?
+	beq bcdc01
+	cmpa #'-'	;  is it a - ?
+	bne bcdco1
+	com negflg	; set flag
+bcdc01:	inx
+bcdco1:	jsr class	; get a digit
+	cmpb #3	; is it a number?
+	beq bcdco2
+	ldaa negflg
+	jmp fixsin	; go fix up the sign
+bcdco2:	inx	; bump the pointer
+	staa noexfl	; set no exec flu
+	anda #0x0f	; mask off ascii
+	ldab #4	; set counter
+bcdco4:	asl number+2
+	rol number+1
+	rol number	; shift prev. over
+	decb	; dec the counter
+	bne bcdco4
+	adda number+2
+	staa number+2	; save new value
+	inc numcnt	; inc number cntr
+	bra bcdco1
+
+; find next block 
+
+nxtblk:	ldx bufpnt	; restore pointer
+nxtbl4:	ldaa 0,x	; get a char.
+	cmpa #' '	;  is it a space?
+	beq skipsp
+	inx	; bump the pointer
+	bra nxtbl4	; repeat
+
+; convert and skip 
+
+conskp:	bsr bcdcon
+	dex
+
+; skip all spaces 
+
+skpsp0:	inx
+skipsp:	ldaa 0,x	; get chr from buf
+	cmpa #0x20	; is it a space?
+	beq skpsp0
+skips4:	rts	; return
+
+; find next block not expecting a space 
+
+nxtspc:	ldx bufpnt	; set pointer
+nxtsp4:	jsr class	; go classify
+	cmpb #2	; is it a letter?
+	bne skipsp
+	inx	; bump the pointer
+	bra nxtsp4
+
+; find key word if possible 
+
+fndkey:	jsr skipsp	; skip spaces
+	stx bufpnt	; save the pointer
+	stx xsave
+	ldx #keytbl	; point to key words
+fndke2:	ldab #5
+fndke4:	cmpa 0,x	; test the character
+	bne fndke6
+	stx xtemp3	; save pointer
+	ldx xsave
+	inx	; bump pointer
+	ldaa 0,x	; get char.
+	stx xsave
+	ldx xtemp3	; rest. pntr.
+	inx
+	decb
+	cmpb #2
+	bne fndke4	; if not done repeat
+fndke5:	rts	; return
+fndke6:	inx	; bump the counter
+	decb
+	bne fndke6
+	ldaa 0,x	; get character
+	beq fndke5	; if zero, end of list
+	stx xtemp3	; save pointer
+	ldx bufpnt
+	stx xsave
+	ldaa 0,x	; get new char.
+	ldx xtemp3	; restore pointer
+	bra fndke2	; repeat
+
+
+; output a number from packed bcd bytes 
+
+outbcd:	ldx #number	; set pointer
+outbci:	ldab #2	; set counter
+	clc
+	ldaa 0,x	; get a word
+	bpl outbc4	; if not neg jmp ahead
+	ldaa #'-'
+	jsr outch	; output a
+	inc fldcnt
+	bra outbc4
+outbc2:	ldaa 0,x	; get digits
+	bita #0xf0	; mask
+	bcs outbc3
+	beq outbc4	; jmp if zeroes
+outbc3:	jsr outhl	; output a digit
+	inc fldcnt
+	sec
+outbc4:	ldaa 0,x	; get a digit
+	bitb #0xff	; last digit?
+	beq outbc6
+	bita #0x0f	; mask
+	bcs outbc6
+	beq outbc8	; jmp if zeroes
+outbc6:	jsr outhr	; output a digit
+	inc fldcnt
+	sec
+outbc8:	inx	; bump the pointer
+	decb	; dec the counter
+	bpl outbc2	; repeat if not done
+	rts	; return
+
+; list users program 
+
+list:	jsr nxtspc	; find next
+	cmpa #0xd
+	beq list3
+	jsr bcdcon	; get line num
+	stx bufpnt	; save pointer
+	jsr fndlin	; find line
+	stx xsave	; save it
+	jsr nxtspc
+	cmpa #0xd	; c.r.?
+	bne list1
+	inc subcnt	; set to 1
+	bra list2
+list1:	inx	; bump the pointer
+	jsr skipsp
+	jsr bcdcon	; get count
+	ldaa number+2
+	staa subcnt	; save it
+list2:	ldx xsave	; point to line
+	bra list4
+list3:	ldx #storsp	; set pointer
+list4:	cpx endstr	; end of storage?
+	beq list8
+	jsr pcrlf	; output a
+	ldab #1	; setup counter
+	clc
+	bsr outbc2	; out line number
+list5:	ldaa 0,x	; get a character
+	cmpa #0xd	; is it a c.r.?
+	beq list6
+	bsr outch	; output character
+	inx	; bump the pointer
+	bra list5	; repeat
+list6:	inx	; bump the pointer
+	ldaa subcnt	; get count
+	beq list4
+	adda #0x99	; dec the count
+	daa
+	beq list8
+	staa subcnt	; save
+	bra list4
+list8:	jmp filbuf
+
+outhl:	lsra
+	lsra
+	lsra
+	lsra	; move to bottom
+outhr:	anda #0x0f	; mask
+	adda #0x30	; bias
+outch:	
+	jsr break	; check for break
+	jmp outeee	; go print
+
+; internal break routine 
+
+intbrk:	psha
+	ldaa piaadr	; check
+	bpl break2
+	pula	; get char
+	rts	; return
+break2:	ldaa piaadr
+	bpl break2
+	ldaa #0x99	; set error
+
+; output error message 
+
+mistak:	psha	; save a
+	jsr pcrlf	; output a cr & lf
+mista1:	ldx #errstr	; point to error string
+	jsr pdata1	; output it
+	pula	; restore a
+	psha	; save a
+	jsr outhl	; output digit
+mista2:	pula	; restore a
+	jsr outhr	; out 1's digit
+	ldab runflg	; running?
+	bne runer1
+mista4:	jmp filbuf
+runer1:	ldx #erstr2	; point to string
+	jsr pdata1	; output it
+	ldx bufpnt	; set pointer
+runer2:	dex	; dec the pointer
+	cpx #storsp	; beginning?
+	beq runer4
+	ldaa 0,x	; get char
+	cmpa #0xd	; c.r.?
+	bne runer2
+	inx	; bump the pointer
+runer4:	ldab #1
+	clc
+	jsr outbc2	; out line num.
+	bra mista4
+errstr:	.byte 7
+	.byte "error #"
+	.byte 4
+
+erstr2:	.byte " at "
+	.byte 4
+
+; print routine 
+
+print:	jsr nxtspc	; find next block
+print0:	jsr tsttrm
+	bne field1
+	jmp print8
+field1:	clr crflag
+	cmpa #','	;  is it a ","
+	bne print2
+	ldab fldcnt	; get count
+field2:	ldaa #' '	;  space
+	jsr outch	; output a space
+	incb
+	bitb #7	; end of field?
+	bne field2
+	cmpb #0x47	; end of line?
+	bhi field3
+	stab fldcnt	; save field info
+	bra print1
+field3:	jsr pcrlf	; out a c.r. & l.f.
+print1:	inc crflag	; set flag
+	inx	; bump the pointer
+	jsr skipsp
+	bra print0
+print2:	cmpa #'"'	; is it a """
+	beq print1
+	cmpa #'"'	;  is it a quote?
+	bne print4
+	inx	; bump the pointer
+	bsr pstrng	; output string
+	bra print6
+print4:	clr tabflg	; clear flag
+	cmpa #'t'	;  is it a t?
+	bne prin45
+	staa tabflg	; set flag
+	ldaa #'a'
+	bra prin47
+prin45:	cmpa #'s'	;  is it a s?
+	bne prin55
+	ldaa #'p'
+prin47:	cmpa 1,x
+	bne prin55
+	jsr nxtsp4	; find next
+	jsr expr	; evaluate
+	jsr bincon	; convert
+	ldab number+2
+	beq print6
+	ldaa tabflg	; check flag
+	beq print5
+	decb
+	cmpb fldcnt	; check count
+	bls print6
+	bra prin51
+print5:	addb fldcnt
+prin51:	ldaa #' '	;  space
+	jsr outch	; output space
+	inc fldcnt	; bump counter
+	cmpb fldcnt
+	bne prin51	; repeat
+prin52:	bra print6
+prin55:	jsr expr	; eval expression
+	stx xsave	; save pointer
+	jsr outbcd	; output value
+	ldx xsave	; restore
+print6:	jsr skycls
+	decb
+	bne print7	; check for error
+	jmp print0
+print7:	ldaa #0x31
+	jmp mistak
+print8:	tst crflag	; c.r. ?
+	bne print9
+	jsr pcrlf	; output c.r. l.f
+print9:	jmp runexc
+
+; print string routine 
+
+pstrng:	ldaa 0,x	; get a char.
+	cmpa #'"'	;  is i t a quote?
+	beq pstrn4
+	jsr tsttrm	; is it a c.r.?
+	beq pstrn8
+	jsr outch	; output character
+	inc fldcnt	; bump field cnt
+	inx	; bump the pointer
+	bra pstrng	; repeat
+pstrn4:	inx
+	jmp skipsp
+pstrn8:	ldaa #0x32
+	jmp mistak	; report error
+
+; find lable routine 
+
+fndvar:	stx bufpnt	; save pointer
+	jsr class1	; go classify char.
+	cmpb #2	; check for letter
+	bne fndl25	; error
+	clr xtemp
+	tab	; save lable
+	asla	; mult it by 2
+	aba	; add it
+	suba #0x13
+	staa xtemp+1
+	ldx xtemp	; point to it
+	rts	; return
+
+; find dimensioned variable 
+
+fndlb0:	ldaa 0,x
+fndlbl:	inx	; advance pointer
+	clr dimflg
+	bsr fndvar	; go find var.
+	clrb
+	ldaa 0,x	; get char.
+	cmpa #0x0a	; check for 1 dim
+	beq fndlb2
+	cmpa #0x0b	; check if 2 dim
+	beq fndlb1
+	rts
+fndlb1:	incb	; set flag-2 dim
+fndlb2:	ldaa 1,x	; set pointer
+	psha
+	ldaa 2,x
+	psha
+	pshb	; save b
+	jsr nxtspc	; find next
+	pulb
+	cmpa #'('	;  is it a paren?
+fndl25:	beq fndlb9_
+	bra fndlb9a_
+fndlb9_:	jmp fndlb9
+fndlb9a_:	tstb
+	beq fndlb3
+	inx
+	jsr expro	; go evaluate
+	ldaa number+2	; get result
+	psha	; save it
+	jsr stakdn	; restore
+	jsr nxtspc	; find next
+	cmpa #','	;  is it a comma?
+	bne fndlb9
+	bra fndlb4
+fndlb3:	clra
+	psha	; set rowv
+fndlb4:	inca
+	staa dimflg	; set flag
+	inx
+	jsr expro
+	inx
+	stx bufpnt	; save pointer
+	pula
+	staa rowvar	; save
+	pula
+	staa xtemp+1	; save
+	pula
+	staa xtemp	; save
+	ldx xtemp	; set pointer
+	ldaa 0,x	; get char
+	staa colcon	; save it
+	inx	; bump the pointer
+	inx
+	stx xtemp
+	jsr upsclr
+	ldaa rowvar	; get var.
+	ldx xtemp
+	dex	; dec pointer
+	cmpa 0,x	; check
+	bhi fndlb9
+	staa number+2
+	jsr upsclr	; push stack
+	ldaa colcon	; get const,
+	cmpa ac-1	; check
+	beq fndl45
+	bls fndlb9	; error!
+fndl45:	adda #1
+	daa	; bias it
+	staa number+2
+	jsr mult	; go multiply
+	jsr add	; go add
+fndlb5:	jsr timthr
+
+; routine to add value to x-reg. 
+
+addx:	ldaa xtemp	; get m.s.byte
+	ldab xtemp+1
+	addb number+2
+	adca number+1
+	staa xtemp	; save sum
+	stab xtemp+1
+	jsr stakdn
+	ldx xtemp	; set pointer
+	clr dimflg	; restore flag
+	rts	; return
+
+fndlb9:	ldaa #0x14	; set error
+	jmp mistak	; go report
+
+; routine to multiply by 3 
+
+timthr:	jsr upsclr
+	ldaa #0x3	; set multiplier
+	staa number+2
+	jsr mult	; go multiply
+
+; bcd to binary convert. 
+
+bincon:	ldaa number+2	; get ls byte
+	psha	; save
+	ldaa number+1
+	psha	; save:
+	clrb
+	stab number+1
+	stab number+2	; initialize
+	ldaa number
+	bsr adshf1	; add and shift
+	pula
+	psha
+	bsr adshf0	; go add in and shift
+	pula	; get ms byte again
+	bsr adshf1	; go add in and shift
+	pula	; get ls byte
+	psha
+	bsr adshf0
+	pula
+	bra addin	; g0 add in ones
+adshf0:	lsra
+	lsra
+	lsra
+	lsra	; move to ls half
+adshf1:	bsr addin	; go add in
+	ldab number+1
+	asla
+	rolb	; mult by 2
+	pshb
+	psha	; save
+	asla
+	rolb
+	asla
+	rolb	; mult by 4, =*8
+	staa number+2
+	pula
+	stab number+1
+	bsr addin1	; go add in
+	pula
+	adda number+1
+	staa number+1	; multiply by ten
+	rts
+addin:	anda #0x0f	; mask
+addin1:	adda number+2
+	staa number+2
+	bcc addin2	; check for carry
+	inc number+1
+addin2:	rts
+
+; put lable routine 
+
+putlbl:	ldaa number
+	staa 0,x	; put m.s. byte
+putlb2:	ldaa number	; +1
+	staa 1,x	; put next
+	ldaa number+2
+	staa 2,x	; put l.s. byte
+	rts	; return
+
+; dimension 
+
+dim:	ldx forstk	; set bounds
+	stx cpx1
+	jsr nxtspc
+dimn:	jsr skipsp	; classify
+	jsr fndvar
+	stx xtemp3	; save it
+	jsr nxtspc	; get to next
+	cmpa #'('	;  is it a parent
+	bne dim9
+dim01:	inx	; bump the pointer
+	jsr conskp	; convert dim
+	cmpa #')'	;  is it a paren
+	bne dim1
+	clra
+	clrb
+	psha	; save it
+	bra dim2
+dim1:	cmpa #','	;  comma?
+	bne dim9	; error!
+	ldaa number+2
+	beq dim9
+	psha	; save
+	inx	; bump the pointer
+	jsr conskp	; convert
+	ldab #1
+	cmpa #')'	;  paren?
+	beq dim2
+dim9:	ldaa #0x40	; set error
+	jmp mistak	; report
+dim2:	ldaa number+2
+	beq dim9
+	psha	; save
+	stx bufpnt	; save pointer
+	ldx xtemp3	; set x
+	ldaa #0x0a
+	aba	; set marker
+	staa 0,x	; save it
+	ldaa dimpnt	; get pointer
+	staa 1,x	; save it
+	ldaa dimpnt+1
+	staa 2,x
+	ldx dimpnt	; set pointer
+	pula
+	staa 0,x	; save 1st dim
+	inx	; bump the pointer
+	pulb
+	stab 0,x	; save 2nd dim
+	inx
+	stx xtemp	; save pointer
+	adda #1
+	daa	; bias
+	psha
+	tba
+	adda #1	; bias
+	daa	; adjust
+	tab	; save
+	jsr clrnum	; clear storage
+	stab number+2
+	jsr upsclr	; go clear
+	pula
+	staa number+2
+	jsr mult	; multiply
+	jsr fndlb5	; go fix x
+	jsr cmpx_	; test bounds
+	bls dim5
+	jmp adjen2
+dim5:	stx dimpnt	; save result
+	ldx bufpnt	; restore f'ntr
+	inx
+	jsr skipsp	; skip spaces
+	jsr tsttrm
+	beq runexc
+	inx	; bump the pointer
+	jmp dimn
+
+; external routine jump 
+
+extrnl:	jsr extern	; go to it
+
+; run executive 
+
+runexc:	clra
+	staa crflag
+	staa letflg
+	staa dimflg
+	staa stkcnt
+	ldaa runflg	; run mode?
+	bne runex0
+runexa:	jmp filbuf
+runex0:	ldx bufpnt	; set pointer
+rune05:	ldaa #0xd
+	ldab #':'	;  setup terminators
+runex1:	cmpa 0,x	; c.r. ?
+	beq runex2
+	cmpb 0,x	; is it a ':'  ?
+	beq rune27
+	inx	; bump the pointer
+	bra runex1	; repeat
+runex2:	inx
+rune22:	cpx endstr	; end of storage?
+	beq runexa
+rune25:	inx	; bump the pointer
+rune27:	inx
+	jsr break	; go check break
+runex3:	jsr fndkey	; find key word
+	tsta
+	bne runex4
+	ldx bufpnt	; set pointer
+	bsr tstlet
+	beq runex4
+	ldaa #0x10
+rune35:	jmp mistak
+runex4:	ldx 0,x
+	jmp 0,x	; go to routine
+
+; test for implied let 
+
+tstlet:	jsr class	; check char.
+	cmpb #2	; letter?
+	bne tstle2
+	inx	; bump the pointer
+	jsr skipsp	; skip spaces
+	cmpa #'='	;  equals?
+	beq tstle1
+	cmpa #'('	;  left parent
+	bne tstle2
+tstle1:	ldx #letadr	; set pointer
+	staa letflg	; set flag
+	clrb
+tstle2:	rts
+
+; run routine 
+
+run:	jsr clrbeg
+	jsr clrend
+	ldx memend
+	stx forstk
+	ldx #storsp	; set pointer
+	inc runflg
+	bra rune22
+
+; let routine 
+
+let:	ldx bufpnt
+	ldaa letflg	; test flag
+	bne let2
+	jsr nxtblk	; find next
+let2:	jsr expequ
+	jmp runexc
+
+; goto routine 
+
+goto:	jsr nxtspc	; find block
+goto1:	jsr expr	; go evaluate
+goto2:	jsr fndlin	; go find line
+goto3:	tstb	; find?
+	beq goto5
+	ldaa #0x16	; set error
+goto4:	jmp mistak	; report
+goto5:	incb
+	stab runflg	; set run flag
+	jmp rune22
+
+; input routine 
+
+input:	jsr nxtspc	; find next
+input0:	clr qmflag	; clear flag
+input1:	jsr skipsp	; skip spaces
+	cmpa #'"'	;  is it a quote?
+	bne input2
+	inx	; bump the pointer
+	jsr pstrng	; output string
+	bra input6
+input2:	jsr fndlbl	; find lable
+	stx xtemp4	; save pointer
+input3:	ldx #buffer	; set pointer
+	ldaa qmflag	; test flag
+	bne input4
+	ldaa #'?'
+	staa qmflag	; set flag
+	jsr outch	; out a ?
+input4:	jsr inch	; get a digit
+	cmpa #delcod	; delete?
+	bne inpu45
+	clr qmflag
+	bra input3
+inpu45:	staa 0,x	; save it
+	inx
+	cmpa #','	;  1s it comma?
+	beq input5
+	cmpa #0xd	; is it a c.r.?
+	bne input4
+	staa crflag	; set flag
+	jsr pcrlf	; output a cr & lf
+input5:	ldx #buffer	; set pointer
+	jsr bcdcon	; go cnvrt num.
+	ldx xtemp4
+	bsr labls2
+	stx bufpnt	; save pointer
+input6:	cmpa #','	;  is it a comma?
+	bne input7
+	inx
+	ldaa crflag	; test flag
+	beq input1
+	bra input0
+input7:	jsr tsttrm
+	bne input9
+inpu72:	ldaa crflag	; test flag
+	beq input8
+inpu75:	jmp runexc
+input8:	jsr inch	; get char.
+	cmpa #0xd	; c.r.?
+	bne input8
+	jsr pcrlf
+	bra inpu75
+input9:	ldaa #0x45
+	jmp mistak	; report error
+
+
+; get and put lable 
+
+lables:	jsr fndlbl	; go find it
+labls2:	jsr putlbl	; go put it
+	jmp nxtspc	; get to next set
+
+
+; data routine 
+
+data:	ldaa runflg	; running?
+	beq read6
+	jsr nxtspc	; find next
+	staa datafl	; set data flag
+	stx datast	; set pointer
+	stx datapt
+	bra read6	; return
+
+
+; read data routine 
+
+read:	ldaa runflg	; running?
+	beq read6
+	ldaa datafl	; check flag
+	beq read8
+	jsr nxtblk	; get next
+read2:	jsr skipsp	; go classify
+	jsr fndlbl
+	stx xtemp4
+	ldx bufpnt
+	stx xtemp5	; save it
+	ldx datapt	; get data pntr
+	jsr expr	; get data
+	ldaa 0,x	; get char.
+	jsr tsttrm	; test it
+	bne read25
+	ldx datast	; set pointer
+	bra read3
+read25:	inx	; bump the pointer
+read3:	stx datapt
+	ldx xtemp5
+	stx bufpnt
+	ldx xtemp4
+	bsr labls2
+	cmpa #','	;  is it a comma?
+	bne read4
+	inx
+	bra read2	; repeat
+read4:	jsr tsttrm
+	bne read8	; error
+read6:	jmp runexc	; return
+read8:	ldaa #0x51
+	jmp mistak
+
+; restore data string 
+
+restor:	stx xsave	; save pointer
+	ldx datast
+	stx datapt	; fix data pntr
+	ldx xsave	; restore pointer
+	bra read6
+
+; on goto routine 
+ongoto:	jsr nxtblk	; find next block
+	jsr expr	; eval. expr.
+	ldaa number+2
+	anda #0x0f	; mask l.s. digit
+	psha	; save a
+	clr crflag
+	inx	; bump the pointer
+	inx
+	ldaa 0,x	; get char
+	cmpa #'t'	;  is it a "t"?
+	beq ongot0
+	staa crflag	; set flag
+ongot0:	jsr nxtbl4	; get next
+	stx xsave	; save x
+	pula	; restore a
+ongot1:	deca
+	beq ongot4
+ongot2:	ldab 0,x	; get a char,
+	inx	; bump the pointer
+	cmpb #','	;  is it a comma?
+	bne ongot3
+	stx xsave	; save the pointer
+	bra ongot1	; repeat
+ongot3:	cmpb #0xd	; c^r^ ?
+	bne ongot2
+	ldx xsave	; restore pointer
+ongot4:	ldab crflag	; check flag
+	beq ongot6
+	jmp gosub2
+ongot6:	jmp goto1
+
+; routine 
+
+if:	jsr nxtspc	; find next
+	jsr expr	; eual expr
+	ldaa 0,x	; get char
+	bsr clsrel	; rel operator?
+	bne if9	; error!
+	psha	; save a
+	ldaa 1,x	; get char
+	bsr clsrel	; rel op?
+	pula	; restore a
+	bne if1
+	ldab 1,x
+	aba	; form rel code
+	inx	; bump the pointer
+if1:	inx
+	psha	; save a
+	jsr expr	; eval expr
+	pula
+	anda #0x0f	; mask
+	suba #9	; bias it
+	bmi if9	; error?
+	asla	; times four
+	asla
+	staa ofset3+1
+	jsr sub	; go compare
+	jsr zchk	; set cc reg
+ofset3:	bra ofset3
+bratbl:	ble if4	; branch table
+	bra if8
+	bne if4
+	bra if8
+	bge if4
+	bra if8
+	blt if4
+	bra if8
+	beq if4
+	bra if8
+	bgt if4
+	bra if8
+	bra if9	; error!
+if4:	ldx bufpnt	; set pointer
+	ldaa 0,x	; get char
+	cmpa #'t'	;  is it a "t"?
+	bne if6
+	jsr nxtspc
+	stx bufpnt	; save pointer
+	jsr class1	; go classify
+	cmpb #3	; is it a number?
+	bne if6
+	jmp goto1	; go to goto
+if6:	jmp runex3
+if8:	jmp runexc	; go process cmnd
+if9:	ldaa #0x62	; set error
+	jmp mistak
+
+; classify relational operation 
+
+clsrel:	cmpa #0x3b
+	bls clsre5
+	cmpa #0x3e	; check char
+	bhi clsre5
+	clrb	; clear flag
+	rts	; return
+clsre5:	incb	; set flag
+	rts	; return
+
+; gosub routine 
+
+gosub:	ldab runflg
+	beq if8
+	jsr nxtspc	; find next
+gosub2:	inc subcnt
+	jsr expr	; evaluate expr
+	dex
+	jsr fndcrt	; find c.r.
+	inx	; bump the pointer
+	ldaa 0,x	; get line no
+	psha
+	ldaa 1,x
+	psha	; save as ret. add.
+	sts cpx1	; save sp
+	ldx #stkbot+35
+	jsr cmpx_	; check bounds
+	bls gosub4
+	jmp adjen2	; rpt ovfl
+gosub4:	jmp goto2
+
+; return routine 
+
+return:	ldaa #0x73
+	dec subcnt	; dec counter
+	bpl retur2
+	jmp mistak	; error!
+retur2:	pula	; get ret. add.
+	pulb
+	jsr findln	; go find line
+	jmp goto3
+
+; expression equate 
+
+expequ:	jsr fndlb0	; find lable
+	stx xtemp4	; save
+	jsr nxtspc
+	inx
+	jsr expr	; go evaluate
+	ldx xtemp4	; get pointer
+	jmp putlbl	; install
+
+; for routine 
+
+for:	jsr nxtblk	; find next
+	psha
+	bsr expequ
+	ldx dimpnt
+	stx cpx1
+	ldx forstk
+	pula
+	staa 0,x
+	ldaa bufpnt+1
+	dex	; dec the pointer
+	staa 0,x
+	ldaa bufpnt	; set up index
+	dex
+	staa 0,x
+	dex
+	jsr cmpx_	; check for ovflw
+	bhi for5
+	jmp adjen2
+for5:	stx forstk	; save pointer
+	jmp runexc
+
+; next routine 
+
+next:	jsr nxtblk	; find next
+	stx nxpntr
+	ldx forstk	; set pointer
+next1:	cpx memend	; ovflw?
+	bne next2
+	ldx bufpnt	; restore pntr
+	jmp next9	; error!
+next2:	inx	; fixup pointer
+	inx
+	inx
+	cmpa 0,x	; check
+	bne next1
+	dex	; fix pointer
+	dex
+	dex
+	stx forstk
+	inx
+	ldx 0,x
+	stx bufpnt	; save it
+	jsr fndlbl	; find lable
+	stx xtemp4	; save it
+	jsr nxtspc	; find next
+	jsr expr	; evaluate
+	jsr stakup
+	ldx xtemp4	; restore pntr
+	jsr getval	; get lable value
+	ldx bufpnt
+	ldaa 0,x	; get char
+	cmpa #'s'	;  is it step?
+	beq next4
+	jsr upsclr
+	inca
+	staa number+2
+	bra next5
+next4:	jsr nxtsp4
+	jsr expr
+	ldaa number
+	staa letflg	; show neg.
+next5:	jsr add	; go add in step
+	ldx #tryval	; set pointer
+	jsr putlbl	; save lable
+	jsr sub	; compare
+	jsr zchk	; set cc reg
+	ldab letflg	; chk flag
+	bmi next6
+	tap	; set cc
+	bge next8
+	bra next7
+next6:	tap	; set cc
+	ble next8
+next7:	ldx forstk
+	inx	; fixup pntr
+	inx
+	inx
+	stx forstk	; save it
+	ldx nxpntr
+	stx bufpnt	; save
+	bra next85
+next8:	ldx #tryval
+	jsr getval
+	ldx xtemp4
+	jsr putlbl
+next85:	jmp runexc
+next9:	ldaa #0x81	; set error
+nextio:	jmp mistak
+
+; expression handler 
+
+expr:	clr stkcnt	; set count = 0
+expro:	ldaa stkcnt
+	staa auxcnt
+	bsr eval
+	tsta	; check for error
+	bne nextio
+expr1:	rts	; return
+; 
+;eval 
+; evaluate an algebraic string 
+; 
+eval:	sts stktop	; save sp top
+eva0a:	jsr skycls
+	stx bufpnt
+	cmpb #1	; see if empty expression
+	bne eval0
+	ldaa #0x21
+	bra eval3
+eval0:	lsrb	; set up
+	cmpb #3	; check for unary + or -
+	bne eval1
+	jsr upsclr
+eval1:	ldx bufpnt
+eval1a:	jsr skycls	; get next char
+	stx bufpnt
+	cmpb #4	; check for operators
+	bls eval1z
+	ldab #5	; set up
+eval1z:	aslb
+	stab offrel+1	; set up branch
+offrel:	bra offrel
+	bra eval2	; error
+	bra eval4	; terminator
+	bra eval8	; letter
+	bra eval7	; number
+	bra eval1c	; right paren
+	psha	; save
+	inx
+	bra eva0a	; again
+eval1c:	tsx	; get sp
+	dex	; adjust
+	ldab dimflg
+	cpx stktop	; check for empty
+	beq eval1e
+	pula
+	clrb
+	cmpa #'('	;  check for l paren on stack
+	beq eval1c	; if so, ok
+eval1e:	tstb	; check for alright
+	beq eval2	; if not set, error
+eval4:	clra
+	ldab stkcnt	; get stack stkcnt
+	decb	; check op stack
+	cmpb auxcnt
+	bne eval2	; if not empty, error
+	tsx
+	dex	; align
+	cpx stktop	; check operator stack
+	beq eval3a	; if not empty� error
+eval2:	ldaa #0x20	; set error number
+eval3:	lds stktop	; get sp
+eval3a:	ldx bufpnt	; set pointer
+	rts
+eval7:	jsr stakup	; shift op stack up
+	ldx bufpnt
+	jsr bcdcon	; get operand
+	bra eval12
+eval8:	ldaa 1,x	; get next char
+	jsr class1	; go classify
+	cmpb #2	; check for letter
+	bne eval9	; if not, variable
+	ldaa 0,x	; get char back
+	stx xsave	; set for entry to fimdkey
+	ldx #fcttbl
+	jsr fndke2	; go check function
+	tsta	; check success
+	beq eval4
+	jmp runex4	; go service
+eval86:	ldaa #'?'	;  get stgnum operator
+eval87:	psha	; put on stack
+	ldx xsave
+	jmp eva0a
+eval85:	ldaa #'@'	;  get abs operator
+	bra eval87
+eval88:	jsr upsclr	; move stack up
+	jsr random	; compute random #
+	staa number+2
+eval89:	ldx xsave	; restore pointer
+	bra eval12
+eval9:	ldab stktop
+	pshb
+	ldab stktop+1
+	pshb
+	ldab auxcnt	; get counter
+	pshb	; save
+	ldab dimflg	; get flag
+	pshb	; save
+	jsr fndlb0	; find variable storage
+	pulb	; get flag
+	stab dimflg	; restore
+	pulb	; get counter
+	stab auxcnt	; restore
+	pulb
+	stab stktop+1
+	pulb
+	stab stktop
+	jsr stakup
+	ldx xtemp
+	jsr getval	; move value to number
+	bra eva12a
+eva11c:	ldx bufpnt	; restore pointer
+	inx
+eval12:	stx bufpnt	; save pointer
+eva12a:	tsx
+	dex
+	cpx stktop	; check operator stack
+	beq eval10	; if empty, don't operate
+	pula
+	psha	; put back
+	cmpa #'('	;  check for left parem
+	beq eval10	; if so, don't operate
+	jsr class1	; go classyfy
+	pshb
+	lsrb	; set up id
+	ldaa stkcnt	; get count
+	deca
+	cmpb #4	; check for abs or son
+	beq eva12c	; if so, go ahead
+	cmpa auxcnt	; otherwise check for 2 operands
+	beq eval10	; if not, abort
+eva12c:	cmpa #9	; check overflow
+	bls eva12d	; ok
+	ldaa #0x24	; set error
+	bra eval19
+eva12d:	pula	; get classification
+	pulb	; get operator
+	suba #6	; remove bias
+	asla	; #2
+	staa opoff+1	; set up jmp
+	ldx #optbl	; point
+opoff:	ldx 0,x
+	jsr 0,x	; go operate
+	jsr zchk	; check result
+	bvc eva12a	; if no ovfl, go operate again
+eval18:	ldaa #0x23	; set error number
+eval19:	jmp eval3
+eval10:	jmp eval1
+optbl:	.word add
+	.word sub
+	.word signum
+	.word absval
+	.word mult
+	.word divide
+	.word expon
+; 
+; get value 
+; move 3 bytes pointed to by x to number 
+; 
+getval:	ldaa 0,x	; get value
+	staa number	; store
+	ldaa 1,x
+	staa number+1
+	ldaa 2,x
+	staa number+2
+	rts
+; 
+; 
+; stackup 
+; roll operational stack upward 
+; 
+stakup:	ldx #stkend	; point to end
+staku2:	ldab 3,x
+	stab 0,x	; move
+	inx
+	cpx #number	; see if done
+	bne staku2
+	inc stkcnt
+	rts
+; 
+; 
+; stackdown 
+; roll operational stack downward 
+; 
+stakdn:	ldx #ax-1	; point to store
+stakd1:	ldab 0,x
+	stab 3,x
+	dex
+	cpx #stkend-1	; see if done
+	bne stakd1
+	dec stkcnt
+	rts
+; 
+; 
+; uadd 
+; unsigned add of ax to number 
+; 
+uadd:	clc	; zero the carry
+uadd1:	ldx #number+2	; point to store
+uadd2:	ldaa 0,x	; get addend
+	adca 3,x	; add in augend
+	daa
+	staa 0,x	; save
+	dex
+	cpx #number-1	; see if done
+	bne uadd2
+uadd22:	pshb
+	ldab #0x02	; set for ovfl
+	bita #0xf0	; and again
+	bne uadd25
+	clrb	; reset ofvl
+uadd25:	orab ovflbf
+	stab ovflbf	; set ovfl if necessary
+	tba
+	pulb
+uadd3:	rts
+; 
+; 
+;usub 
+; unsigned subtract of ax from number 
+; 
+usub:	bsr tencom	; go ten's complement
+	sec	; fix up
+	bra uadd1	; go add
+; 
+; 
+;tencom 
+; unsigned ten's complement of ax (almost) 
+; 
+tencom:	ldx #ax+2	; point to ax
+tenco1:	ldaa #0x99
+	suba 0,x	; subtract from 99
+	staa 0,x	; save
+	dex
+	cpx #ax-1
+	bne tenco1
+	anda #0x0f	; reset sign
+	staa 1,x	; store
+	rts
+; 
+; 
+; set sin 
+; calculate result sign 
+; 
+setsin:	clr ovflbf	; clear ovfl indicator
+setsi0:	ldaa ax	; get sign
+	tab	; save
+	andb #0x0f	; reset sign
+	stab ax	; put back
+	staa axsign	; save sign
+	eora number	; form new sign
+	staa sign	; save
+absval:	ldab number	; get ms byte
+	andb #0x0f	; reset sign
+	stab number	; put back
+	tsta	; test new sign
+	rts
+; 
+; 
+; 
+; subtract ax from number 
+; 
+sub:	ldaa number	; get ms byte
+	eora #0xf0	; change sign
+	staa number	; put back
+; go into add 
+; 
+; 
+; add 
+; add ax to number 
+; 
+add:	bsr relay
+	bsr setsin	; go calculate sign
+	bpl add0	; use either sign
+	bsr usub	; otherwise subtract
+	tap	; set ccr
+	bvc add1	; check overflow
+;  axsign change for ax smaller 
+	bra add15
+add0:	bsr uadd	; go add
+	bra add2	; go fix sign
+add1:	bsr relay	; copy number to ax
+	jsr upsclr	; restore
+	bsr usub	; go negate
+add15:	clr ovflbf
+add2:	ldaa axsign	; get old sign
+; 
+; 
+; fixsin 
+; set the sign on the result 
+; 
+fixsin:	anda #0xf0	; mask
+	ldab #0x0f	; set mask
+	andb number	; reset sign
+	aba	; tack on sign
+com_:	staa number	; put back
+fix2:	rts
+; 
+; 
+; mult 
+; multiply ac by ax 
+; 
+mult:	bsr relay	; move stack
+	bsr setsin	; go calc. signs
+mult0:	jsr upsclr	; move stack up
+	ldab #5	; set counter
+mult1:	ldaa ac	; get ms byte of ac
+	beq mult3	; if zero , loop
+mult2:	jsr uadd	; add in ax
+	dec ac	; once done
+	bne mult2
+mult3:	decb	; once done
+	beq mult4	; check if all done
+	bsr acleft	; shift ac left
+	ldaa number
+	jsr uadd22
+	bra mult1
+; 
+; 
+; divide 
+; divide ac-number by ax 
+; 
+divide:	bsr relay
+	ldx #ax
+	jsr zchk1	; go check if ax=o
+	bne divid1	; if not, ok
+divid0:	ldaa #0x22	; set error
+	jmp eval3
+relay:	jmp stakdn	; relay to stack down
+divid1:	jsr setsin	; calc, signs
+	jsr stakup	; push back
+	bsr acleft	; shift down
+	clr 2,x
+	clr 3,x	; zero out number
+	ldab #5	; set loop count
+divid2:	bsr acleft	; move ac down
+divi2a:	jsr tencom	; take 10's comp
+divid3:	bsr dadd	; go special add
+	bita #0xf0	; check for overflow
+	bne divid4
+	jsr tencom	; if so, restore ax
+	clc
+	bsr dadd1	; add back in
+	decb	; one pass made
+	bne divid2
+mult4:	ldaa sign	; get the sign
+	bsr fixsin	; go fix up the sign
+	ldx #ac-1	; point to ac
+	jmp stakd1	; move stack back
+divid4:	inc number+2	; add one in
+	bra divid3	; go do again
+; 
+; 
+; acleft 
+; shift ac-number left 4 bits 
+; 
+acleft:	ldaa #4	; set for 4 bits
+aclef1:	ldx #ax-1	; point x
+	clc
+aclef2:	rol 0,x	; rotate
+	dex
+	cpx #ac-1	; check if done
+	bne aclef2
+	deca	; check for done
+	bne aclef1
+	rts
+; 
+; 
+; dadd 
+; add ax to a c 
+; 
+dadd:	sec
+dadd1:	ldx #ac+2
+	ldaa ac	; get ms byte
+	anda #0x0f	; reset sign
+	staa ac	; store back
+dadd2:	ldaa 0,x	; get addend
+	adca 6,x	; add in
+	daa
+	staa 0,x	; save
+	dex
+	cpx #ac-1	; see if done
+	bne dadd2
+	rts
+; 
+; signum 
+; calculate signum function 
+; 
+signum:	bsr zchk	; go check = o
+	beq signu2	; if soy result =0
+	ldab number	; otherwise get sign
+signu1:	bsr signu2	; go clear
+	inc number+2	; make = i
+	tba	; set for fixsin
+	jmp fixsin	; go set the sign
+signu2:	jmp clrnum
+; 
+; 
+; expon 
+; calculate exponentiation 
+; only positive exponents up to 99 allowed 
+; 
+expon:	bsr relay	; move operands down
+	clrb
+	stab ovflbf	; clear over flow
+	ldaa ax+2	; get exponent
+	beq signu1	; if o, go make result +1
+	jsr stakup	; get two copies
+	bsr relay_	; move down
+	bra expon1
+relay_:	jmp relay
+expon1:	adda #0x99	; decrement
+	daa
+	beq cmpx2	; when 0 all done
+	psha	; save exp
+	jsr setsi0	; go fix signs
+	jsr mult0	; go multiply
+	pula	; get exponent
+	bra expon1	; loop
+; 
+; 
+; cmpx_ 
+; full compare on x 
+; compares x with contents of cpx1 
+; 
+cmpx_:	stx cpx2	; save
+cmpx1:	ldaa cpx2	; get ms byte
+	cmpa cpx1	; compare
+	bne cmpx2	; if not equal, done
+	ldab cpx2+1	; get ls byte
+	cmpb cpx1+1	; compare
+cmpx2:	rts	; dome
+; 
+; 
+; zchk 
+; check operand for equal to 0 
+; 
+zchk:	ldx #number
+zchk1:	clrb
+	tst 2,x
+	bne zchk2
+	tst 1,x
+	bne zchk2
+	ldaa 0,x	; get ms byte
+	anda #0x0f
+	bne zchk2	; check for 0
+	staa 0,x	; reset sign bits
+	ldab #4
+zchk2:	ldaa 0,x	; get ms byte
+	rora	; move a sign bit to n
+	anda #8	; mask n bit
+	aba	; merge z and n
+	oraa ovflbf	; add in v
+	tap	; set ccr
+	rts
+; 
+; 
+; 
+skycls:	jsr skipsp
+	bra class1
+; 
+; 
+;class 
+;classify a character in the a accumulator 
+;classification returned in b 
+;  0 error 
+;  1 terminator 
+;  2 letter 
+;  3 number 
+;  4 ) 
+;  5 ( 
+;  6 + 
+;  7 - 
+;  8 sgn 
+;  9 abs 
+; 10  
+; 11 / 
+; 12 ~ 
+class:	ldaa 0,x	; get char
+class1:	ldab #1	; set up
+	cmpa #0xd	; check for cr
+	beq clas25
+	decb
+	psha	; save char
+clas2b:	suba #'('	;  remove bias
+	bmi class2	; check illegal
+	cmpa #'@'	; -'( check limit
+	bls class3	; not letter
+	cmpa #'z'	; -'( check for letter
+	bls clas1b
+	cmpa #'^'	; -'( check for illegal
+	bne class2
+	ldab #10	; fix up
+clas1b:	addb #02
+class2:	pula	; restore character
+clas25:	rts	; done
+class3:	stx xsave2	; save x reg
+	ldx #clstbl	; point to table
+	staa clsoff+1	; set bias
+clsoff:	ldab 0,x	; get classification
+	ldx xsave2	; restore x reg,
+	bra class2
+clstbl:	.byte 5,4,10,6,1,7,0,11,3,3,3,3
+	.byte 3,3,3,3,3,3,1,1,1,1,1,8,9
+; 
+; 
+; random generator 
+; 
+random:	ldab #8	; set counter
+	ldx #rndm
+rpt:	ldaa 3,x	; get m.s. byte of random no.
+	asla	; shift it left three:
+	asla	; times to get bit 28
+	asla	; in line with bit 31
+	eora 3,x	; xor a with random no
+	asla	; put bit 28.xor31 in
+	asla	; carry by shifting left
+	rol 0,x	; rotate all four bytes of
+	rol 1,x	; the random no, rotating
+	rol 2,x	; the carry into the lsb
+	rol 3,x	; the msb is lost
+	decb	; decrement the counter
+	bne rpt	; if its not o, go repeat
+	ldaa 0,x	; put random # in a
+	cmpa #0x9f	; check in range
+	bhi random	; in not get another
+	adda #0	; set half carry
+	daa
+	rts
+endstr:	.space 2
+storsp:	.space 2
+
+	; .org extern
+	; rts
+	; end of listing
+
+extern: rts ; todo: figure out what this is about
