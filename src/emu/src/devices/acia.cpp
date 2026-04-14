@@ -1,17 +1,48 @@
 #include "acia.h"
-#include "machine.h"
+#include "machine/machine.h"
+
+std::string decode_acia_status(uint8_t s)
+{
+    std::string out;
+
+    auto add = [&](const char *name)
+    {
+        if (!out.empty())
+            out += ", ";
+        out += name;
+    };
+
+    if (s & 0x01)
+        add("RDRF");
+    if (s & 0x02)
+        add("TDRE");
+    if (s & 0x04)
+        add("DCD");
+    if (s & 0x08)
+        add("CTS");
+    if (s & 0x20)
+        add("FE");
+    if (s & 0x40)
+        add("OVRN");
+    if (s & 0x80)
+        add("IRQ");
+
+    return out;
+}
 
 uint8_t Acia::in(uint8_t port)
 {
     char buf[80];
+    char buf2[10];
+
     switch (port & 0xf)
     {
     case 0:
     {
         uint8_t status = getStatusByte();
 
-        snprintf(buf, sizeof(buf), "%s status in %02x\n", name(), status);
-        Machine::instance().log(buf);
+        snprintf(buf, sizeof(buf), "%s status in 0x%02x [%s]\n", name(), status, decode_acia_status(status).c_str());
+        Machine::instance().logging_.log(buf);
 
         return status;
     }
@@ -20,7 +51,9 @@ uint8_t Acia::in(uint8_t port)
         std::optional<uint8_t> c = terminalOutAciaInBuffer.next();
         if (c.has_value())
         {
-            snprintf(buf, sizeof(buf), "%s data in %02x\r\n", name(), c.value());
+            Machine::instance().expandchar(c.value(), buf2, sizeof(buf2));
+            snprintf(buf, sizeof(buf), "%s data in 0x%02x (%s)\r\n", name(), c.value(), buf2);
+            Machine::instance().logging_.log(buf);
             lastOut = c.value();
         }
 
@@ -34,6 +67,7 @@ uint8_t Acia::in(uint8_t port)
 void Acia::out(uint8_t port, uint8_t value)
 {
     char buf[80];
+    char buf2[10];
 
     switch (port & 0xf)
     {
@@ -67,16 +101,17 @@ void Acia::out(uint8_t port, uint8_t value)
         // 0b10 = /64
         // 0b11 = reset - set to 0x11 to reset device then select clock divisor
 
-        snprintf(buf, sizeof(buf), "%s control out %02x\n", name(), value);
-        Machine::instance().log(buf);
+        snprintf(buf, sizeof(buf), "%s control out 0x%02x\n", name(), value);
+        Machine::instance().logging_.log(buf);
         // control
         controlByte = value;
         break;
     }
     case 1:
     {
-        snprintf(buf, sizeof(buf), "%s data out %02x\n", name(), value);
-        Machine::instance().log(buf);
+        Machine::instance().expandchar(value, buf2, sizeof(buf2));
+        snprintf(buf, sizeof(buf), "%s data out 0x%02x (%s)\n", name(), value, buf2);
+        Machine::instance().logging_.log(buf);
 
         terminalInAciaOutBuffer.push(value);
         break;
@@ -89,8 +124,6 @@ void Acia::out(uint8_t port, uint8_t value)
 void Acia::terminalOutAciaIn(uint8_t c)
 {
     terminalOutAciaInBuffer.push(c);
-
-    // printf("terminalOutAciaIn: %c, terminalOutAciaInBuffer length: %d\r\n", c, terminalOutAciaInBuffer.length());
 }
 
 bool Acia::terminalOutAciaInReady()
@@ -111,8 +144,7 @@ bool Acia::terminalInAciaOutReady()
 uint8_t Acia::getStatusByte()
 {
     uint8_t status = (terminalOutAciaInReady() ? status_rdrf : 0) // receive buffer full, that is there's at least one byte in the queue
-                     | status_tdre                                // "transmit buffer empty", but really we have a basically infinite queue
-                     | status_irq_n;                              // there are no interrupts
+                     | status_tdre;                               // "transmit buffer empty", but really we have a basically infinite queue
 
     return status;
 }

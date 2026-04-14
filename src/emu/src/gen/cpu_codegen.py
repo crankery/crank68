@@ -3,7 +3,8 @@
 import csv
 from dataclasses import dataclass
 from pathlib import Path
-import sys
+
+CWD = Path(__file__).resolve().parent
 
 @dataclass
 class OpInfo:
@@ -138,20 +139,19 @@ def emit_operations_header(operations_header_path: Path, operations_header_templ
 
 def main() -> None:
     CPU_OPERATIONS = "cpu_operations"
-    CPU_OPERATIONS_CSV = Path(f"{CPU_OPERATIONS}.csv")
-    CPU_OPERATIONS_H_IN = Path(f"{CPU_OPERATIONS}_h.in")
-    CPU_OPERATIONS_H = Path(f"{CPU_OPERATIONS}.g.h")
-    CPU_OPERATIONS_CPP = Path(f"{CPU_OPERATIONS}.cpp")
+    CPU_OPERATIONS_CSV = CWD / Path(f"{CPU_OPERATIONS}.csv")
+    CPU_OPERATIONS_H_IN = CWD / Path(f"{CPU_OPERATIONS}_h.in")
+    CPU_OPERATIONS_H = CWD / Path(f"{CPU_OPERATIONS}.g.h")
     
     CPU_DEFS = "cpu_defs"
-    CPU_DEFS_H = Path(f"{CPU_DEFS}.g.h")
-    CPU_DEFS_H_IN = Path(f"{CPU_DEFS}_h.in")
-    CPU_DEFS_CPP = Path(f"{CPU_DEFS}.g.cpp")
-    CPU_DEFS_CPP_IN = Path(f"{CPU_DEFS}_cpp.in")
+    CPU_DEFS_H = CWD / Path(f"{CPU_DEFS}.g.h")
+    CPU_DEFS_H_IN = CWD / Path(f"{CPU_DEFS}_h.in")
+    CPU_DEFS_CPP = CWD / Path(f"{CPU_DEFS}.g.cpp")
+    CPU_DEFS_CPP_IN = CWD / Path(f"{CPU_DEFS}_cpp.in")
 
     CPU_DISPATCH = "cpu_dispatch"
-    CPU_DISPATCH_CPP = Path(f"{CPU_DISPATCH}.g.cpp")
-    CPU_DISPATCH_CPP_IN = Path(f"{CPU_DISPATCH}_cpp.in")
+    CPU_DISPATCH_CPP = CWD / Path(f"{CPU_DISPATCH}.g.cpp")
+    CPU_DISPATCH_CPP_IN = CWD / Path(f"{CPU_DISPATCH}_cpp.in")
 
     entries = load_csv(CPU_OPERATIONS_CSV)
 

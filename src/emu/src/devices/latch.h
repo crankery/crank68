@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstring>
+
 #include "memoryIODevice.h"
 
 // simple write only latch

@@ -1,7 +1,8 @@
 #pragma once
 
-#include "mem.h"
 #include <stdio.h>
+
+#include "mem.h"
 
 class MemoryIODevice
 {
@@ -40,15 +41,11 @@ public:
         uint8_t slot = io_port >> 4;
         uint8_t offset = io_port & 0xf;
 
-        // printf("%s handles %04x?\r\n", name(), addr);
-
         if ((slot_ == slot))
         {
             if (offset >= offset_ && offset < offset_ + count_)
             {
-                // printf("%s handles io_port %02x: slot: %1x=%1x %1x>=%1x<%1x\r\n", name(), io_port, slot, slot_, offset, offset_, offset_ + count_);
                 int8_t devPort = offset - offset_;
-                // printf("%s dev match %x:%x\r\n", name(), slot, devPort);
                 return devPort;
             }
         }

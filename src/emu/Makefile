@@ -1,47 +1,55 @@
-BUILD_DIR = build
-GENERATOR = cpu_codegen.py
+SRC_DIR := src
 
-# todo: build the bios header
-# xxd -i ../roms/c68bios/bios.rom bios.h
+BUILD_DIR := build
+
+OBJ_DIR := $(BUILD_DIR)/obj
+BIN_DIR := $(BUILD_DIR)/bin
+
+GEN_DIR := $(SRC_DIR)/gen
+GENERATOR := $(GEN_DIR)/cpu_codegen.py
 
 # Compiler
-CXX = g++
+CXX := g++
 
 # Python
-PYTHON = python3
+PYTHON := python3
 
 # Compiler flags
-CXXFLAGS = -std=c++17 -Wall -O2 -Imame -g
+CXXFLAGS := -std=c++17 -Wall -O2 -Imame -g -I$(SRC_DIR)
 
 # Target executable
-TARGET = $(BUILD_DIR)/emu
+TARGET := $(BIN_DIR)/emu
 
 # Default target
 all: $(TARGET)
 
-GEN_TEMPLATES = $(wildcard *.in)
-GEN_INPUTS = cpu_operations.csv
-GEN_OUTS_CPP = cpu_defs.g.cpp cpu_dispatch.g.cpp
-GEN_OUTS_H = cpu_defs.g.h cpu_operations.g.h
+GEN_TEMPLATES = $(wildcard $(GEN_DIR)/*.in)
+GEN_INPUTS = $(GEN_DIR)/cpu_operations.csv
+GEN_OUTS_CPP = $(GEN_DIR)/cpu_defs.g.cpp $(GEN_DIR)/cpu_dispatch.g.cpp
+GEN_OUTS_H = $(GEN_DIR)/cpu_defs.g.h $(GEN_DIR)/cpu_operations.g.h
 GEN_OUTS = $(GEN_OUTS_CPP) $(GEN_OUTS_H)
+
 $(GEN_OUTS): $(GENERATOR) ${GEN_TEMPLATES} ${GEN_INPUTS}
 	$(PYTHON) $(GENERATOR)
 
 $(GEN_OUTS_CPP:.cpp=.o): $(GEN_OUTS)
 
-# Source files (all .cpp in current directory)
-SRCS = $(wildcard *.cpp)
-DOT_HS = $(wildcard *.h)
+# Source files
+SRCS = $(shell find src -name '*.cpp')
+
+# Header files
+DOT_HS = $(shell find src -name '*.h')
 
 # Object files
-OBJS = $(SRCS:%.cpp=$(BUILD_DIR)/%.o)
+OBJS = $(patsubst src/%.cpp,$(OBJ_DIR)/%.o,$(SRCS))
 
 # Linker
-$(TARGET): $(OBJS) $(DOT_HS)
+$(TARGET): $(OBJS)
 	$(CXX) $(CXXFLAGS) $(OBJS) -o $@
 
 # Compile
-${BUILD_DIR}/%.o: %.cpp | $(BUILD_DIR) $(GEN_OUTS)
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp $(GEN_OUTS_H)
+	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 # Clean build files

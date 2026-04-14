@@ -19,7 +19,6 @@ public:
 private:
     static const uint16_t StartAddress = 0x0000;
     static const uint16_t EndAddress = 0xbfff;
-    static const uint16_t Size = EndAddress - StartAddress + 1;
 
-    std::array<uint8_t, Size> memory_;
+    std::array<uint8_t, EndAddress - StartAddress + 1> memory_;
 };

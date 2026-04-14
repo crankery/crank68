@@ -32,12 +32,48 @@ bool Cpu::op_addb(uint8_t opcode, op_names op, addr_mode mode)
 
 bool Cpu::op_adca(uint8_t opcode, op_names op, addr_mode mode)
 {
-    return false;
+    uint8_t value;
+
+    if (!load8(value, mode))
+        return false;
+
+    s_.a = adc8(s_.a, value);
+    return true;
 }
 
 bool Cpu::op_adcb(uint8_t opcode, op_names op, addr_mode mode)
 {
-    return false;
+    uint8_t value;
+
+    if (!load8(value, mode))
+        return false;
+
+    s_.b = adc8(s_.b, value);
+    return true;
+}
+
+uint8_t Cpu::adc8(uint8_t a, uint8_t b)
+{
+    uint16_t sum = a + b + (get_flag(C) ? 1 : 0);
+
+    uint8_t result = sum & 0xFF;
+
+    // Carry out
+    set_flag(C, sum > 0xFF);
+
+    // Zero
+    set_flag(Z, result == 0);
+
+    // Negative
+    set_flag(N, (result & 0x80) != 0);
+
+    // Overflow (signed)
+    set_flag(V, (~(a ^ b) & (a ^ result) & 0x80) != 0);
+
+    // Half carry (for BCD, still required)
+    set_flag(H, ((a & 0x0F) + (b & 0x0F) + (get_flag(C) ? 1 : 0)) > 0x0F);
+
+    return result;
 }
 
 bool Cpu::op_cba(uint8_t opcode, op_names op, addr_mode mode)
@@ -51,6 +87,11 @@ bool Cpu::op_cmpa(uint8_t opcode, op_names op, addr_mode mode)
 
     switch (mode)
     {
+    case addr_mode::dir:
+    {
+        v = read8(fetch8());
+        break;
+    }
     case addr_mode::imb:
     {
         v = fetch8();

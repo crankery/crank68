@@ -1,6 +1,5 @@
 SHELL := /bin/bash
 
-# TSC MICRO BASIC PLUS
 NAME := microbas
 
 TOOLS_DIR := ../../tools
@@ -9,26 +8,18 @@ TOOLS_BIN_DIR := ${TOOLS_DIR}/bin
 VASM := vasm6800_std
 VASM_BIN := $(TOOLS_BIN_DIR)/$(VASM)
 
-PYTHON := python3
-TRANSLATE := $(TOOLS_DIR)/translate.py
+SRC := $(NAME).s
+LST := $(NAME).lst
 
-ORIG := microbas.asm
-SRC := microbas.s
-OUT := $(SRC:%.s=%.o)
-LST := $(SRC:%.s=%.lst)
-
-TARGET := microbas.o
+TARGET := $(NAME).rom
 
 .PHONY: all clean
 
 all: $(TARGET)
 
-$(SRC): $(TRANSLATE) $(ORIG)
-	$(PYTHON) $(TRANSLATE) $(ORIG) > $(SRC)
-
-%.o: %.s | 
-	$(VASM_BIN) -Fvobj -L $(@:.o=.lst) -o $@ $<
-	cat $(@:.o=.lst)
+$(TARGET): $(SRC) | 
+	$(VASM_BIN) -Fbin -L $(LST) -o $@ $<
+	cat $(LST)
 
 clean:
-	rm -rf $(TARGET) $(LST) $(OUT) $(SRC)
+	rm -rf $(TARGET) $(LST)

@@ -1,6 +1,6 @@
 
 #include "bankedMemory.h"
-#include "machine.h"
+#include "machine/machine.h"
 
 int BankedMemory::getBankedMemoryAddr(uint16_t busAddr) const
 {

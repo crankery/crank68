@@ -2,8 +2,28 @@
 #include <iomanip>
 
 #include "cpu.h"
-#include "machine.h"
-#include "cpu_defs.g.h"
+#include "machine/machine.h"
+#include "gen/cpu_defs.g.h"
+
+uint8_t Cpu::read8(uint16_t addr) const
+{
+    return Machine::instance().read8(addr);
+}
+
+uint16_t Cpu::read16(uint16_t addr) const
+{
+    return Machine::instance().read16(addr);
+}
+
+void Cpu::write8(uint16_t addr, uint8_t value)
+{
+    Machine::instance().write8(addr, value);
+}
+
+void Cpu::write16(uint16_t addr, uint16_t value)
+{
+    Machine::instance().write16(addr, value);
+}
 
 void Cpu::step()
 {
@@ -14,35 +34,12 @@ void Cpu::step()
 
     bool result = dispatch(opcode, op_info);
 
-    Machine::instance().trace(pc);
+    Machine::instance().logging_.trace(pc);
 
     if (!result)
     {
         unimplemented(opcode);
     }
-}
-
-uint8_t Cpu::read8(uint16_t addr) const
-{
-    return Machine::instance().read(addr);
-}
-
-void Cpu::write8(uint16_t addr, uint8_t value)
-{
-    Machine::instance().write(addr, value);
-}
-
-uint16_t Cpu::read16(uint16_t addr) const
-{
-    uint8_t hi = read8(addr);
-    uint8_t lo = read8(static_cast<uint16_t>(addr + 1));
-    return static_cast<uint16_t>((hi << 8) | lo);
-}
-
-void Cpu::write16(uint16_t addr, uint16_t value)
-{
-    write8(addr, static_cast<uint8_t>(value >> 8));
-    write8(static_cast<uint16_t>(addr + 1), static_cast<uint8_t>(value & 0xFF));
 }
 
 uint8_t Cpu::fetch8()
@@ -155,7 +152,7 @@ void Cpu::reset()
 
     char message[256];
     snprintf(message, sizeof(message), "---\nreset pc=%04x\n---\n", reset_vector);
-    Machine::instance().log(message);
+    Machine::instance().logging_.log(message);
 
     s_.a = 0;
     s_.b = 0;
@@ -169,7 +166,7 @@ void Cpu::reset()
 {
     char message[256];
     snprintf(message, sizeof(message), "\r\n---\r\n\r\nunimplemented opcode 0x%02x at 0x%04x\r\n\r\n---\r\n", opcode, s_.pc - 1);
-    Machine::instance().log(message);
+    Machine::instance().logging_.log(message);
 
     throw std::runtime_error(message);
 }
@@ -320,27 +317,127 @@ void Cpu::do_test(uint8_t value)
     set_flag(C, false);
 }
 
+bool Cpu::store8(uint8_t value, addr_mode mode)
+{
+    uint16_t addr;
+
+    switch (mode)
+    {
+    case addr_mode::dir:
+        addr = fetch8();
+        break;
+
+    case addr_mode::idx:
+    {
+        uint8_t off = fetch8();
+        addr = s_.x + off;
+        break;
+    }
+
+    case addr_mode::ext:
+        addr = fetch16();
+        break;
+
+    default:
+        return false;
+    }
+
+    write8(addr, value);
+
+    set_nz8(value);
+    set_flag(V, false);
+    return true;
+}
+
+bool Cpu::store16(uint16_t value, addr_mode mode)
+{
+    uint16_t addr;
+
+    switch (mode)
+    {
+    case addr_mode::dir:
+    {
+        addr = fetch8();
+        break;
+    }
+    case addr_mode::idx:
+    {
+        uint8_t off = fetch8();
+        addr = s_.x + off;
+        break;
+    }
+
+    case addr_mode::ext:
+        addr = fetch16();
+        break;
+
+    default:
+        return false;
+    }
+
+    write16(addr, value);
+
+    set_nz16(value);
+    set_flag(V, false);
+    return true;
+}
+
+bool Cpu::load8(uint8_t &value, addr_mode mode)
+{
+    uint16_t addr;
+
+    switch (mode)
+    {
+    case addr_mode::dir:
+        addr = fetch8();
+        value = read8(addr);
+        break;
+
+    case addr_mode::imb:
+        value = fetch8();
+        break;
+
+    case addr_mode::idx:
+    {
+        uint8_t off = fetch8();
+        addr = s_.x + off;
+        value = read8(addr);
+        break;
+    }
+
+    case addr_mode::ext:
+        addr = fetch16();
+        value = read8(addr);
+        break;
+
+    default:
+        return false;
+    }
+
+    return true;
+}
+
 bool Cpu::load16(uint16_t &dst, addr_mode mode)
 {
     uint16_t value;
 
     switch (mode)
     {
+    case addr_mode::dir:
+        value = read16(fetch8());
+        break;
     case addr_mode::imw:
         value = fetch16();
         break;
-
     case addr_mode::idx:
     {
         uint8_t off = fetch8();
         value = read16(s_.x + off);
         break;
     }
-
     case addr_mode::ext:
         value = read16(fetch16());
         break;
-
     default:
         return false;
     }
@@ -399,7 +496,7 @@ std::optional<uint8_t> Cpu::read_operand8(addr_mode mode)
 {
     char message[256];
     snprintf(message, sizeof(message), "---\ninfinite loop at %04x\n---\n", s_.pc);
-    Machine::instance().log(message);
+    Machine::instance().logging_.log(message);
 
     throw std::runtime_error("infinite loop");
 }

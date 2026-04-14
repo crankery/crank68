@@ -1,5 +1,5 @@
 #include "symbols.h"
-#include "machine.h"
+#include "machine/machine.h"
 
 bool Symbols::load(std::string_view filename)
 {
@@ -52,7 +52,7 @@ bool Symbols::load(std::string_view filename)
 
     char buffer[256];
     snprintf(buffer, sizeof(buffer), "loaded %d symbols from %s\r\n", count, std::string(filename).c_str());
-    Machine::instance().log(buffer);
+    Machine::instance().logging_.log(buffer);
 
     return true;
 }

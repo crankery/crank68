@@ -22,7 +22,7 @@ private:
     static const int InstalledBanks = 8 * 8; // 8x8KB * 8 64K chips
     static const uint16_t StartAddress = 0xC000;
     static const uint16_t EndAddress = 0xDFFF;
-    static const uint16_t Size = EndAddress - StartAddress + 1;
+    static const uint16_t Size = 0x2000;
 
     std::array<uint8_t, InstalledBanks * Size> bankedMemory_;
 };

@@ -1,5 +1,5 @@
 #include "rom.h"
-#include "machine.h"
+#include "machine/machine.h"
 
 uint8_t Rom::read(uint16_t addr) const
 {

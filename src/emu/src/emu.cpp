@@ -4,13 +4,10 @@
 #include <unistd.h>
 #include <sys/select.h>
 #include <termios.h>
-
+#include <time.h>
 #include <stdio.h>
-#include "cpu.h"
-#include "ram.h"
-#include "rom.h"
-#include "memoryIO.h"
-#include "machine.h"
+
+#include "machine/machine.h"
 
 struct LoadRequest
 {
@@ -19,9 +16,16 @@ struct LoadRequest
 };
 
 std::vector<LoadRequest> loads_;
-std::vector<uint16_t> halt_addresses_;
+std::vector<uint16_t> breakpoints_;
 struct termios orig_termios_;
 bool show_control = false;
+
+static uint64_t now_us()
+{
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (uint64_t)ts.tv_sec * 1000000ULL + (uint64_t)ts.tv_nsec / 1000ULL;
+}
 
 std::optional<uint16_t> parse_hex16(std::string_view text)
 {
@@ -111,9 +115,9 @@ std::optional<LoadRequest> parse_load(std::string_view arg)
     return LoadRequest{filename, *addr};
 }
 
-void add_halt_address(uint16_t addr)
+void add_breakpoint(uint16_t addr)
 {
-    halt_addresses_.push_back(addr);
+    breakpoints_.push_back(addr);
 }
 
 int parse_args(int argc, char **argv)
@@ -128,22 +132,22 @@ int parse_args(int argc, char **argv)
             continue;
         }
 
-        if (arg == "--halt")
+        if (arg == "--break")
         {
             if (i + 1 >= argc)
             {
-                std::fprintf(stderr, "--halt requires an address\n");
+                std::fprintf(stderr, "--break requires an address\n");
                 return 1;
             }
 
             auto addr = parse_hex16(argv[++i]);
             if (!addr)
             {
-                std::fprintf(stderr, "invalid halt address: %s\n", argv[i]);
+                std::fprintf(stderr, "invalid break address: %s\n", argv[i]);
                 return 1;
             }
 
-            add_halt_address(*addr);
+            add_breakpoint(*addr);
             continue;
         }
 
@@ -206,32 +210,118 @@ bool load_binary(const std::string &filename, uint16_t addr)
     std::fclose(f);
 
     char msg[256];
-    snprintf(msg, sizeof(msg), "loaded %s @ %04x\n", filename.c_str(), addr);
-    Machine::instance().log(msg);
+    snprintf(msg, sizeof(msg), "loaded %s @ 0x%04x:0x%04x\n", filename.c_str(), addr, current);
+    Machine::instance().logging_.log(msg);
 
     return true;
 }
 
+void dump_memory_binary(const char *filename, uint16_t start, uint16_t end)
+{
+    FILE *f = std::fopen(filename, "wb");
+    if (!f)
+    {
+        std::perror("fopen");
+        return;
+    }
+
+    for (uint32_t addr = start; addr <= end; ++addr)
+    {
+        uint8_t b = Machine::instance().read8(static_cast<uint16_t>(addr));
+        if (std::fwrite(&b, 1, 1, f) != 1)
+        {
+            std::perror("fwrite");
+            break;
+        }
+    }
+
+    std::fclose(f);
+}
+
+void dump_traceback()
+{
+    FILE *fp = fopen("emu_traceback.log", "w");
+    fprintf(fp, "traceback:\r\n\r\n");
+    Machine::instance().logging_.dumpTraces(fp);
+    fprintf(fp, "\r\n(exit)\r\n");
+    fflush(fp);
+    fclose(fp);
+}
+
 void run()
 {
+    const uint64_t sleep_threshold_cycles = 1000; // sleep/check every 1000 cycles
+
     char message[256];
-    uint16_t lastpc = 0x0;
+    uint16_t lastpc = 0x0000;
+    uint64_t total_cycles;
+    uint64_t last_sleep_check_cycles = 0;
+    uint64_t start_us = now_us();
+    bool lastBreakpoint = false;
+
     while (1)
     {
+        total_cycles = Machine::instance().cpu_.cycles_;
+
+        if ((total_cycles - last_sleep_check_cycles) >= sleep_threshold_cycles)
+        {
+            last_sleep_check_cycles = total_cycles;
+
+            // At 1 MHz, 1 cycle = 1 microsecond
+            uint64_t target_elapsed_us = total_cycles;
+            uint64_t actual_elapsed_us = now_us() - start_us;
+
+            if (target_elapsed_us > actual_elapsed_us)
+            {
+                uint64_t sleep_us = target_elapsed_us - actual_elapsed_us;
+
+                // avoid giant sleeps if something odd happens
+                if (sleep_us > 20000)
+                {
+                    sleep_us = 20000;
+                }
+
+                snprintf(message, sizeof(message), "(sleep for %lluµs)\r\n", sleep_us);
+                Machine::instance().logging_.log(message);
+                usleep((useconds_t)sleep_us);
+            }
+        }
+
         uint16_t pc = Machine::instance().cpu_.state().pc;
 
-        if (std::find(halt_addresses_.begin(), halt_addresses_.end(), pc) != halt_addresses_.end())
+        if (!lastBreakpoint && std::find(breakpoints_.begin(), breakpoints_.end(), pc) != breakpoints_.end())
         {
-            snprintf(message, sizeof(message), "\r\nhalt address @ 0x%04x\r\n", pc);
-            Machine::instance().log(message);
+            Machine::instance().logging_.trace(pc);
+            snprintf(message, sizeof(message), "\r\nbreakpoint @ 0x%04x\r\n", pc);
+            Machine::instance().logging_.log(message);
             printf("%s", message);
-            return;
+
+            // write out the traceback
+            dump_traceback();
+
+            // dump all memory on exit
+            dump_memory_binary("emu_memorydump.bin", 0x0000, 0xBFFF);
+
+            printf("\r\npress key to continue...");
+
+            while (!(kbhit()))
+            {
+                usleep(5000);
+            }
+
+            getch();
+
+            lastBreakpoint = true;
+            continue;
         }
+
+        lastBreakpoint = false;
 
         if (pc == lastpc)
         {
+            Machine::instance().logging_.trace(pc);
             snprintf(message, sizeof(message), "\r\nloop detected @ 0x%04x\r\n", pc);
-            Machine::instance().log(message);
+            Machine::instance().logging_.log(message);
             printf("%s", message);
             return;
         }
@@ -242,17 +332,33 @@ void run()
 
         if (kbhit())
         {
-            int c = getchar();
-            if (c == 0x03)
+            int c = getch();
+
+            // treat ctrl-] as a command to exit the emulator
+            if (c == (']' & 0x1f))
             {
+                snprintf(message, sizeof(message), "\r\n^] pressed @ 0x%04x\r\n", pc);
+                Machine::instance().logging_.log(message);
+                printf("%s", message);
                 return;
             }
+
+            // map delete to backspace
+            if (c == 0x7F)
+            {
+                c = '\b';
+            }
+
+            // reverse meaning of caps lock - if it's on,
+            // treat letters as lowercase, if it's off, treat letters as uppercase
+            c = (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')
+                    ? (c ^ 0x20)
+                    : c;
 
             Machine::instance().memory_io_.acia_0_.terminalOutAciaIn(c);
         }
 
         auto c = Machine::instance().memory_io_.acia_0_.terminalInAciaOut();
-
         if (c.has_value())
         {
             uint8_t v = c.value();
@@ -264,7 +370,12 @@ void run()
                 case '\r':
                 case '\n':
                 case '\t':
-                    printf("%c", v);
+                    putc(v, stdout);
+                    break;
+                case '\b':
+                    putc('\b', stdout);
+                    putc(' ', stdout);
+                    putc('\b', stdout);
                     break;
                 default:
                 {
@@ -279,43 +390,15 @@ void run()
             }
             else
             {
-                printf("%c", v);
+                putc(v, stdout);
             }
         }
-
-        // usleep(2500);
     }
-}
-
-void dump_memory_binary(const char *filename, uint16_t start, uint16_t end)
-{
-    FILE *f = std::fopen(filename, "wb");
-    if (!f)
-    {
-        std::perror("fopen");
-        return;
-    }
-
-    for (uint32_t addr = start; addr <= end; ++addr)
-    {
-        uint8_t b = Machine::instance().read(static_cast<uint16_t>(addr));
-        if (std::fwrite(&b, 1, 1, f) != 1)
-        {
-            std::perror("fwrite");
-            break;
-        }
-    }
-
-    std::fclose(f);
 }
 
 int main(int argc, char **argv)
 {
-    Machine::instance().startLog();
-
-    uint8_t acia0switches = 0b00010101;
-
-    Machine::instance().memory_io_.config_switches_.setValue(acia0switches);
+    char message[256];
 
     int parsed = parse_args(argc, argv);
     if (parsed != 0)
@@ -324,16 +407,23 @@ int main(int argc, char **argv)
         return -1;
     }
 
+    // load all the binaries
     for (const auto &req : loads_)
     {
         load_binary(req.filename, req.address);
     }
 
+    // set the config switches
+    uint8_t acia0switches = 0b00010101;
+    Machine::instance().memory_io_.config_switches_.setValue(acia0switches);
+
     set_conio_terminal_mode();
     setvbuf(stdout, NULL, _IONBF, 0);
 
+    // reset the cpu (load the PC from the reset vector)
     Machine::instance().cpu_.reset();
 
+    // run the emulation until error or ^]
     int result = 0;
     try
     {
@@ -341,26 +431,38 @@ int main(int argc, char **argv)
     }
     catch (const std::exception &e)
     {
-        reset_terminal_mode();
+        Machine::instance().logging_.trace(Machine::instance().cpu_.s_.pc);
         fprintf(stderr, "%s", e.what());
         result = 1;
     }
 
-    Machine::instance().endLog(true);
+    auto state = Machine::instance().cpu_.s_;
+    snprintf(message, sizeof(message), "\r\nexit @ 0x%04x\r\n", state.pc);
+    Machine::instance().logging_.log(message);
+    snprintf(message,
+             sizeof(message),
+             "a:0x%02x b:0x%02x x:0x%04x sp:0x%04x cc:%c%c%c%c%c%c\r\n",
+             state.a,
+             state.b,
+             state.x,
+             state.sp,
+             state.cc & C ? 'C' : '-',
+             state.cc & V ? 'V' : '-',
+             state.cc & Z ? 'Z' : '-',
+             state.cc & N ? 'N' : '-',
+             state.cc & I ? 'I' : '-',
+             state.cc & H ? 'H' : '-');
+    Machine::instance().logging_.log(message);
 
     // write out the traceback
-    FILE *fp = fopen("emu_traceback.log", "w");
-    fprintf(fp, "traceback:\r\n\r\n");
+    dump_traceback();
 
-    Machine::instance().dumpTraces(fp);
-
-    fprintf(fp, "\r\n(exit)\r\n");
-    fflush(fp);
-    fclose(fp);
-
-    reset_terminal_mode();
-
+    // dump all memory on exit
     dump_memory_binary("emu_memorydump.bin", 0x0000, 0xBFFF);
+
+    // go back to normal terminal io mode
+    // the shell gets really unusable if you forget to do this
+    reset_terminal_mode();
 
     printf("\r\n---\r\r\n(exit)\r\n");
 

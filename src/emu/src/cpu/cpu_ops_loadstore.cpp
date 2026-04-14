@@ -159,31 +159,3 @@ bool Cpu::op_sts(uint8_t opcode, op_names op, addr_mode mode)
 {
     return store16(s_.sp, mode);
 }
-
-bool Cpu::store16(uint16_t value, addr_mode mode)
-{
-    uint16_t addr;
-
-    switch (mode)
-    {
-    case addr_mode::idx:
-    {
-        uint8_t off = fetch8();
-        addr = s_.x + off;
-        break;
-    }
-
-    case addr_mode::ext:
-        addr = fetch16();
-        break;
-
-    default:
-        return false;
-    }
-
-    write16(addr, value);
-
-    set_nz16(value);
-    set_flag(V, false);
-    return true;
-}
