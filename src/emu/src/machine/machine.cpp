@@ -73,29 +73,3 @@ void Machine::write8(uint16_t addr, uint8_t value)
         banked_memory_.write(addr, value);
     }
 }
-
-void Machine::expandchar(uint8_t value, char *buf, size_t n)
-{
-    if (value < ' ' || value > 0x7e)
-    {
-        switch (value)
-        {
-        case '\n':
-            snprintf(buf, n, "\\n");
-            break;
-        case '\r':
-            snprintf(buf, n, "\\r");
-            break;
-        case '\b':
-            snprintf(buf, n, "\\b");
-            break;
-        default:
-            snprintf(buf, n, "\\%02x", value);
-            break;
-        }
-    }
-    else
-    {
-        snprintf(buf, n, "%c", value);
-    }
-}

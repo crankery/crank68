@@ -51,7 +51,7 @@ uint8_t Acia::in(uint8_t port)
         std::optional<uint8_t> c = terminalOutAciaInBuffer.next();
         if (c.has_value())
         {
-            Machine::instance().expandchar(c.value(), buf2, sizeof(buf2));
+            Machine::expandchar(c.value(), buf2, sizeof(buf2));
             snprintf(buf, sizeof(buf), "%s data in 0x%02x (%s)\r\n", name(), c.value(), buf2);
             Machine::instance().logging_.log(buf);
             lastOut = c.value();
@@ -109,7 +109,7 @@ void Acia::out(uint8_t port, uint8_t value)
     }
     case 1:
     {
-        Machine::instance().expandchar(value, buf2, sizeof(buf2));
+        Machine::expandchar(value, buf2, sizeof(buf2));
         snprintf(buf, sizeof(buf), "%s data out 0x%02x (%s)\n", name(), value, buf2);
         Machine::instance().logging_.log(buf);
 

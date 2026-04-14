@@ -32,6 +32,7 @@ void Logging::trace(uint16_t pc)
         break;
     }
 
+    char starget[20];
     switch (addr_mode)
     {
     case inh:
@@ -46,8 +47,6 @@ void Logging::trace(uint16_t pc)
     {
         uint16_t target = (Machine::instance().read8(pc + 1) << 8) | Machine::instance().read8(pc + 2);
         auto symtarget = Machine::instance().symbols_.lookup(target);
-        char starget[20];
-
         if (symtarget && !symtarget->empty())
         {
             snprintf(starget, sizeof(starget), "#$%04x <%s>", target, symtarget->front().name.c_str());
@@ -64,8 +63,6 @@ void Logging::trace(uint16_t pc)
     {
         uint16_t target = Machine::instance().cpu_.s_.x + Machine::instance().read8(pc + 1);
         auto symtarget = Machine::instance().symbols_.lookup(target);
-        char starget[20];
-
         if (symtarget && !symtarget->empty())
         {
             snprintf(starget, sizeof(starget), "$%04x <%s>", target, symtarget->front().name.c_str());
@@ -80,15 +77,24 @@ void Logging::trace(uint16_t pc)
     }
     case dir:
     {
-        snprintf(op_formatted, sizeof(op_formatted), "%s $%02x", op_name_s, Machine::instance().read8(pc + 1));
+        uint16_t target = Machine::instance().read8(pc + 1);
+        auto symtarget = Machine::instance().symbols_.lookup(target);
+        if (symtarget && !symtarget->empty())
+        {
+            snprintf(starget, sizeof(starget), "$%02x <%s>", target, symtarget->front().name.c_str());
+        }
+        else
+        {
+            snprintf(starget, sizeof(starget), "$%02x", target);
+        }
+
+        snprintf(op_formatted, sizeof(op_formatted), "%s %s", op_name_s, starget);
         break;
     }
     case ext:
     {
         uint16_t target = (Machine::instance().read8(pc + 1) << 8) | Machine::instance().read8(pc + 2);
         auto symtarget = Machine::instance().symbols_.lookup(target);
-        char starget[20];
-
         if (symtarget && !symtarget->empty())
         {
             snprintf(starget, sizeof(starget), "%04x <%s>", target, symtarget->front().name.c_str());
@@ -98,15 +104,13 @@ void Logging::trace(uint16_t pc)
             snprintf(starget, sizeof(starget), "%04x", target);
         }
 
-        snprintf(op_formatted, sizeof(op_formatted), "%s %s", op_name_s, starget);
+        snprintf(op_formatted, sizeof(op_formatted), "%s $%s", op_name_s, starget);
         break;
     }
     case rel:
     {
         uint16_t target = pc + 2 + ((int8_t)Machine::instance().read8(pc + 1));
         auto symtarget = Machine::instance().symbols_.lookup(target);
-        char starget[20];
-
         if (symtarget && !symtarget->empty())
         {
             snprintf(starget, sizeof(starget), "$%04x <%s>", target, symtarget->front().name.c_str());

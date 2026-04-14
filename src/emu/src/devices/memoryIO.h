@@ -35,8 +35,6 @@ public:
         devices_.push_back(&pia_2_1_);
         devices_.push_back(&acia_2_0_);
         devices_.push_back(&acia_2_1_);
-
-        printf("done\r\n");
     }
 
     virtual uint8_t read(uint16_t addr) const override

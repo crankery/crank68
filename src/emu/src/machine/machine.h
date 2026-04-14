@@ -40,9 +40,31 @@ public:
     // marks the loading flag during this operation to allow for writing to read only memory types
     void load(uint16_t baseAddr, uint8_t data);
 
-    // todo: move this to a static utility class
-    void expandchar(uint8_t value, char *buf, size_t n);
-
+    static void expandchar(uint8_t value, char *buf, size_t n)
+    {
+        if (value < ' ' || value > 0x7e)
+        {
+            switch (value)
+            {
+            case '\n':
+                snprintf(buf, n, "\\n");
+                break;
+            case '\r':
+                snprintf(buf, n, "\\r");
+                break;
+            case '\b':
+                snprintf(buf, n, "\\b");
+                break;
+            default:
+                snprintf(buf, n, "\\%02x", value);
+                break;
+            }
+        }
+        else
+        {
+            snprintf(buf, n, "%c", value);
+        }
+    }
     // it'd be better if these guys were private and had access to a shared bus type class instead
     Cpu cpu_;
     Ram ram_;

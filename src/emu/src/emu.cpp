@@ -257,39 +257,41 @@ void run()
     uint64_t total_cycles;
     uint64_t last_sleep_check_cycles = 0;
     uint64_t start_us = now_us();
-    bool lastBreakpoint = false;
 
     while (1)
     {
-        total_cycles = Machine::instance().cpu_.cycles_;
-
-        if ((total_cycles - last_sleep_check_cycles) >= sleep_threshold_cycles)
+        if (!breakpoints_.empty())
         {
-            last_sleep_check_cycles = total_cycles;
+            total_cycles = Machine::instance().cpu_.cycles_;
 
-            // At 1 MHz, 1 cycle = 1 microsecond
-            uint64_t target_elapsed_us = total_cycles;
-            uint64_t actual_elapsed_us = now_us() - start_us;
-
-            if (target_elapsed_us > actual_elapsed_us)
+            if ((total_cycles - last_sleep_check_cycles) >= sleep_threshold_cycles)
             {
-                uint64_t sleep_us = target_elapsed_us - actual_elapsed_us;
+                last_sleep_check_cycles = total_cycles;
 
-                // avoid giant sleeps if something odd happens
-                if (sleep_us > 20000)
+                // At 1 MHz, 1 cycle = 1 microsecond
+                uint64_t target_elapsed_us = total_cycles;
+                uint64_t actual_elapsed_us = now_us() - start_us;
+
+                if (target_elapsed_us > actual_elapsed_us)
                 {
-                    sleep_us = 20000;
-                }
+                    uint64_t sleep_us = target_elapsed_us - actual_elapsed_us;
 
-                snprintf(message, sizeof(message), "(sleep for %lluµs)\r\n", sleep_us);
-                Machine::instance().logging_.log(message);
-                usleep((useconds_t)sleep_us);
+                    // avoid giant sleeps if something odd happens
+                    if (sleep_us > 20000)
+                    {
+                        sleep_us = 20000;
+                    }
+
+                    snprintf(message, sizeof(message), "(sleep for %lluµs)\r\n", sleep_us);
+                    Machine::instance().logging_.log(message);
+                    usleep((useconds_t)sleep_us);
+                }
             }
         }
 
         uint16_t pc = Machine::instance().cpu_.state().pc;
 
-        if (!lastBreakpoint && std::find(breakpoints_.begin(), breakpoints_.end(), pc) != breakpoints_.end())
+        if (std::find(breakpoints_.begin(), breakpoints_.end(), pc) != breakpoints_.end())
         {
             Machine::instance().logging_.trace(pc);
             snprintf(message, sizeof(message), "\r\nbreakpoint @ 0x%04x\r\n", pc);
@@ -309,17 +311,11 @@ void run()
                 usleep(5000);
             }
 
-            if (getch() == (']' & 0x1f))
-            {
-                // exit if they pressed the exit key.
-                return;
-            }
+            // throw away the keypress
+            getch();
 
-            lastBreakpoint = true;
             continue;
         }
-
-        lastBreakpoint = false;
 
         if (pc == lastpc)
         {
