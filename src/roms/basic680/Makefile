@@ -1,4 +1,4 @@
-NAME := basic680
+NAME := c68basic
 
 SHELL := /bin/bash
 
@@ -8,6 +8,8 @@ TOOLS_BIN_DIR := ${TOOLS_DIR}/bin
 VASM := vasm6800_oldstyle
 VASM_BIN := $(TOOLS_BIN_DIR)/$(VASM)
 
+BASE := basic680.asm
+PATCH := c68basic.diff
 SRC := $(NAME).asm
 LST := $(NAME).lst
 
@@ -20,7 +22,12 @@ TARGET := $(NAME).rom
 
 all: $(TARGET) $(ORIG_BIN)
 
-$(TARGET): $(SRC) $(ORIG_BIN) | 
+$(SRC): $(BASE) $(PATCH)
+	rm -f $(SRC)
+	cp $(BASE) $(SRC)
+	patch -p0 $(SRC) < $(PATCH)
+
+$(TARGET): $(SRC) | 
 	$(VASM_BIN) -maxerrors=0 -Fbin -L $(LST) -o $@ $<
 	dd if=/dev/zero of=$@ bs=1 seek=$$(stat -f%z mits_raw.bin) count=0
 	# cat $(LST)
@@ -29,4 +36,4 @@ $(ORIG_BIN): $(ORIG_SREC)
 	srec_cat $(ORIG_SREC) -Motorola -offset 0x0000 -o $(ORIG_BIN) -binary
 
 clean:
-	rm -rf $(TARGET) $(LST)
+	rm -rf $(TARGET) $(LST) $(SRC)
