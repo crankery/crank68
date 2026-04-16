@@ -96,7 +96,7 @@
 
 ; stack is at 0x100
 
-    .equ stackpage, 0x100
+    .equ stackpage, 0xBF00
     .equ stack, stackpage + 0xff
 
 ; nam mikbug 
@@ -379,6 +379,7 @@ inch1:      ldaa acias
             tst outsw                   ; should input be echoed?
             beq outch1                  ; if so, output the char
             rts                         ; else,return to caller of inch1
+
 ; 
 ; constant initialization 
 ; s = pointer to rom bytes to be copied to ram 
@@ -1814,6 +1815,28 @@ divovf:     ins                         ; clean up stack
 divov2:     ins
             sev                         ; set the overflow flag
             rts
+
+; mits used B rather than A
+outchmits:  tba
+outcmits:   ldab acias
+            asrb
+            asrb
+            bcc outcmits                   ; xmit not ready
+            tab
+            stab aciad                  ; output char
+            rts
+
+; apparently MITS 680b mikbug returned the character in B for some reason
+; trying out switching this to not affect A.
+inchmits:   ldab acias
+            asrb
+            bcc inchmits                ; receiver not ready
+            ldab aciad                  ; input char
+            andb #0x7f                  ; reset parity bit
+            cmpb #0x7f
+            beq inchmits                ; rubout"del
+            rts                         ; else,return to caller
+
 ; 
 ; interrupt vectors 
 ; 

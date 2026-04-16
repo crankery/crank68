@@ -8,8 +8,9 @@ TOOLS_BIN_DIR := ${TOOLS_DIR}/bin
 VASM := vasm6800_oldstyle
 VASM_BIN := $(TOOLS_BIN_DIR)/$(VASM)
 
-BASE := basic680.asm
-PATCH := c68basic.diff
+ORIG := basic680.asm
+EDITED := $(NAME).s
+DIFF := $(NAME).diff
 SRC := $(NAME).asm
 LST := $(NAME).lst
 
@@ -18,14 +19,18 @@ ORIG_BIN := mits_raw.bin
 
 TARGET := $(NAME).rom
 
-.PHONY: all clean
+.PHONY: all clean diff
 
-all: $(TARGET) $(ORIG_BIN)
+all: $(TARGET) $(ORIG_BIN) $(DIFF)
+diff: $(DIFF)
 
-$(SRC): $(BASE) $(PATCH)
+$(DIFF): $(EDITED) $(ORIG)
+	diff $(ORIG) $(EDITED) > $(DIFF)
+
+$(SRC): $(ORIG) $(DIFF)
 	rm -f $(SRC)
-	cp $(BASE) $(SRC)
-	patch -p0 $(SRC) < $(PATCH)
+	cp $(ORIG) $(SRC)
+	patch -p0 $(SRC) < $(DIFF)
 
 $(TARGET): $(SRC) | 
 	$(VASM_BIN) -maxerrors=0 -Fbin -L $(LST) -o $@ $<
@@ -36,4 +41,4 @@ $(ORIG_BIN): $(ORIG_SREC)
 	srec_cat $(ORIG_SREC) -Motorola -offset 0x0000 -o $(ORIG_BIN) -binary
 
 clean:
-	rm -rf $(TARGET) $(LST) $(SRC)
+	rm -rf $(TARGET) $(LST) $(SRC) $(DIFF) $(ORIG_BIN)

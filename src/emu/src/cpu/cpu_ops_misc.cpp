@@ -181,21 +181,68 @@ bool Cpu::op_com(uint8_t opcode, op_names op, addr_mode mode)
 {
     return false;
 }
-
-// not implemented
 bool Cpu::op_neg(uint8_t opcode, op_names op, addr_mode mode)
 {
-    return false;
+    return neg_mem(mode);
 }
 
-// not implemented
 bool Cpu::op_nega(uint8_t opcode, op_names op, addr_mode mode)
 {
-    return false;
+    return mode == addr_mode::inh ? neg_a() : false;
 }
 
-// not implemented
 bool Cpu::op_negb(uint8_t opcode, op_names op, addr_mode mode)
 {
-    return false;
+    return mode == addr_mode::inh ? neg_b() : false;
+}
+
+bool Cpu::neg_a()
+{
+    s_.a = do_neg8(s_.a);
+    return true;
+}
+
+bool Cpu::neg_b()
+{
+    s_.b = do_neg8(s_.b);
+    return true;
+}
+
+bool Cpu::neg_mem(addr_mode mode)
+{
+    uint16_t addr = 0;
+
+    switch (mode)
+    {
+    case addr_mode::idx:
+    {
+        uint8_t off = fetch8();
+        addr = static_cast<uint16_t>(s_.x + off);
+        break;
+    }
+    case addr_mode::ext:
+    {
+        addr = fetch16();
+        break;
+    }
+    default:
+        return false;
+    }
+
+    uint8_t value = read8(addr);
+    value = do_neg8(value);
+    write8(addr, value);
+    return true;
+}
+
+uint8_t Cpu::do_neg8(uint8_t value)
+{
+    const uint8_t result = static_cast<uint8_t>(0u - value);
+
+    set_flag(C, value != 0);
+    set_flag(V, value == 0x80);
+    set_nz8(result);
+    // H unaffected
+
+    return result;
 }

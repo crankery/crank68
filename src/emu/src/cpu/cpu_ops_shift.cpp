@@ -30,57 +30,19 @@ bool Cpu::op_asrb(uint8_t opcode, op_names op, addr_mode mode)
     return mode == addr_mode::inh ? shift_b(ShiftOp::asr) : false;
 }
 
-// not implemented
 bool Cpu::op_lsr(uint8_t opcode, op_names op, addr_mode mode)
 {
-    return false;
+    return shift_mem(mode, ShiftOp::lsr);
 }
 
-// combine with lsrb
 bool Cpu::op_lsra(uint8_t opcode, op_names op, addr_mode mode)
 {
-    bool lsb;
-    switch (mode)
-    {
-    case addr_mode::inh:
-    {
-        lsb = (s_.a & 1) == 1;
-        s_.a >>= 1;
-
-        break;
-    }
-    default:
-        return false;
-    }
-
-    set_flag(C, lsb);
-    set_flag(N, false); // always reset
-    set_flag(V, get_flag(C));
-    set_flag(Z, s_.a == 0);
-    return true;
+    return mode == addr_mode::inh ? shift_a(ShiftOp::lsr) : false;
 }
 
 bool Cpu::op_lsrb(uint8_t opcode, op_names op, addr_mode mode)
 {
-    bool lsb;
-    switch (mode)
-    {
-    case addr_mode::inh:
-    {
-        lsb = (s_.b & 1) == 1;
-        s_.b >>= 1;
-
-        break;
-    }
-    default:
-        return false;
-    }
-
-    set_flag(C, lsb);
-    set_flag(N, false); // always reset
-    set_flag(V, get_flag(C));
-    set_flag(Z, s_.b == 0);
-    return true;
+    return mode == addr_mode::inh ? shift_b(ShiftOp::lsr) : false;
 }
 
 bool Cpu::op_rola(uint8_t opcode, op_names op, addr_mode mode)

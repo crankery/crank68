@@ -6,9 +6,15 @@ bool Cpu::op_des(uint8_t opcode, op_names op, addr_mode mode)
     return false;
 }
 
-// not implemented
 bool Cpu::op_ins(uint8_t opcode, op_names op, addr_mode mode)
 {
+    if (mode == addr_mode::inh)
+    {
+        s_.sp = static_cast<uint16_t>(s_.sp + 1);
+
+        return true;
+    }
+
     return false;
 }
 

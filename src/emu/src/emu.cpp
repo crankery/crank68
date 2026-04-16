@@ -17,8 +17,9 @@ struct LoadRequest
 
 std::vector<LoadRequest> loads_;
 std::vector<uint16_t> breakpoints_;
+std::vector<uint16_t> spwatches_;
 struct termios orig_termios_;
-bool show_control = false;
+bool show_control_ = false;
 
 static uint64_t now_us()
 {
@@ -93,11 +94,6 @@ int getch()
     }
 }
 
-bool parse_lst(std::string_view arg)
-{
-    return Machine::instance().symbols_.load(arg);
-}
-
 std::optional<LoadRequest> parse_load(std::string_view arg)
 {
     auto at = arg.find('@');
@@ -115,11 +111,6 @@ std::optional<LoadRequest> parse_load(std::string_view arg)
     return LoadRequest{filename, *addr};
 }
 
-void add_breakpoint(uint16_t addr)
-{
-    breakpoints_.push_back(addr);
-}
-
 int parse_args(int argc, char **argv)
 {
     for (int i = 1; i < argc; ++i)
@@ -128,7 +119,7 @@ int parse_args(int argc, char **argv)
 
         if (arg == "--show-control")
         {
-            show_control = true;
+            show_control_ = true;
             continue;
         }
 
@@ -147,7 +138,26 @@ int parse_args(int argc, char **argv)
                 return 1;
             }
 
-            add_breakpoint(*addr);
+            breakpoints_.push_back(*addr);
+            continue;
+        }
+
+        if (arg == "--sp-watch")
+        {
+            if (i + 1 >= argc)
+            {
+                std::fprintf(stderr, "--sp-watch requires an address\n");
+                return 1;
+            }
+
+            auto addr = parse_hex16(argv[++i]);
+            if (!addr)
+            {
+                std::fprintf(stderr, "invalid sp watch address: %s\n", argv[i]);
+                return 1;
+            }
+
+            spwatches_.push_back(*addr);
             continue;
         }
 
@@ -178,7 +188,7 @@ int parse_args(int argc, char **argv)
                 return 1;
             }
 
-            parse_lst(argv[++i]);
+            Machine::instance().symbols_.load(argv[++i]);
         }
     }
 
@@ -250,17 +260,22 @@ void dump_traceback()
 
 void run()
 {
+    std::optional<uint16_t> lastBreakpoint;
+    std::optional<uint16_t> lastSpWatch;
+
     const uint64_t sleep_threshold_cycles = 1000; // sleep/check every 1000 cycles
 
     char message[256];
     uint16_t lastpc = 0x0000;
+    uint16_t lastsp = 0x0000;
     uint64_t total_cycles;
     uint64_t last_sleep_check_cycles = 0;
     uint64_t start_us = now_us();
 
     while (1)
     {
-        if (!breakpoints_.empty())
+        // don't try to run at any particular speed when there's watches or breakpoints
+        if (!breakpoints_.empty() && !spwatches_.empty())
         {
             total_cycles = Machine::instance().cpu_.cycles_;
 
@@ -291,17 +306,15 @@ void run()
 
         uint16_t pc = Machine::instance().cpu_.state().pc;
 
-        if (std::find(breakpoints_.begin(), breakpoints_.end(), pc) != breakpoints_.end())
+        if (!(lastBreakpoint.has_value() && lastBreakpoint.value() == pc) &&
+            std::find(breakpoints_.begin(), breakpoints_.end(), pc) != breakpoints_.end())
         {
             Machine::instance().logging_.trace(pc);
             snprintf(message, sizeof(message), "\r\nbreakpoint @ 0x%04x\r\n", pc);
             Machine::instance().logging_.log(message);
             printf("%s", message);
 
-            // write out the traceback
             dump_traceback();
-
-            // dump all memory on exit
             dump_memory_binary("emu_memorydump.bin", 0x0000, 0xBFFF);
 
             printf("\r\npress key to continue...");
@@ -314,7 +327,42 @@ void run()
             // throw away the keypress
             getch();
 
-            continue;
+            lastBreakpoint = pc;
+        }
+        else
+        {
+            lastBreakpoint.reset();
+        }
+
+        uint16_t sp = Machine::instance().cpu_.state().sp;
+
+        if (!(lastSpWatch.has_value() && lastSpWatch.value() == sp) &&
+            std::find(spwatches_.begin(), spwatches_.end(), sp) != spwatches_.end())
+        {
+            Machine::instance().logging_.trace(pc);
+
+            snprintf(message, sizeof(message), "\r\nsp == 0x%04x @ 0x%04x\r\n", sp, pc);
+            Machine::instance().logging_.log(message);
+            printf("%s", message);
+
+            dump_traceback();
+            dump_memory_binary("emu_memorydump.bin", 0x0000, 0xBFFF);
+
+            printf("\r\npress key to continue...");
+
+            while (!(kbhit()))
+            {
+                usleep(5000);
+            }
+
+            // throw away the keypress
+            getch();
+
+            lastSpWatch = sp;
+        }
+        else
+        {
+            lastSpWatch.reset();
         }
 
         if (pc == lastpc)
@@ -325,8 +373,6 @@ void run()
             printf("%s", message);
             return;
         }
-
-        lastpc = pc;
 
         Machine::instance().cpu_.step();
 
@@ -348,6 +394,8 @@ void run()
             {
                 c = '\b';
             }
+
+            // printf("[\\%02x]", c);
 
             // reverse meaning of caps lock - if it's on,
             // treat letters as lowercase, if it's off, treat letters as uppercase
@@ -379,7 +427,7 @@ void run()
                     break;
                 default:
                 {
-                    if (show_control)
+                    if (show_control_)
                     {
                         printf("\\%02x", v);
                     }
@@ -390,9 +438,12 @@ void run()
             }
             else
             {
-                putc(v, stdout);
+                putc(v & 0x7F, stdout);
             }
         }
+
+        lastpc = pc;
+        lastsp = sp;
     }
 }
 
@@ -458,7 +509,7 @@ int main(int argc, char **argv)
     dump_traceback();
 
     // dump all memory on exit
-    dump_memory_binary("emu_memorydump.bin", 0x0000, 0xBFFF);
+    dump_memory_binary("emu_memorydump.bin", 0x0000, 0xFFFF);
 
     // go back to normal terminal io mode
     // the shell gets really unusable if you forget to do this

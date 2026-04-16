@@ -106,5 +106,10 @@ private:
     std::optional<uint8_t> read_operand8(addr_mode mode);
     std::optional<uint16_t> resolve_operand_addr(addr_mode mode);
 
+    bool neg_a();
+    bool neg_b();
+    bool neg_mem(addr_mode mode);
+    uint8_t do_neg8(uint8_t value);
+
 #include "gen/cpu_operations.g.h"
 };

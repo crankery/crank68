@@ -1,3 +1,5 @@
 *.lst
 *.rom
 *.bin
+*.diff
+c68basic.asm

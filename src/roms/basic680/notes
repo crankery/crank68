@@ -1,0 +1,20 @@
+these are just some random notes about the code
+
+Init:
+
+008a: ff
+008b: ff
+
+
+# this is probably the initial stack
+# it sits above the code
+sp: # 1b1b lds const
+0082: 1b from sp
+0083: 1b from sp + 1
+
+M00C8: tty width, 0 on enter
+
+0111: 00 from clr M0111 (and source FCB $00)
+
+tmpptr:
+load 0x0065 into x

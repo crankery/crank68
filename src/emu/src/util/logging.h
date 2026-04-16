@@ -3,7 +3,7 @@
 #include "logBuffer.h"
 #include "symbols.h"
 
-#define TRACEBACK_LENGTH 1024
+#define TRACEBACK_LENGTH 1024 * 8
 
 class Logging
 {
