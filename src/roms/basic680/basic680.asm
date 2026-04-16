@@ -1,40 +1,5 @@
+; f9dasm: M6800/1/2/3/8/9 / H6309 Binary/OS9/FLEX9 Disassembler V1.79
 ; Loaded Motorola S file basic680.mot
-
-; Missing referenced labels:
-
-M17D8   EQU     $17D8
-M1885   EQU     $1885
-M1889   EQU     $1889
-M18A2   EQU     $18A2
-M00C8   EQU     $00C8
-M00C9   EQU     $00C9
-M00D8   EQU     $00D8
-M0268   EQU     $0268
-M028B   EQU     $028B
-M0292   EQU     $0292
-M0297   EQU     $0297
-M0D05   EQU     $0D05
-M15CF   EQU     $15CF
-
-Z02D3   EQU     $02D3
-Z0414   EQU     $0414
-Z06F1   EQU     $06F1
-Z070E   EQU     $070E
-Z0893   EQU     $0893
-Z08FF   EQU     $08FF
-Z0903   EQU     $0903
-Z09F3   EQU     $09F3
-Z0A0E   EQU     $0A0E
-Z0A20   EQU     $0A20
-Z0A8C   EQU     $0A8C
-Z0B3A   EQU     $0B3A
-Z0B3D   EQU     $0B3D
-Z0D4C   EQU     $0D4C
-Z1251   EQU     $1251
-Z13BC   EQU     $13BC
-Z1452   EQU     $1452
-Z15CA   EQU     $15CA
-Z1700   EQU     $1700
 
 ;****************************************************
 ;* Used Labels                                      *
@@ -245,73 +210,73 @@ M015B   FCB     $95
 
 ; Reserved word tokens.
 ; The high bit is set on the last char of each token.
-RESLST  FCB     'E','N','D'|$80             ; END
-        FCB     'F','O','R'|$80             ; FOR
-        FCB     'N','E','X','T'|$80          ; NEXT
-        FCB     'D','A','T','A'|$80          ; DATA
-        FCB     'I','N','P','U','T'|$80       ; INPUT
-        FCB     'D','I','M'|$80             ; DIM
-        FCB     'R','E','A','D'|$80          ; READ
-        FCB     'L','E','T'|$80             ; LET
-        FCB     'G','O','T','O'|$80          ; GOTO
-        FCB     'R','U','N'|$80             ; RUN
-        FCB     'I','F'|$80                ; IF
-        FCB     'R','E','S','T','O','R'        ; RESTORE
-        FCB     'E'|$80
-        FCB     'G','O','S','U','B'|$80       ; GOSUB
-        FCB     'R','E','T','U','R','N'|$80    ; RETURN
-        FCB     'R','E','M'|$80             ; REM
-        FCB     'S','T','O','P'|$80          ; STOP
-        FCB     'O','N'|$80                ; ON
-        FCB     'N','U','L','L'|$80          ; NULL
-        FCB     'W','A','I','T'|$80          ; WAIT
-        FCB     'D','E','F'|$80             ; DEF
-        FCB     'P','O','K','E'|$80          ; POKE
-        FCB     'P','R','I','N','T'|$80       ; PRINT
-        FCB     'C','O','N','T'|$80          ; CONT
-        FCB     'L','I','S','T'|$80          ; LIST
-        FCB     'C','L','E','A','R'|$80       ; CLEAR
-        FCB     'N','E','W'|$80             ; NEW
-        FCB     'T','A','B','(|$80          ; TAB(
-        FCB     'T','O'|$80                ; TO
-        FCB     'F','N'|$80                ; FN
-        FCB     'S','P','C','(|$80          ; SPC(
-        FCB     'T','H','E','N'|$80          ; THEN
-        FCB     'N','O','T'|$80             ; NOT
-        FCB     'S','T','E','P'|$80          ; STEP
+RESLST  FCB     'E,'N,'D|$80             ; END
+        FCB     'F,'O,'R|$80             ; FOR
+        FCB     'N,'E,'X,'T|$80          ; NEXT
+        FCB     'D,'A,'T,'A|$80          ; DATA
+        FCB     'I,'N,'P,'U,'T|$80       ; INPUT
+        FCB     'D,'I,'M|$80             ; DIM
+        FCB     'R,'E,'A,'D|$80          ; READ
+        FCB     'L,'E,'T|$80             ; LET
+        FCB     'G,'O,'T,'O|$80          ; GOTO
+        FCB     'R,'U,'N|$80             ; RUN
+        FCB     'I,'F|$80                ; IF
+        FCB     'R,'E,'S,'T,'O,'R        ; RESTORE
+        FCB     'E|$80
+        FCB     'G,'O,'S,'U,'B|$80       ; GOSUB
+        FCB     'R,'E,'T,'U,'R,'N|$80    ; RETURN
+        FCB     'R,'E,'M|$80             ; REM
+        FCB     'S,'T,'O,'P|$80          ; STOP
+        FCB     'O,'N|$80                ; ON
+        FCB     'N,'U,'L,'L|$80          ; NULL
+        FCB     'W,'A,'I,'T|$80          ; WAIT
+        FCB     'D,'E,'F|$80             ; DEF
+        FCB     'P,'O,'K,'E|$80          ; POKE
+        FCB     'P,'R,'I,'N,'T|$80       ; PRINT
+        FCB     'C,'O,'N,'T|$80          ; CONT
+        FCB     'L,'I,'S,'T|$80          ; LIST
+        FCB     'C,'L,'E,'A,'R|$80       ; CLEAR
+        FCB     'N,'E,'W|$80             ; NEW
+        FCB     'T,'A,'B,'(|$80          ; TAB(
+        FCB     'T,'O|$80                ; TO
+        FCB     'F,'N|$80                ; FN
+        FCB     'S,'P,'C,'(|$80          ; SPC(
+        FCB     'T,'H,'E,'N|$80          ; THEN
+        FCB     'N,'O,'T|$80             ; NOT
+        FCB     'S,'T,'E,'P|$80          ; STEP
         FCB     '+|$80                   ; +
         FCB     '-|$80                   ; -
         FCB     '*|$80                   ; *
         FCB     '/|$80                   ; /
         FCB     '^|$80                   ; ^
-        FCB     'A','N','D'|$80             ; AND
-        FCB     'O','R'|$80                ; OR
+        FCB     'A,'N,'D|$80             ; AND
+        FCB     'O,'R|$80                ; OR
         FCB     '>|$80                   ; >
         FCB     '=|$80                   ; =
         FCB     '<|$80                   ; <
-        FCB     'S','G','N'|$80             ; SGN
-        FCB     'I','N','T'|$80             ; INT
-        FCB     'A','B','S'|$80             ; ABS
-        FCB     'U','S','R'|$80             ; USR
-        FCB     'F','R','E'|$80             ; FRE
-        FCB     'P','O','S'|$80             ; POS
-        FCB     'S','Q','R'|$80             ; SQR
-        FCB     'R','N','D'|$80             ; RND
-        FCB     'L','O','G'|$80             ; LOG
-        FCB     'E','X','P'|$80             ; EXP
-        FCB     'C','O','S'|$80             ; COS
-        FCB     'S','I','N'|$80             ; SIN
-        FCB     'T','A','N'|$80             ; TAN
-        FCB     'A','T','N'|$80             ; ATN
-        FCB     'P','E','E','K'|$80          ; PEEK
-        FCB     'L','E','N'|$80             ; LEN
-        FCB     'S','T','R','$|$80          ; STR$
-        FCB     'V','A','L'|$80             ; VAL
-        FCB     'A','S','C'|$80             ; ASK
-        FCB     'C','H','R','$|$80          ; CHR$
-        FCB     'L','E','F','T','$|$80       ; LEFT$
-        FCB     'R','I','G','H','T','$|$80    ; RIGHT$
-        FCB     'M','I','D','$|$80          ; MID$
+        FCB     'S,'G,'N|$80             ; SGN
+        FCB     'I,'N,'T|$80             ; INT
+        FCB     'A,'B,'S|$80             ; ABS
+        FCB     'U,'S,'R|$80             ; USR
+        FCB     'F,'R,'E|$80             ; FRE
+        FCB     'P,'O,'S|$80             ; POS
+        FCB     'S,'Q,'R|$80             ; SQR
+        FCB     'R,'N,'D|$80             ; RND
+        FCB     'L,'O,'G|$80             ; LOG
+        FCB     'E,'X,'P|$80             ; EXP
+        FCB     'C,'O,'S|$80             ; COS
+        FCB     'S,'I,'N|$80             ; SIN
+        FCB     'T,'A,'N|$80             ; TAN
+        FCB     'A,'T,'N|$80             ; ATN
+        FCB     'P,'E,'E,'K|$80          ; PEEK
+        FCB     'L,'E,'N|$80             ; LEN
+        FCB     'S,'T,'R,'$|$80          ; STR$
+        FCB     'V,'A,'L|$80             ; VAL
+        FCB     'A,'S,'C|$80             ; ASK
+        FCB     'C,'H,'R,'$|$80          ; CHR$
+        FCB     'L,'E,'F,'T,'$|$80       ; LEFT$
+        FCB     'R,'I,'G,'H,'T,'$|$80    ; RIGHT$
+        FCB     'M,'I,'D,'$|$80          ; MID$
         FCB     $00                      ; Terminate statement table.
 
 M0234   FCB     $06
@@ -373,7 +338,7 @@ Z025C   CBA
         SBCB    START
         BRA     Z02DE
         FCB     $4E
-        SUBA    0,X
+        SUBA    ,X
         SEC
         CLV
         CLRA
@@ -394,7 +359,7 @@ Z02A7   TSX
         INX
 Z02AC   LDAB    #$10
         STX     M0071
-        LDAA    0,X
+        LDAA    ,X
         SUBA    #$81
         BNE     Z02CA
         LDX     $01,X
@@ -431,7 +396,7 @@ copy1   TPA                              ; save flags
         LDX     copy_srctop
         INX
 _cpnxt  DEX
-        LDAA    0,X
+        LDAA    ,X
         PSHA
 Z02DE   CPX     copy_srcbot
         BNE     _cpnxt
@@ -475,7 +440,7 @@ Z0313   JSR     READY
         JSR     Z0893
         LDX     #M0268
         BSR     Z0303
-        LDAA    0,X
+        LDAA    ,X
         JSR     OUTDO
         LDAA    $01,X
         JSR     OUTDO
@@ -517,10 +482,10 @@ Z0360   JSR     Z0767
         PSHA
         STS     stktmp
         SEI
-        LDS     0,X
+        LDS     ,X
         DES
 Z0387   PULA
-        STAA    0,X
+        STAA    ,X
         INX
         CPX     M007C
         BNE     Z0387
@@ -544,7 +509,7 @@ Z0393   LDAA    M0010
         SEI
         LDS     #M000B
 Z03B2   PULA
-        STAA    0,X
+        STAA    ,X
         INX
         CPX     copy_dstbot
         BNE     Z03B2
@@ -555,7 +520,7 @@ Z03B2   PULA
         STX     M007C
 Z03C2   JSR     Z04EE
         LDX     M007A
-Z03C7   LDAA    0,X
+Z03C7   LDAA    ,X
         ORAA    $01,X
         BNE     Z03D0
         JMP     Z0345
@@ -565,7 +530,7 @@ Z03D0   STX     M00D8
         INX
         INX
 Z03D6   INX
-        LDAA    0,X
+        LDAA    ,X
         BNE     Z03D6
         INX
         JMP     >Z00D7
@@ -590,7 +555,7 @@ Z03F1   BSR     Z041E
         BEQ     Z03E6
         CMPA    #$5F
         BEQ     Z03DF
-Z040B   STAA    0,X
+Z040B   STAA    ,X
         CMPB    #$48
         BCC     Z0414
         INX
@@ -641,7 +606,7 @@ Z0467   INX
 Z0468   PULA
         CMPA    #$20
         BEQ     Z0468
-        SUBA    0,X
+        SUBA    ,X
         BEQ     Z0467
         CMPA    #$80
         BNE     Z04A7
@@ -653,7 +618,7 @@ Z0479   STS     M00C8
         TAP
         INX
         STX     STRNG2
-        STAB    0,X
+        STAB    ,X
         BEQ     Z04B6
         SUBB    #$3A
         BEQ     Z048F
@@ -671,14 +636,14 @@ Z049A   PULB
         CMPB    ENDCHR
         BEQ     Z0479
 Z04A2   INX
-        STAB    0,X
+        STAB    ,X
         BRA     Z049A
 Z04A7   LDS     M00C8
         INCB
-Z04AA   LDAA    0,X
+Z04AA   LDAA    ,X
         INX
         BPL     Z04AA
-        LDAA    0,X
+        LDAA    ,X
         BNE     Z0468
         PULB
         BRA     Z0477
@@ -691,7 +656,7 @@ Z04B6   STAB    $01,X
 Z04C3   RTS
 Z04C4   LDAA    M008E
         LDX     M007A
-Z04C8   LDAB    0,X
+Z04C8   LDAB    ,X
         ORAB    $01,X
         BEQ     Z04DE
         CMPA    $02,X
@@ -700,16 +665,16 @@ Z04C8   LDAB    0,X
         LDAB    M008F
         CMPB    $03,X
         BLS     Z04DF
-Z04DA   LDX     0,X
+Z04DA   LDX     ,X
         BRA     Z04C8
 Z04DE   SEC
 Z04DF   STX     copy_srcbot
         RTS
         BNE     Z04DF
 Z04E4   LDX     M007A
-        CLR     0,X
+        CLR     ,X
         INX
-        CLR     0,X
+        CLR     ,X
         INX
         STX     M007C
 Z04EE   LDX     M007A
@@ -725,21 +690,21 @@ Z04F3   LDX     M0088
 READY   LDX     #M0065
         STX     TEMPPT
         TSX
-        LDX     0,X
+        LDX     ,X
         LDS     M0082
         CLRA
         PSHA
         STAA    M0090
         STAA    M0091
         STAA    M005E
-        JMP     0,X
+        JMP     ,X
         BHI     Z04C3
         JSR     Z0767
         BNE     Z04C3
         PULA
         PULA
         BSR     Z04C4
-Z051F   LDAA    0,X
+Z051F   LDAA    ,X
         ORAA    $01,X
         BNE     Z0528
         JMP     Z033C
@@ -756,7 +721,7 @@ Z0528   JSR     Z0618
         LDAA    #$20
 Z053D   LDX     M0071
 Z053F   JSR     OUTDO
-        LDAA    0,X
+        LDAA    ,X
         INX
         TSTA
         BEQ     Z051F
@@ -766,11 +731,11 @@ Z053F   JSR     OUTDO
         LDX     #RESLST
 Z0551   DECA
         BEQ     Z055B
-Z0554   LDAB    0,X
+Z0554   LDAB    ,X
         INX
         BPL     Z0554
         BRA     Z0551
-Z055B   LDAA    0,X
+Z055B   LDAA    ,X
         BMI     Z053D
         INX
         JSR     OUTDO
@@ -824,23 +789,23 @@ Z05B9   JSR     Z1483
 Z05C8   BSR     Z0618
         LDX     M00C8
         STX     M0092
-        LDAA    0,X
+        LDAA    ,X
         BEQ     Z05D9
         CMPA    #$3A
         BEQ     Z05EF
 Z05D6   JMP     Z0B49
 Z05D9   INX
-        LDAA    0,X
+        LDAA    ,X
         INX
-        ORAA    0,X
+        ORAA    ,X
         CLC
         TPA
         BEQ     Z0637
         INX
-        LDAA    0,X
+        LDAA    ,X
         STAA    M008A
         INX
-        LDAA    0,X
+        LDAA    ,X
         STAA    M008B
         STX     M00C8
 Z05EF   JSR     >Z00BF
@@ -856,9 +821,9 @@ Z05FF   CMPA    #$1A
         TAB
         LDX     #M0234
         JSR     Z0303
-        LDX     0,X
+        LDX     ,X
         JSR     >Z00BF
-        JMP     0,X
+        JMP     ,X
 Z0612   LDX     M007A
         DEX
 Z0615   STX     M0096
@@ -994,7 +959,7 @@ Z070B   LDAB    #$3A
 Z0714   TBA
         LDAB    CHARAC
         STAA    CHARAC
-Z0719   LDAA    0,X
+Z0719   LDAA    ,X
         BEQ     Z070A
         CBA
         BEQ     Z070A
@@ -1081,7 +1046,7 @@ Z07B8   LDAA    M007C
         LDAB    M007C
         CMPB    M00B2
         BHI     Z07D3
-Z07C6   LDAB    0,X
+Z07C6   LDAB    ,X
         JSR     STRINI
         LDX     M00AD
         JSR     Z105F
@@ -1096,7 +1061,7 @@ Z07D3   STX     M00AD
         TXS
         LDX     M009E
         PULA
-        STAA    0,X
+        STAA    ,X
         PULA
         PULA
         STAA    $02,X
@@ -1127,14 +1092,14 @@ Z07FC   BEQ     PRTRTS
         JSR     dstrlit
         LDX     DSCTMP+1
         LDAA    M000B
-        ADDA    0,X
+        ADDA    ,X
         CMPA    M000C
         BLS     Z0829
         BSR     Z0834
 Z0829   BSR     STRPRT
         BSR     OUTSPC
         BRA     Z07F7
-Z082F   CLR     0,X
+Z082F   CLR     ,X
         LDX     #M000F
 Z0834   LDAA    #$0D
         STAA    M000B
@@ -1190,7 +1155,7 @@ STRPRT  JSR     FREFAC                   ; RETURN TEMP POINTER.
         INCB
 STRPR2  DECB
         BEQ     PRTRTS
-        LDAA    0,X
+        LDAA    ,X
         BSR     OUTDO
         INX
         CMPA    #$0D
@@ -1273,7 +1238,7 @@ Z0908   JSR     Z0C29
         LDX     M00C8
         STX     M008E
 Z0911   LDX     M0098
-        LDAA    0,X
+        LDAA    ,X
         BNE     Z0920
         LDAA    M005F
         BNE     Z0969
@@ -1328,7 +1293,7 @@ Z0969   STX     M00C8
         INX
         INX
 Z0985   INX
-        LDAA    0,X
+        LDAA    ,X
         CMPA    #$83
         BNE     Z0969
         BRA     Z0920
@@ -1336,7 +1301,7 @@ Z098E   LDX     M0098
         LDAB    M005F
         BEQ     Z0997
         JMP     Z0615
-Z0997   LDAA    0,X
+Z0997   LDAA    ,X
         BEQ     Z09A1
         LDX     #Z09A1
         JMP     STROUT
@@ -1446,7 +1411,7 @@ Z0A59   ADCA    #$FF
         LDX     #M0147
         JSR     Z0303
 Z0A65   PULA
-        CMPA    0,X
+        CMPA    ,X
         BCC     Z0AC0
         BSR     Z0A0D
 Z0A6C   PSHA
@@ -1475,12 +1440,12 @@ Z0A92   LDAA    $02,X
         PSHA
         BSR     Z0AA1
         LDAB    M00A2
-HACK    BRA     Z0A20
+        BRA     Z0A20
 Z0A9E   JMP     Z0B49
 Z0AA1   LDAB    M00B3
-        LDAA    0,X
+        LDAA    ,X
 Z0AA5   TSX
-        LDX     0,X
+        LDX     ,X
         INS
         INS
         PSHB
@@ -1492,7 +1457,7 @@ Z0AAB   LDAB    M00B2
         PSHB
         LDAB    tmpstrlen
         PSHB
-        JMP     0,X
+        JMP     ,X
 Z0AB9   LDX     #START
         PULA
         TSTA
@@ -1560,7 +1525,7 @@ Z0B37   LDAB    #$29
         CPX     #MC628
         CPX     #MC62C
 Z0B3F   LDX     M00C8
-        LDAA    0,X
+        LDAA    ,X
         CBA
         BNE     Z0B49
 Z0B46   JMP     >Z00BF
@@ -1599,8 +1564,8 @@ Z0B85   BSR     Z0B32
         PULB
 Z0B88   LDX     #M0119
         JSR     Z0303
-        LDX     0,X
-        JSR     0,X
+        LDX     ,X
+        JSR     ,X
         JMP     Z0A0D
         LDAA    #$4F
         STAA    M005A
@@ -1657,7 +1622,7 @@ Z0BFB   DECB
         BRA     Z0C0D
 Z0C02   PULA
         INX
-        CMPA    0,X
+        CMPA    ,X
         BEQ     Z0BFB
         LDAB    #$FF
         BCC     Z0C0D
@@ -1712,7 +1677,7 @@ Z0C68   CLR     >M005E
         LDAB    M009B
 Z0C71   CPX     M007E
         BEQ     Z0C8E
-        CMPA    0,X
+        CMPA    ,X
         BNE     Z0C7D
         CMPB    $01,X
         BEQ     Z0CC5
@@ -1749,7 +1714,7 @@ Z0C98   LDX     M0080
         LDX     copy_srcbot
         LDAA    M009A
         LDAB    M009B
-        STAA    0,X
+        STAA    ,X
         STAB    $01,X
         CLRA
         STAA    $02,X
@@ -1793,10 +1758,10 @@ Z0CF0   PSHB
         TSX
         LDAA    $01,X
         PSHA
-        LDAA    0,X
+        LDAA    ,X
         PSHA
         LDAA    DSCTMP+1
-        STAA    0,X
+        STAA    ,X
         LDAA    M00B2
         STAA    $01,X
         INCB
@@ -1813,7 +1778,7 @@ Z0CF0   PSHB
 Z0D24   CPX     M0080
         BEQ     Z0D51
         LDAA    M009A
-        CMPA    0,X
+        CMPA    ,X
         BNE     Z0D34
         LDAA    M009B
         CMPA    $01,X
@@ -1835,7 +1800,7 @@ Z0D51   LDAA    #$04
         STAA    M00BE
         CLR     >STRNG2
         LDAA    M009A
-        STAA    0,X
+        STAA    ,X
         LDAA    M009B
         STAA    $01,X
         LDAB    M005A
@@ -1947,7 +1912,7 @@ Z0E12   JMP     Z0D49
         LDAA    M0084
         LDAB    M0085
 Z0E30   SUBB    $01,X
-        SBCA    0,X
+        SBCA    ,X
 Z0E34   CLR     >M005C
         STAA    DSCTMP
         STAB    DSCTMP+1
@@ -1974,7 +1939,7 @@ Z0E4C   JMP     Z0313
         LDX     M00AB
         LDAA    M00C8
         LDAB    M00C9
-        STAA    0,X
+        STAA    ,X
         STAB    $01,X
         LDAA    M009C
         LDAB    M009D
@@ -2010,7 +1975,7 @@ Z0E8D   BSR     Z0E7A
         PSHA
         LDAA    $01,X
         PSHA
-        LDAA    0,X
+        LDAA    ,X
         PSHA
         JSR     Z1454
         LDX     M00AB
@@ -2018,7 +1983,7 @@ Z0E8D   BSR     Z0E7A
         PSHB
         LDAB    M00C8
         PSHB
-        LDX     0,X
+        LDX     ,X
         STX     M00C8
         LDAB    M009D
         PSHB
@@ -2038,7 +2003,7 @@ Z0EDC   PULB
         STAB    M00C9
         LDX     M009C
         PULA
-        STAA    0,X
+        STAA    ,X
         PULA
         STAA    $01,X
         PULA
@@ -2088,7 +2053,7 @@ STRLIT2 INX
         STX     DSCTMP+1                 ; IN CASE NO STRCPY.
         LDAB    #$FF                     ; INITIALIZE CHARACTER COUNT.
 STRGET  INCB                             ; find 00 terminator or char after CHARAC or ENDCHR
-        LDAA    0,X                       ; GET CHARACTER.
+        LDAA    ,X                       ; GET CHARACTER.
         BEQ     STRFI2                   ; IF ZERO.
         INX
         CMPA    CHARAC                   ; THIS TERMINATOR?
@@ -2104,7 +2069,7 @@ STRFI2  STX     STRNG2
         BNE     PUTNEW
         BSR     STRINI
         LDX     STRNG1
-        JSR     Q_MOVSTR
+        JSR     ?MOVSTR
 PUTNEW  LDX     TEMPPT
         CPX     #M0071
         BNE     PUTNW1
@@ -2127,7 +2092,7 @@ PUTNW1  JSR     Z1454
 ; MAY FORCE GARBAGE COLLECTION.
 ;  
 ; # OF CHARACTERS (BYTES) IN ACCA.
-; RETURNS WITH POINTER IN [Y,X]. OTHERWISE (IF CAN'T' GET
+; RETURNS WITH POINTER IN [Y,X]. OTHERWISE (IF CAN'T GET
 ; SPACE) BLOWS OFF TO "OUT OF STRING SPACE" TYPE ERROR.
 ; ALSO PRESERVES [ACCA] AND SETS [FRESPC]=[Y,X]=PNTR AT SPACE.
 ;  
@@ -2197,7 +2162,7 @@ Z0FD1   LDAA    $01,X
         INX
         INX
         BPL     Z0FF9
-Z0FD7   LDAB    0,X
+Z0FD7   LDAB    ,X
         BEQ     Z0FF9
         LDAA    $02,X
         CMPA    M0084
@@ -2222,7 +2187,7 @@ Z0FFD   RTS
 Z0FFE   LDX     M00AB
         BEQ     Z0FFD
         CLRA
-        LDAB    0,X
+        LDAB    ,X
         DECB
         ADDB    copy_srcbot+1
         ADCA    copy_srcbot
@@ -2233,7 +2198,7 @@ Z0FFE   LDX     M00AB
         JSR     copy1
         LDX     M00AB
         LDAA    copy_dstbot
-        LDAB    copy_dstbot+1
+        LDAB    copy_dstbot+
         STAA    $02,X
         STAB    $03,X
         LDX     copy_dstbot
@@ -2251,26 +2216,26 @@ Z1025   LDAA    M00B2
         PULA
         STAA    M00BC
         LDX     STRNG1
-        LDAB    0,X
+        LDAB    ,X
         LDX     DSCTMP+1
-        ADDB    0,X
+        ADDB    ,X
         BCC     .1046
         LDAB    #$1C
         JMP     Z0313
 .1046   JSR     STRINI
         LDX     STRNG1
-        LDAB    0,X
+        LDAB    ,X
         BSR     Z105F
         LDX     M00AD
         BSR     Z107F
-        BSR     Q_MOVSTR
+        BSR     ?MOVSTR
         LDX     STRNG1
         BSR     Z107F
         JSR     PUTNEW
         JMP     Z0A2D
 
 Z105F   LDX     $02,X
-Q_MOVSTR TPA                              ; save flags
+?MOVSTR TPA                              ; save flags
         PSHA
         STS     stktmp
         SEI
@@ -2279,7 +2244,7 @@ Q_MOVSTR TPA                              ; save flags
         INCB
         BRA     Z1070
 Z106C   PULA
-        STAA    0,X
+        STAA    ,X
         INX
 Z1070   DECB
         BNE     Z106C
@@ -2290,7 +2255,7 @@ Z1070   DECB
         RTS
 Z107A   JSR     Z0A0E
 FREFAC  LDX     DSCTMP+1
-Z107F   LDAB    0,X
+Z107F   LDAB    ,X
         BSR     Z109B
         BNE     Z1098
         LDX     $06,X
@@ -2328,19 +2293,19 @@ Z10AE   BSR     Z107A
         JSR     GETSPA
         LDAA    M00B2
         JSR     Z0F05
-        STAA    0,X
+        STAA    ,X
         INS
         INS
 Z10C6   JMP     PUTNEW
         BSR     Z10AE
         BEQ     Z1135
-        LDAB    0,X
+        LDAB    ,X
         BRA     Z10AB
         BSR     Z1118
         CLRA
-Z10D4   CMPB    0,X
+Z10D4   CMPB    ,X
         BLS     Z10DB
-        LDAB    0,X
+        LDAB    ,X
         CLRA
 Z10DB   PSHB
         PSHA
@@ -2350,10 +2315,10 @@ Z10DB   PSHB
         PULB
         JSR     Z0303
         PULB
-        JSR     Q_MOVSTR
+        JSR     ?MOVSTR
         BRA     Z10C6
         BSR     Z1118
-        LDAA    0,X
+        LDAA    ,X
         SBA
         BRA     Z10D4
         LDAB    #$FF
@@ -2366,10 +2331,10 @@ Z10DB   PSHB
 Z1104   BSR     Z1118
         CLRB
         DECA
-        CMPA    0,X
+        CMPA    ,X
         BCC     Z10DB
         TAB
-        SUBB    0,X
+        SUBB    ,X
         NEGB
         CMPB    M00B2
         BLS     Z10DB
@@ -2406,9 +2371,9 @@ Z1147   JMP     >Z00C7
         BNE     Z1152
         JMP     Z122F
 Z1152   JSR     Z0303
-        LDAA    0,X
+        LDAA    ,X
         PSHA
-        CLR     0,X
+        CLR     ,X
         LDX     M00C8
         STX     STRNG2
         LDX     M0071
@@ -2417,7 +2382,7 @@ Z1152   JSR     Z0303
         JSR     Z1526
         PULA
         LDX     M0073
-        STAA    0,X
+        STAA    ,X
 Z116C   LDX     STRNG2
         STX     M00C8
 Z1170   RTS
@@ -2435,11 +2400,11 @@ Z117D   LDAA    M00B3
         LDX     DSCTMP+1
         RTS
         BSR     Z117D
-        LDAB    0,X
+        LDAB    ,X
         JMP     Z0E42
         BSR     Z1171
         LDX     M008E
-        STAB    0,X
+        STAB    ,X
         RTS
         BSR     Z1171
         STAB    M009E
@@ -2449,7 +2414,7 @@ Z117D   LDAA    M00B3
         BSR     Z1178
 Z11A7   STAB    M009F
         LDX     M008E
-Z11AB   LDAA    0,X
+Z11AB   LDAA    ,X
         EORA    M009F
         ANDA    M009E
         BEQ     Z11AB
@@ -2668,7 +2633,7 @@ Z1355   LDAA    $01,X
         STAA    M00B8
         LDAA    $03,X
         STAA    M00B9
-        LDAA    0,X
+        LDAA    ,X
         STAA    M00B6
         LDAB    tmpstrlen
         RTS
@@ -2733,7 +2698,7 @@ Z13D3   LDAA    DSCTMP
 Z13E6   TPA
         ROLB
         BCC     Z13F6
-        STAB    0,X
+        STAB    ,X
         INX
         DEC     >M005A
         BMI     Z1420
@@ -2776,7 +2741,7 @@ Z1438   LDAB    $01,X
         STAB    M00B3
         ORAB    #$80
         STAB    DSCTMP
-        LDAB    0,X
+        LDAB    ,X
         LDX     $02,X
         STX     DSCTMP+1
         STAB    tmpstrlen
@@ -2786,7 +2751,7 @@ Z1449   LDX     #copy_dstbot
 Z144E   LDX     #copy_dsttop
         CPX     #MDE9E
 Z1454   LDAA    tmpstrlen
-        STAA    0,X
+        STAA    ,X
         LDAA    M00B3
         ORAA    #$7F
         ANDA    DSCTMP
@@ -2832,13 +2797,13 @@ Z149D   STAB    tmpstrlen
         JMP     Z1211
         CLR     >M00B3
         RTS
-Z14AE   LDAB    0,X
+Z14AE   LDAB    ,X
         BEQ     Z1483
         LDAB    $01,X
         EORB    M00B3
         BMI     Z1487
 Z14B8   LDAB    tmpstrlen
-        CMPB    0,X
+        CMPB    ,X
         BNE     Z14D5
         LDAB    $01,X
         ORAB    #$7F
@@ -2927,7 +2892,7 @@ Z156E   TST     >copy_srcbot+1
         BEQ     Z157D
         NEG     >copy_srcbot
         BRA     Z157D
-Z1578   COM     >copy_dstbot+1
+Z1578   COM     >copy_dstbot+
         BNE     Z1542
 Z157D   LDAA    copy_srcbot
         SUBA    copy_dstbot
@@ -2945,7 +2910,7 @@ Z1599   LDAA    M00B4
         BPL     Z1525
         JMP     Z173B
 Z15A0   LDAB    copy_dstbot
-        SUBB    copy_dstbot+1
+        SUBB    copy_dstbot+
         STAB    copy_dstbot
         PSHA
         JSR     Z1397
@@ -2988,7 +2953,7 @@ Z15F2   LDAA    #$20
         LDAB    M00B3
         BPL     Z15FA
         LDAA    #$2D
-Z15FA   STAA    0,X
+Z15FA   STAA    ,X
         STAA    M00B3
         STX     STRNG2
         INX
@@ -3034,12 +2999,12 @@ Z164F   DECA
         LDX     STRNG2
         LDAA    #$2E
         INX
-        STAA    0,X
+        STAA    ,X
         TSTB
         BEQ     Z1666
         LDAA    #$30
         INX
-        STAA    0,X
+        STAA    ,X
 Z1666   STX     STRNG2
 Z1668   LDX     #M16EA
         LDAB    #$80
@@ -3050,7 +3015,7 @@ Z166D   LDAA    M00B2
         ADCA    $01,X
         STAA    DSCTMP+1
         LDAA    DSCTMP
-        ADCA    0,X
+        ADCA    ,X
         STAA    DSCTMP
         INCB
         RORB
@@ -3068,12 +3033,12 @@ Z1689   ADDB    #$2F
         INX
         TBA
         ANDA    #$7F
-        STAA    0,X
+        STAA    ,X
         DEC     >copy_dstbot
         BNE     Z16A2
         LDAA    #$2E
         INX
-        STAA    0,X
+        STAA    ,X
 Z16A2   STX     STRNG2
         LDX     M009C
         COMB
@@ -3081,7 +3046,7 @@ Z16A2   STX     STRNG2
         CPX     #M16FC
         BNE     Z166D
         LDX     STRNG2
-Z16B0   LDAA    0,X
+Z16B0   LDAA    ,X
         DEX
         CMPA    #$30
         BEQ     Z16B0
@@ -3106,7 +3071,7 @@ Z16CF   INCA
         STAB    $04,X
         CLR     $05,X
         BRA     Z16E2
-Z16DE   STAA    0,X
+Z16DE   STAA    ,X
 Z16E0   CLR     $01,X
 Z16E2   LDX     #M0100
 Z16E5   RTS
@@ -3208,7 +3173,7 @@ Z17AD   JMP     Z1308
 Z17B0   STX     STRNG2
 Z17B2   JSR     Z1449
         LDX     STRNG2
-        LDAB    0,X
+        LDAB    ,X
         STAB    M00B4
         INX
         STX     STRNG2
@@ -3386,12 +3351,12 @@ INIT    LDX     #MFFFF
         LDX     #LASTWR
 Z1926   INX
         LDAA    #$37
-        STAA    0,X
-        CMPA    0,X
+        STAA    ,X
+        CMPA    ,X
         BNE     Z1946
         DECA
-        STAA    0,X
-        CMPA    0,X
+        STAA    ,X
+        CMPA    ,X
         BEQ     Z1926
         BRA     Z1946
 Z1938   JSR     >Z00C7
@@ -3459,7 +3424,7 @@ Z19AE   LDX     #Z0D4C
         STX     M012F
         LDX     #M1812
 Z19CA   CLRA
-        STAA    0,X
+        STAA    ,X
         INX
         STX     M007A
         LDX     M0082
@@ -3490,20 +3455,20 @@ Z19D9   STX     M0082
 ; Strings used by INIT routine
 ; XXX Both high-byte and \000 terminated?
 FNS     FCC     "WANT SIN-COS-TAN-AT"
-        FCB     'N'|$80,$00               ; 'N''|$80, \000  
+        FCB     'N|$80,$00               ; 'N'|$80, \000  
 AUTTXT  FCB     $0D,$0A,$0C
         FCC     "WRITTEN BY RICHARD W. WEILAND"
-        FCB     '.'|$80,$0d,$0a,$00       ; '.'|$80, \000
+        FCB     '.|$80,$0d,$0a,$00       ; '.'|$80, \000
 TTYWID  FCC     "TERMINAL WIDT"
-        FCB     'H'|$80,$00               ; 'H''|$80, \000
+        FCB     'H|$80,$00               ; 'H'|$80, \000
 WORDS   FCC     " BYTES FRE"
-        FCB     'E'|$80,$0D,$0A,$0D,$0A
+        FCB     'E|$80,$0D,$0A,$0D,$0A
         FCC     "MITS ALTAIR 680 BASIC VERSION 1.1 REV 3."
-        FCB     '2'|$80,$0D,$0A
+        FCB     '2|$80,$0D,$0A
         FCC     "COPYRIGHT 1976 BY MITS INC"
-        FCB     '.'|$80,$0D,$0A,$00
+        FCB     '.|$80,$0D,$0A,$00
 MEMORY  FCC     "MEMORY SIZ"
-        FCB     'E'|$80,$00
+        FCB     'E|$80,$00
 LASTWR  FCB     $00
         FCC     " IS IT RETURN"
         FCB     $0D
@@ -3513,3 +3478,5 @@ LASTWR  FCB     $00
         FCB     $0D
         FCC     " END"
         FCB     $0D,$00
+
+        END     START
