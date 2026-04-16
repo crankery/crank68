@@ -235,11 +235,16 @@ uint8_t Cpu::do_rol8(uint8_t value)
     const bool old7 = (value & 0x80) != 0;
     const bool oldC = get_flag(C);
 
-    uint8_t result = static_cast<uint8_t>((value << 1) | (oldC ? 1 : 0));
+    const uint8_t result =
+        static_cast<uint8_t>((value << 1) | (oldC ? 1 : 0));
 
-    set_flag(C, old7);
-    set_nz8(result);
-    set_flag(V, get_flag(N) ^ get_flag(C));
+    const bool newC = old7;
+    const bool newN = (result & 0x80) != 0;
+
+    set_flag(C, newC);
+    set_flag(N, newN);
+    set_flag(Z, result == 0);
+    set_flag(V, newN ^ newC);
 
     return result;
 }
@@ -249,15 +254,19 @@ uint8_t Cpu::do_ror8(uint8_t value)
     const bool old0 = (value & 0x01) != 0;
     const bool oldC = get_flag(C);
 
-    uint8_t result = static_cast<uint8_t>((value >> 1) | (oldC ? 0x80 : 0x00));
+    const uint8_t result =
+        static_cast<uint8_t>((value >> 1) | (oldC ? 0x80 : 0x00));
 
-    set_flag(C, old0);
-    set_nz8(result);
-    set_flag(V, get_flag(N) ^ get_flag(C));
+    const bool newC = old0;
+    const bool newN = (result & 0x80) != 0;
+
+    set_flag(C, newC);
+    set_flag(N, newN);
+    set_flag(Z, result == 0);
+    set_flag(V, newN ^ newC);
 
     return result;
 }
-
 bool Cpu::shift_a(ShiftOp op)
 {
     s_.a = do_shift8(s_.a, op);

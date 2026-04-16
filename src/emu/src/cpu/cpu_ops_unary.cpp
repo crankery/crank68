@@ -105,53 +105,59 @@ bool Cpu::op_comb(uint8_t opcode, op_names op, addr_mode mode)
 
 bool Cpu::op_dec(uint8_t opcode, op_names op, addr_mode mode)
 {
+    uint16_t addr = 0;
+
     switch (mode)
     {
+    case addr_mode::idx:
+    {
+        uint8_t off = fetch8();
+        addr = static_cast<uint16_t>(s_.x + off);
+        break;
+    }
     case addr_mode::ext:
     {
-        uint16_t addr = fetch16();
-        uint8_t o = read8(addr);
-        uint8_t r = sub8(o, 1);
-        // printf("dec %04d: v=%02d r=%02d\r\n", addr, o, r);
-        write8(addr, r);
+        addr = fetch16();
         break;
     }
     default:
         return false;
     }
 
+    uint8_t value = read8(addr);
+    uint8_t result = dec8(value);
+    write8(addr, result);
     return true;
 }
 
 bool Cpu::op_deca(uint8_t opcode, op_names op, addr_mode mode)
 {
-    switch (mode)
-    {
-    case addr_mode::inh:
-    {
-        s_.a = sub8(s_.a, 1);
-        break;
-    }
-    default:
+    if (mode != addr_mode::inh)
         return false;
-    }
-
+    s_.a = dec8(s_.a);
     return true;
 }
 
 bool Cpu::op_decb(uint8_t opcode, op_names op, addr_mode mode)
 {
-    switch (mode)
-    {
-    case addr_mode::inh:
-    {
-        s_.b = sub8(s_.b, 1);
-        break;
-    }
-    default:
+    if (mode != addr_mode::inh)
         return false;
-    }
+    s_.b = dec8(s_.b);
     return true;
+}
+
+uint8_t Cpu::dec8(uint8_t value)
+{
+    uint8_t result = static_cast<uint8_t>(value - 1);
+
+    set_flag(Z, result == 0);
+    set_flag(N, (result & 0x80) != 0);
+    set_flag(V, value == 0x7F);
+
+    // C unchanged
+    // H unchanged
+
+    return result;
 }
 
 bool Cpu::op_dex(uint8_t opcode, op_names op, addr_mode mode)
@@ -169,49 +175,59 @@ bool Cpu::op_dex(uint8_t opcode, op_names op, addr_mode mode)
 
 bool Cpu::op_inc(uint8_t opcode, op_names op, addr_mode mode)
 {
+    uint16_t addr = 0;
+
     switch (mode)
     {
+    case addr_mode::idx:
+    {
+        uint8_t off = fetch8();
+        addr = static_cast<uint16_t>(s_.x + off);
+        break;
+    }
     case addr_mode::ext:
     {
-        uint16_t addr = fetch16();
-        uint8_t o = read8(addr);
-        uint8_t r = add8(o, 1);
-        write8(addr, r);
+        addr = fetch16();
         break;
     }
     default:
         return false;
     }
 
+    uint8_t value = read8(addr);
+    uint8_t result = inc8(value);
+    write8(addr, result);
     return true;
 }
 
 bool Cpu::op_inca(uint8_t opcode, op_names op, addr_mode mode)
 {
-    switch (mode)
-    {
-    case addr_mode::inh:
-    {
-        s_.a = add8(s_.a, 1);
-        return true;
-    }
-    default:
+    if (mode != addr_mode::inh)
         return false;
-    }
+    s_.a = inc8(s_.a);
+    return true;
 }
 
 bool Cpu::op_incb(uint8_t opcode, op_names op, addr_mode mode)
 {
-    switch (mode)
-    {
-    case addr_mode::inh:
-    {
-        s_.b = add8(s_.b, 1);
-        return true;
-    }
-    default:
+    if (mode != addr_mode::inh)
         return false;
-    }
+    s_.b = inc8(s_.b);
+    return true;
+}
+
+uint8_t Cpu::inc8(uint8_t value)
+{
+    uint8_t result = static_cast<uint8_t>(value + 1);
+
+    set_flag(Z, result == 0);
+    set_flag(N, (result & 0x80) != 0);
+    set_flag(V, value == 0x7F);
+
+    // C unchanged
+    // H unchanged
+
+    return result;
 }
 
 bool Cpu::op_inx(uint8_t opcode, op_names op, addr_mode mode)

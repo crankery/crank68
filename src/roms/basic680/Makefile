@@ -24,7 +24,7 @@ TARGET := $(NAME).rom
 all: $(TARGET) $(ORIG_BIN) $(DIFF)
 
 $(DIFF): $(EDITED) $(ORIG)
-	diff $(ORIG) $(EDITED) > $(DIFF)
+	-diff -u $(ORIG) $(EDITED) > $(DIFF)
 
 $(SRC): $(ORIG) $(DIFF)
 	rm -f $(SRC)
@@ -37,7 +37,6 @@ $(ORIG_BIN): $(ORIG_SREC)
 $(TARGET): $(SRC) $(ORIG_BIN) | 
 	$(VASM_BIN) -maxerrors=0 -Fbin -L $(LST) -o $@ $<
 	dd if=/dev/zero of=$@ bs=1 seek=$$(stat -f%z mits_raw.bin) count=0
-	# cat $(LST)
 
 clean:
 	rm -rf $(TARGET) $(LST) $(SRC) $(DIFF) $(ORIG_BIN)

@@ -3510,11 +3510,3 @@ WORDS   FCC     " BYTES FRE"
 MEMORY  FCC     "MEMORY SIZ"
         FCB     'E'|$80,$00
 LASTWR  FCB     $00
-        FCC     " IS IT RETURN"
-        FCB     $0D
-        FCC     " BEQ OUT"
-        FCB     $0D
-        FCC     " BRA INTAPE GET NEXT CHARACTER"
-        FCB     $0D
-        FCC     " END"
-        FCB     $0D,$00

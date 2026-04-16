@@ -82,6 +82,8 @@ private:
     bool dispatch(uint8_t op, OpInfo op_info);
 
     uint8_t adc8(uint8_t a, uint8_t b);
+    uint8_t inc8(uint8_t value);
+    uint8_t dec8(uint8_t value);
 
     uint8_t do_shift8(uint8_t value, ShiftOp op);
     uint8_t do_rol8(uint8_t value);
