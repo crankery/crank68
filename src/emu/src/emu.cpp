@@ -1,11 +1,13 @@
 
 #include <stdio.h>
-#include <optional>
 #include <unistd.h>
 #include <sys/select.h>
 #include <termios.h>
 #include <time.h>
 #include <stdio.h>
+
+#include <optional>
+#include <sstream>
 
 #include "machine/machine.h"
 
@@ -19,7 +21,12 @@ std::vector<LoadRequest> loads_;
 std::vector<uint16_t> breakpoints_;
 std::vector<uint16_t> spwatches_;
 struct termios orig_termios_;
+
 bool show_control_ = false;
+const uint64_t sleep_threshold_cycles = 1000; // sleep/check every 1000 cycles
+uint64_t total_cycles_ = 0;
+uint64_t last_sleep_check_cycles_ = 0;
+uint64_t start_us_;
 
 static uint64_t now_us()
 {
@@ -258,61 +265,139 @@ void dump_traceback()
     fclose(fp);
 }
 
+void term_out_acia_in()
+{
+    if (kbhit())
+    {
+        int c = getch();
+
+        // treat ctrl-] as a command to exit the emulator
+        if (c == (']' & 0x1f))
+        {
+            return;
+        }
+
+        // map delete to backspace
+        if (c == 0x7F)
+        {
+            c = '\b';
+        }
+
+        // reverse meaning of caps lock/alpha shift - if it's on,
+        // treat letters as lowercase, if it's off, treat letters as uppercase
+        c = (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')
+                ? (c ^ 0x20)
+                : c;
+
+        Machine::instance().memory_io_.acia_1_0_.terminalOutAciaIn(c);
+    }
+}
+
+void term_in_acia_out()
+{
+    auto c = Machine::instance().memory_io_.acia_1_0_.terminalInAciaOut();
+    if (c.has_value())
+    {
+        uint8_t v = c.value();
+
+        if (v < ' ')
+        {
+            switch (v)
+            {
+            case '\r':
+            case '\n':
+            case '\t':
+                putc(v, stdout);
+                break;
+            case '\b':
+                putc('\b', stdout);
+                putc(' ', stdout);
+                putc('\b', stdout);
+                break;
+            default:
+            {
+                if (show_control_)
+                {
+                    printf("\\%02x", v);
+                }
+
+                break;
+            }
+            }
+        }
+        else
+        {
+            putc(v & 0x7F, stdout);
+        }
+    }
+}
+
+void throttle()
+{
+    // don't try to run at any particular speed when there's watches or breakpoints
+    if (breakpoints_.empty() && spwatches_.empty())
+    {
+        total_cycles_ = Machine::instance().cpu_.cycles_;
+
+        if ((total_cycles_ - last_sleep_check_cycles_) >= sleep_threshold_cycles)
+        {
+            last_sleep_check_cycles_ = total_cycles_;
+
+            // At 1 MHz, 1 cycle = 1 microsecond
+            uint64_t target_elapsed_us = total_cycles_;
+            uint64_t actual_elapsed_us = now_us() - start_us_;
+
+            if (target_elapsed_us > actual_elapsed_us)
+            {
+                uint64_t sleep_us = target_elapsed_us - actual_elapsed_us;
+
+                // avoid giant sleeps if something odd happens
+                if (sleep_us > 20000)
+                {
+                    sleep_us = 20000;
+                }
+
+                std::string msg = "(sleep for " + std::to_string(sleep_us) + "µs)\r\n";
+                Machine::instance().logging_.log(msg.c_str());
+
+                usleep((useconds_t)sleep_us);
+            }
+        }
+    }
+}
 void run()
 {
     std::optional<uint16_t> lastBreakpoint;
-    std::optional<uint16_t> lastSpWatch;
 
-    const uint64_t sleep_threshold_cycles = 1000; // sleep/check every 1000 cycles
+    total_cycles_ = 0;
+    last_sleep_check_cycles_ = 0;
+    start_us_ = now_us();
+
+    uint16_t lastpc = 0x0000;
 
     char message[256];
-    uint16_t lastpc = 0x0000;
-    uint16_t lastsp = 0x0000;
-    uint64_t total_cycles;
-    uint64_t last_sleep_check_cycles = 0;
-    uint64_t start_us = now_us();
 
     while (1)
     {
-        // don't try to run at any particular speed when there's watches or breakpoints
-        if (!breakpoints_.empty() && !spwatches_.empty())
-        {
-            total_cycles = Machine::instance().cpu_.cycles_;
+        term_in_acia_out();
+        term_out_acia_in();
 
-            if ((total_cycles - last_sleep_check_cycles) >= sleep_threshold_cycles)
-            {
-                last_sleep_check_cycles = total_cycles;
-
-                // At 1 MHz, 1 cycle = 1 microsecond
-                uint64_t target_elapsed_us = total_cycles;
-                uint64_t actual_elapsed_us = now_us() - start_us;
-
-                if (target_elapsed_us > actual_elapsed_us)
-                {
-                    uint64_t sleep_us = target_elapsed_us - actual_elapsed_us;
-
-                    // avoid giant sleeps if something odd happens
-                    if (sleep_us > 20000)
-                    {
-                        sleep_us = 20000;
-                    }
-
-                    snprintf(message, sizeof(message), "(sleep for %lluµs)\r\n", sleep_us);
-                    Machine::instance().logging_.log(message);
-                    usleep((useconds_t)sleep_us);
-                }
-            }
-        }
+        throttle();
 
         uint16_t pc = Machine::instance().cpu_.state().pc;
 
         if (!(lastBreakpoint.has_value() && lastBreakpoint.value() == pc) &&
-            std::find(breakpoints_.begin(), breakpoints_.end(), pc) != breakpoints_.end())
+            ((std::find(breakpoints_.begin(), breakpoints_.end(), pc) != breakpoints_.end())))
         {
             Machine::instance().logging_.trace(pc);
-            snprintf(message, sizeof(message), "\r\nbreakpoint @ 0x%04x\r\n", pc);
-            Machine::instance().logging_.log(message);
-            printf("%s", message);
+
+            std::stringstream ss;
+            ss << std::hex << pc;
+            std::string msg = "\r\nbreakpoint @ 0x" + ss.str() + "\r\n";
+
+            // display msg on screen and in trace
+            Machine::instance().logging_.log(msg.c_str());
+            printf("%s", msg.c_str());
 
             dump_traceback();
             dump_memory_binary("emu_memorydump.bin", 0x0000, 0xBFFF);
@@ -324,8 +409,13 @@ void run()
                 usleep(5000);
             }
 
-            // throw away the keypress
-            getch();
+            int c = getch();
+
+            // treat ctrl-] as a command to exit the emulator
+            if (c == (']' & 0x1f))
+            {
+                return;
+            }
 
             lastBreakpoint = pc;
         }
@@ -334,116 +424,21 @@ void run()
             lastBreakpoint.reset();
         }
 
-        uint16_t sp = Machine::instance().cpu_.state().sp;
-
-        if (!(lastSpWatch.has_value() && lastSpWatch.value() == sp) &&
-            std::find(spwatches_.begin(), spwatches_.end(), sp) != spwatches_.end())
-        {
-            Machine::instance().logging_.trace(pc);
-
-            snprintf(message, sizeof(message), "\r\nsp == 0x%04x @ 0x%04x\r\n", sp, pc);
-            Machine::instance().logging_.log(message);
-            printf("%s", message);
-
-            dump_traceback();
-            dump_memory_binary("emu_memorydump.bin", 0x0000, 0xBFFF);
-
-            printf("\r\npress key to continue...");
-
-            while (!(kbhit()))
-            {
-                usleep(5000);
-            }
-
-            // throw away the keypress
-            getch();
-
-            lastSpWatch = sp;
-        }
-        else
-        {
-            lastSpWatch.reset();
-        }
-
         if (pc == lastpc)
         {
             Machine::instance().logging_.trace(pc);
             snprintf(message, sizeof(message), "\r\nloop detected @ 0x%04x\r\n", pc);
             Machine::instance().logging_.log(message);
             printf("%s", message);
+
             return;
         }
 
+        // finally step the cpu
         Machine::instance().cpu_.step();
 
-        if (kbhit())
-        {
-            int c = getch();
-
-            // treat ctrl-] as a command to exit the emulator
-            if (c == (']' & 0x1f))
-            {
-                snprintf(message, sizeof(message), "\r\n^] pressed @ 0x%04x\r\n", pc);
-                Machine::instance().logging_.log(message);
-                printf("%s", message);
-                return;
-            }
-
-            // map delete to backspace
-            if (c == 0x7F)
-            {
-                c = '\b';
-            }
-
-            // printf("[\\%02x]", c);
-
-            // reverse meaning of caps lock - if it's on,
-            // treat letters as lowercase, if it's off, treat letters as uppercase
-            c = (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')
-                    ? (c ^ 0x20)
-                    : c;
-
-            Machine::instance().memory_io_.acia_1_0_.terminalOutAciaIn(c);
-        }
-
-        auto c = Machine::instance().memory_io_.acia_1_0_.terminalInAciaOut();
-        if (c.has_value())
-        {
-            uint8_t v = c.value();
-
-            if (v < ' ')
-            {
-                switch (v)
-                {
-                case '\r':
-                case '\n':
-                case '\t':
-                    putc(v, stdout);
-                    break;
-                case '\b':
-                    putc('\b', stdout);
-                    putc(' ', stdout);
-                    putc('\b', stdout);
-                    break;
-                default:
-                {
-                    if (show_control_)
-                    {
-                        printf("\\%02x", v);
-                    }
-
-                    break;
-                }
-                }
-            }
-            else
-            {
-                putc(v & 0x7F, stdout);
-            }
-        }
-
+        // update the last state
         lastpc = pc;
-        lastsp = sp;
     }
 }
 

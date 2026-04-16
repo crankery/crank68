@@ -8,9 +8,9 @@ void Logging::trace(uint16_t pc)
     const char *op_name_s = op_info.op_name_s;
     addr_mode addr_mode = op_info.addr_mode;
 
-    int argc = addr_mode == inh                                           ? 0
-               : addr_mode == rel || addr_mode == imb || addr_mode == idx ? 1
-                                                                          : 2;
+    int argc = addr_mode == inh                       ? 0
+               : addr_mode == imw || addr_mode == ext ? 2
+                                                      : 1;
     uint8_t argv[2];
     for (int i = 0; i < argc; i++)
     {

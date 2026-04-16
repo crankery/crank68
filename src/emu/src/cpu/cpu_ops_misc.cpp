@@ -174,13 +174,12 @@ bool Cpu::op_wai(uint8_t opcode, op_names op, addr_mode mode)
     return false;
 }
 
-// the remaining ops need a real home
-
 // not implemented
 bool Cpu::op_com(uint8_t opcode, op_names op, addr_mode mode)
 {
     return false;
 }
+
 bool Cpu::op_neg(uint8_t opcode, op_names op, addr_mode mode)
 {
     return neg_mem(mode);

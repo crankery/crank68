@@ -267,6 +267,7 @@ uint8_t Cpu::do_ror8(uint8_t value)
 
     return result;
 }
+
 bool Cpu::shift_a(ShiftOp op)
 {
     s_.a = do_shift8(s_.a, op);

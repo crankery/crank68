@@ -1,6 +1,5 @@
 ; c68basic.asm
-
-; Loaded Motorola S file basic680.mot
+; from the disassembly of the mits_raw_bin.srec
 
 ; monitor routines - C68 mikbug2 addresses
 
@@ -261,8 +260,7 @@ RESLST  FCB     'E','N','D'|$80             ; END
         FCB     'G','O','T','O'|$80          ; GOTO
         FCB     'R','U','N'|$80             ; RUN
         FCB     'I','F'|$80                ; IF
-        FCB     'R','E','S','T','O','R'        ; RESTORE
-        FCB     'E'|$80
+        FCB     'R','E','S','T','O','R','E'|$80 ; RESTORE
         FCB     'G','O','S','U','B'|$80       ; GOSUB
         FCB     'R','E','T','U','R','N'|$80    ; RETURN
         FCB     'R','E','M'|$80             ; REM
@@ -277,10 +275,10 @@ RESLST  FCB     'E','N','D'|$80             ; END
         FCB     'L','I','S','T'|$80          ; LIST
         FCB     'C','L','E','A','R'|$80       ; CLEAR
         FCB     'N','E','W'|$80             ; NEW
-        FCB     'T','A','B','(|$80          ; TAB(
+        FCB     'T','A','B','('|$80          ; TAB(
         FCB     'T','O'|$80                ; TO
         FCB     'F','N'|$80                ; FN
-        FCB     'S','P','C','(|$80          ; SPC(
+        FCB     'S','P','C','('|$80          ; SPC(
         FCB     'T','H','E','N'|$80          ; THEN
         FCB     'N','O','T'|$80             ; NOT
         FCB     'S','T','E','P'|$80          ; STEP
@@ -291,9 +289,9 @@ RESLST  FCB     'E','N','D'|$80             ; END
         FCB     '^|$80                   ; ^
         FCB     'A','N','D'|$80             ; AND
         FCB     'O','R'|$80                ; OR
-        FCB     '>|$80                   ; >
-        FCB     '=|$80                   ; =
-        FCB     '<|$80                   ; <
+        FCB     '>'|$80                   ; >
+        FCB     '='|$80                   ; =
+        FCB     '<'|$80                   ; <
         FCB     'S','G','N'|$80             ; SGN
         FCB     'I','N','T'|$80             ; INT
         FCB     'A','B','S'|$80             ; ABS
@@ -310,13 +308,13 @@ RESLST  FCB     'E','N','D'|$80             ; END
         FCB     'A','T','N'|$80             ; ATN
         FCB     'P','E','E','K'|$80          ; PEEK
         FCB     'L','E','N'|$80             ; LEN
-        FCB     'S','T','R','$|$80          ; STR$
+        FCB     'S','T','R','$'|$80          ; STR$
         FCB     'V','A','L'|$80             ; VAL
         FCB     'A','S','C'|$80             ; ASK
-        FCB     'C','H','R','$|$80          ; CHR$
-        FCB     'L','E','F','T','$|$80       ; LEFT$
-        FCB     'R','I','G','H','T','$|$80    ; RIGHT$
-        FCB     'M','I','D','$|$80          ; MID$
+        FCB     'C','H','R','$'|$80          ; CHR$
+        FCB     'L','E','F','T','$'|$80       ; LEFT$
+        FCB     'R','I','G','H','T','$'|$80    ; RIGHT$
+        FCB     'M','I','D','$'|$80          ; MID$
         FCB     $00                      ; Terminate statement table.
 
 M0234   FCB     $06
