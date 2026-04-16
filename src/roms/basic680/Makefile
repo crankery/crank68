@@ -22,7 +22,6 @@ TARGET := $(NAME).rom
 .PHONY: all clean diff
 
 all: $(TARGET) $(ORIG_BIN) $(DIFF)
-diff: $(DIFF)
 
 $(DIFF): $(EDITED) $(ORIG)
 	diff $(ORIG) $(EDITED) > $(DIFF)
@@ -32,13 +31,13 @@ $(SRC): $(ORIG) $(DIFF)
 	cp $(ORIG) $(SRC)
 	patch -p0 $(SRC) < $(DIFF)
 
-$(TARGET): $(SRC) | 
+$(ORIG_BIN): $(ORIG_SREC)
+	srec_cat $(ORIG_SREC) -Motorola -offset 0x0000 -o $(ORIG_BIN) -binary
+
+$(TARGET): $(SRC) $(ORIG_BIN) | 
 	$(VASM_BIN) -maxerrors=0 -Fbin -L $(LST) -o $@ $<
 	dd if=/dev/zero of=$@ bs=1 seek=$$(stat -f%z mits_raw.bin) count=0
 	# cat $(LST)
-
-$(ORIG_BIN): $(ORIG_SREC)
-	srec_cat $(ORIG_SREC) -Motorola -offset 0x0000 -o $(ORIG_BIN) -binary
 
 clean:
 	rm -rf $(TARGET) $(LST) $(SRC) $(DIFF) $(ORIG_BIN)
