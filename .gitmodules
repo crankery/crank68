@@ -10,3 +10,6 @@
 [submodule "src/terminal/pico-sdk"]
 	path = src/terminal/pico-sdk
 	url = git@github.com:raspberrypi/pico-sdk.git
+[submodule "src/emu/gtest"]
+	path = src/emu/gtest
+	url = https://github.com/google/googletest
