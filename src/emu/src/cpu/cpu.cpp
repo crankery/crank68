@@ -165,7 +165,7 @@ void Cpu::reset()
 [[noreturn]] void Cpu::unimplemented(uint8_t opcode) const
 {
     char message[256];
-    snprintf(message, sizeof(message), "\r\n---\r\n\r\nunimplemented opcode 0x%02x at 0x%04x\r\n\r\n---\r\n", opcode, s_.pc - 1);
+    snprintf(message, sizeof(message), "\r\n---\r\n\r\nunimplemented opcode 0x%02x\r\n\r\n---\r\n", opcode);
     Machine::instance().logging_.log(message);
 
     throw std::runtime_error(message);

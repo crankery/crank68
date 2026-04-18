@@ -66,6 +66,8 @@ regen:
 	rm -f $(CPU_DEFS_H) $(CPU_DEFS_CPP)
 	$(MAKE) generated
 
+DEPS := $(OBJS:.o=.d)
+
 -include $(DEPS)
 
 .PHONY: all clean generated

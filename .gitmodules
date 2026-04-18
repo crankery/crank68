@@ -4,3 +4,9 @@
 [submodule "src/emu/mikbug"]
 	path = src/emu/mikbug
 	url = git@github.com:crsjones/MIKBUG2.git
+[submodule "src/terminal/picodvi"]
+	path = src/terminal/picodvi
+	url = git@github.com:Wren6991/PicoDVI.git
+[submodule "src/terminal/pico-sdk"]
+	path = src/terminal/pico-sdk
+	url = git@github.com:raspberrypi/pico-sdk.git

@@ -265,7 +265,7 @@ void dump_traceback()
     fclose(fp);
 }
 
-void term_out_acia_in()
+bool term_out_acia_in()
 {
     if (kbhit())
     {
@@ -274,7 +274,7 @@ void term_out_acia_in()
         // treat ctrl-] as a command to exit the emulator
         if (c == (']' & 0x1f))
         {
-            return;
+            return true;
         }
 
         // map delete to backspace
@@ -291,6 +291,8 @@ void term_out_acia_in()
 
         Machine::instance().memory_io_.acia_1_0_.terminalOutAciaIn(c);
     }
+
+    return false;
 }
 
 void term_in_acia_out()
@@ -373,14 +375,17 @@ void run()
     last_sleep_check_cycles_ = 0;
     start_us_ = now_us();
 
-    uint16_t lastpc = 0x0000;
+    uint16_t lastpc = 0xFFFF;
 
     char message[256];
 
     while (1)
     {
         term_in_acia_out();
-        term_out_acia_in();
+        if (term_out_acia_in())
+        {
+            return;
+        }
 
         throttle();
 

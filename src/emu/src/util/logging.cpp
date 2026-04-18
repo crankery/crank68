@@ -168,9 +168,19 @@ void Logging::log(std::string_view message)
     traceMessages_.log(message);
 }
 
+void Logging::suslog(std::string_view message)
+{
+    suslogs_.log(message);
+}
+
 void Logging::dumpTraces(FILE *fp)
 {
     for (const auto &message : traceMessages_.messages())
+    {
+        fprintf(fp, "%s", message.c_str());
+    }
+
+    for (const auto &message : suslogs_.messages())
     {
         fprintf(fp, "%s", message.c_str());
     }

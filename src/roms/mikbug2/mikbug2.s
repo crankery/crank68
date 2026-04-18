@@ -25,7 +25,7 @@
 ; 
 ; 
 
-    .equ RAM_PTR, 0xBF00
+    .equ RAM_PTR, 0xBE00
 
 .macro ALLOC name, size
     .equ \name, RAM_PTR
@@ -96,7 +96,7 @@
 
 ; stack is at 0x100
 
-    .equ stackpage, 0xBF00
+    .equ stackpage, 0xBC00
     .equ stack, stackpage + 0xff
 
 ; nam mikbug 
@@ -1817,6 +1817,7 @@ divov2:     ins
             rts
 
 ; mits used B rather than A
+; don't use the stack for temporary store, just wipe out A.
 outchmits:  tba
 outcmits:   ldab acias
             asrb
@@ -1832,9 +1833,6 @@ inchmits:   ldab acias
             asrb
             bcc inchmits                ; receiver not ready
             ldab aciad                  ; input char
-            andb #0x7f                  ; reset parity bit
-            cmpb #0x7f
-            beq inchmits                ; rubout"del
             rts                         ; else,return to caller
 
 ; 
