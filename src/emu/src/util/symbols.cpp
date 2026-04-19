@@ -1,10 +1,7 @@
 #include "symbols.h"
-#include "machine/machine.h"
 
 bool Symbols::load(std::string_view filename)
 {
-    char buffer[256];
-
     int count = 0;
     std::ifstream in(std::string(filename).c_str());
     if (!in)
@@ -50,13 +47,9 @@ bool Symbols::load(std::string_view filename)
         by_value_[sym.value].push_back(sym);
 
         std::string msg = sym.name + " = " + std::to_string(sym.value);
-        Machine::instance().logging_.log(msg);
 
         count++;
     }
-
-    snprintf(buffer, sizeof(buffer), "loaded %d symbols from %s\r\n", count, std::string(filename).c_str());
-    Machine::instance().logging_.log(buffer);
 
     return true;
 }

@@ -11,7 +11,7 @@ void Latch::out(uint8_t addr, uint8_t value)
 {
     char buf[80];
     snprintf(buf, sizeof(buf), "%s out: %02x\n", name(), value_);
-    Machine::instance().logging_.log(buf);
+    Logging::log(buf);
 
     value_ = value;
 }

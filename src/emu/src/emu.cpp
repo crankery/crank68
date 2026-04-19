@@ -11,6 +11,8 @@
 
 #include "machine/machine.h"
 
+Machine machine_ = Machine::create_default();
+
 struct LoadRequest
 {
     std::string filename;
@@ -195,7 +197,7 @@ int parse_args(int argc, char **argv)
                 return 1;
             }
 
-            Machine::instance().symbols_.load(argv[++i]);
+            machine_.cpu_->symbols_.load(argv[++i]);
         }
     }
 
@@ -221,14 +223,14 @@ bool load_binary(const std::string &filename, uint16_t addr)
             return false;
         }
 
-        Machine::instance().load(current++, static_cast<uint8_t>(c));
+        machine_.load(current++, static_cast<uint8_t>(c));
     }
 
     std::fclose(f);
 
     char msg[256];
     snprintf(msg, sizeof(msg), "loaded %s @ 0x%04x:0x%04x\n", filename.c_str(), addr, current);
-    Machine::instance().logging_.log(msg);
+    Logging::log(msg);
 
     return true;
 }
@@ -244,7 +246,7 @@ void dump_memory_binary(const char *filename, uint16_t start, uint16_t end)
 
     for (uint32_t addr = start; addr <= end; ++addr)
     {
-        uint8_t b = Machine::instance().read8(static_cast<uint16_t>(addr));
+        uint8_t b = machine_.read8(static_cast<uint16_t>(addr));
         if (std::fwrite(&b, 1, 1, f) != 1)
         {
             std::perror("fwrite");
@@ -259,7 +261,7 @@ void dump_traceback()
 {
     FILE *fp = fopen("emu_traceback.log", "w");
     fprintf(fp, "traceback:\r\n\r\n");
-    Machine::instance().logging_.dumpTraces(fp);
+    Logging::dumpTraces(fp);
     fprintf(fp, "\r\n(exit)\r\n");
     fflush(fp);
     fclose(fp);
@@ -289,7 +291,7 @@ bool term_out_acia_in()
                 ? (c ^ 0x20)
                 : c;
 
-        Machine::instance().memory_io_.acia_1_0_.terminalOutAciaIn(c);
+        machine_.memory_io_->acia_1_0_.terminalOutAciaIn(c);
     }
 
     return false;
@@ -297,7 +299,7 @@ bool term_out_acia_in()
 
 void term_in_acia_out()
 {
-    auto c = Machine::instance().memory_io_.acia_1_0_.terminalInAciaOut();
+    auto c = machine_.memory_io_->acia_1_0_.terminalInAciaOut();
     if (c.has_value())
     {
         uint8_t v = c.value();
@@ -339,7 +341,7 @@ void throttle()
     // don't try to run at any particular speed when there's watches or breakpoints
     if (breakpoints_.empty() && spwatches_.empty())
     {
-        total_cycles_ = Machine::instance().cpu_.cycles_;
+        total_cycles_ = machine_.cpu_->cycles_;
 
         if ((total_cycles_ - last_sleep_check_cycles_) >= sleep_threshold_cycles)
         {
@@ -360,13 +362,14 @@ void throttle()
                 }
 
                 std::string msg = "(sleep for " + std::to_string(sleep_us) + "µs)\r\n";
-                Machine::instance().logging_.log(msg.c_str());
+                Logging::log(msg.c_str());
 
                 usleep((useconds_t)sleep_us);
             }
         }
     }
 }
+
 void run()
 {
     std::optional<uint16_t> lastBreakpoint;
@@ -389,19 +392,19 @@ void run()
 
         throttle();
 
-        uint16_t pc = Machine::instance().cpu_.state().pc;
+        uint16_t pc = machine_.cpu_->state().pc;
 
         if (!(lastBreakpoint.has_value() && lastBreakpoint.value() == pc) &&
             ((std::find(breakpoints_.begin(), breakpoints_.end(), pc) != breakpoints_.end())))
         {
-            Machine::instance().logging_.trace(pc);
+            machine_.cpu_->trace(pc);
 
             std::stringstream ss;
             ss << std::hex << pc;
             std::string msg = "\r\nbreakpoint @ 0x" + ss.str() + "\r\n";
 
             // display msg on screen and in trace
-            Machine::instance().logging_.log(msg.c_str());
+            Logging::log(msg.c_str());
             printf("%s", msg.c_str());
 
             dump_traceback();
@@ -431,16 +434,16 @@ void run()
 
         if (pc == lastpc)
         {
-            Machine::instance().logging_.trace(pc);
+            machine_.cpu_->trace(pc);
             snprintf(message, sizeof(message), "\r\nloop detected @ 0x%04x\r\n", pc);
-            Machine::instance().logging_.log(message);
+            Logging::log(message);
             printf("%s", message);
 
             return;
         }
 
         // finally step the cpu
-        Machine::instance().cpu_.step();
+        machine_.cpu_->step();
 
         // update the last state
         lastpc = pc;
@@ -466,13 +469,13 @@ int main(int argc, char **argv)
 
     // set the config switches
     uint8_t acia0switches = 0b00010101;
-    Machine::instance().memory_io_.config_switches_.setValue(acia0switches);
+    machine_.memory_io_->config_switches_.setValue(acia0switches);
 
     set_conio_terminal_mode();
     setvbuf(stdout, NULL, _IONBF, 0);
 
     // reset the cpu (load the PC from the reset vector)
-    Machine::instance().cpu_.reset();
+    machine_.cpu_->reset();
 
     // run the emulation until error or ^]
     int result = 0;
@@ -482,14 +485,14 @@ int main(int argc, char **argv)
     }
     catch (const std::exception &e)
     {
-        Machine::instance().logging_.trace(Machine::instance().cpu_.s_.pc);
+        machine_.cpu_->trace(machine_.cpu_->s_.pc);
         fprintf(stderr, "%s", e.what());
         result = 1;
     }
 
-    auto state = Machine::instance().cpu_.s_;
+    auto state = machine_.cpu_->s_;
     snprintf(message, sizeof(message), "\r\nexit @ 0x%04x\r\n", state.pc);
-    Machine::instance().logging_.log(message);
+    Logging::log(message);
     snprintf(message,
              sizeof(message),
              "a:0x%02x b:0x%02x x:0x%04x sp:0x%04x cc:%c%c%c%c%c%c\r\n",
@@ -503,7 +506,7 @@ int main(int argc, char **argv)
              state.cc & N ? 'N' : '-',
              state.cc & I ? 'I' : '-',
              state.cc & H ? 'H' : '-');
-    Machine::instance().logging_.log(message);
+    Logging::log(message);
 
     // write out the traceback
     dump_traceback();

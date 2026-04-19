@@ -9,10 +9,14 @@
 
 #include "gen/cpu_defs.g.h"
 #include "cc.h"
+#include "machine/ibus.h"
+#include "util/symbols.h"
 
 class Cpu
 {
 public:
+    explicit Cpu(IBus &bus) : bus_(bus) {}
+
     enum class ShiftOp
     {
         asl,
@@ -32,10 +36,6 @@ public:
         uint8_t cc = 0;
     };
 
-    Cpu()
-    {
-    }
-
     void reset();
     void step();
 
@@ -43,15 +43,17 @@ public:
     State &state() { return s_; }
 
     State s_;
+    Symbols symbols_;
 
     uint32_t cycles_ = 0;
 
+    void trace(uint16_t pc);
+
 private:
     uint8_t read8(uint16_t addr) const;
-    uint16_t read16(uint16_t addr) const;
-
-    void write16(uint16_t addr, uint16_t value);
     void write8(uint16_t addr, uint8_t value);
+    uint16_t read16(uint16_t addr) const;
+    void write16(uint16_t addr, uint16_t value);
 
     // fetch bytes at pc
     uint8_t fetch8();
@@ -114,4 +116,6 @@ private:
     uint8_t do_neg8(uint8_t value);
 
 #include "gen/cpu_operations.g.h"
+
+    IBus &bus_;
 };

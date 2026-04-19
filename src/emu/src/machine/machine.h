@@ -13,28 +13,34 @@
 #include "util/logging.h"
 #include "util/symbols.h"
 
-class Machine
+class Machine final : public IBus
 {
 public:
-    static Machine &instance()
+    static Machine create_default()
     {
-        static Machine instance;
-        return instance;
+        return Machine(
+            std::make_unique<Ram>(),
+            std::make_unique<Rom>(),
+            std::make_unique<MemoryIO>());
     }
 
-    Machine(const Machine &) = delete;
-    Machine &operator=(const Machine &) = delete;
+    Machine(std::unique_ptr<Ram> ram,
+            std::unique_ptr<Rom> rom,
+            std::unique_ptr<MemoryIO> memory_io)
+        : ram_(std::move(ram)),
+          rom_(std::move(rom)),
+          memory_io_(std::move(memory_io)),
+          banked_memory_(std::make_unique<BankedMemory>(
+              [this]()
+              {
+                  return memory_io_->bankedMemoryLatch().getValue();
+              }))
+    {
+        cpu_ = std::make_unique<Cpu>(*this);
+    }
 
-    // todo: move these read/write operations to a bus class
-    // everything is too tightly coupled to the Machine right now
-    // it'd be nicer if everything had to go through a shared mediator to
-    // access the bus
-    uint8_t read8(uint16_t addr) const;
-    uint16_t read16(uint16_t addr) const;
-    void write8(uint16_t addr, uint8_t value);
-    void write16(uint16_t addr, uint16_t value);
-
-    Machine() = default;
+    uint8_t read8(uint16_t addr) override;
+    void write8(uint16_t addr, uint8_t value) override;
 
     // load data into memory
     // marks the loading flag during this operation to allow for writing to read only memory types
@@ -65,16 +71,12 @@ public:
             snprintf(buf, n, "%c", value);
         }
     }
-    // it'd be better if these guys were private and had access to a shared bus type class instead
-    Cpu cpu_;
-    Ram ram_;
-    Rom rom_;
-    MemoryIO memory_io_;
-    BankedMemory banked_memory_;
 
-    // todo: these don't really belong here
-    Logging logging_;
-    Symbols symbols_;
+    std::unique_ptr<Cpu> cpu_;
+    std::unique_ptr<Ram> ram_;
+    std::unique_ptr<Rom> rom_;
+    std::unique_ptr<MemoryIO> memory_io_;
+    std::unique_ptr<BankedMemory> banked_memory_;
 
 private:
     // flag to indicate read only devices can be written

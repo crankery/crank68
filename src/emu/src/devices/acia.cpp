@@ -42,7 +42,7 @@ uint8_t Acia::in(uint8_t port)
         uint8_t status = getStatusByte();
 
         snprintf(buf, sizeof(buf), "%s status in 0x%02x [%s]\n", name(), status, decode_acia_status(status).c_str());
-        Machine::instance().logging_.log(buf);
+        Logging::log(buf);
 
         return status;
     }
@@ -53,7 +53,7 @@ uint8_t Acia::in(uint8_t port)
         {
             Machine::expandchar(c.value(), buf2, sizeof(buf2));
             snprintf(buf, sizeof(buf), "%s data in 0x%02x (%s)\r\n", name(), c.value(), buf2);
-            Machine::instance().logging_.log(buf);
+            Logging::log(buf);
             lastOut = c.value();
         }
 
@@ -102,7 +102,7 @@ void Acia::out(uint8_t port, uint8_t value)
         // 0b11 = reset - set to 0x11 to reset device then select clock divisor
 
         snprintf(buf, sizeof(buf), "%s control out 0x%02x\n", name(), value);
-        Machine::instance().logging_.log(buf);
+        Logging::log(buf);
         // control
         controlByte = value;
         break;
@@ -111,7 +111,7 @@ void Acia::out(uint8_t port, uint8_t value)
     {
         Machine::expandchar(value, buf2, sizeof(buf2));
         snprintf(buf, sizeof(buf), "%s data out 0x%02x (%s)\n", name(), value, buf2);
-        Machine::instance().logging_.log(buf);
+        Logging::log(buf);
 
         terminalInAciaOutBuffer.push(value);
         break;

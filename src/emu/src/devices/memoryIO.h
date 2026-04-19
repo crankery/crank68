@@ -23,19 +23,17 @@ public:
           acia_2_0_(0x2, 0x8),
           acia_2_1_(0x2, 0xA)
     {
-        // slot 0
         devices_.push_back(&banked_memory_latch_);
         devices_.push_back(&config_switches_);
-
-        // slot 1
         devices_.push_back(&acia_1_0_);
-
-        // slot 2
         devices_.push_back(&pia_2_0_);
         devices_.push_back(&pia_2_1_);
         devices_.push_back(&acia_2_0_);
         devices_.push_back(&acia_2_1_);
     }
+
+    auto &bankedMemoryLatch() { return banked_memory_latch_; }
+    const auto &bankedMemoryLatch() const { return banked_memory_latch_; }
 
     virtual uint8_t read(uint16_t addr) const override
     {

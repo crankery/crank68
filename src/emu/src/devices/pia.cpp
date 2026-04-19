@@ -13,7 +13,7 @@ uint8_t Pia::in(uint8_t port)
     case 3:
     default:
         snprintf(buf, sizeof(buf), "%s in 0x00", name());
-        Machine::instance().logging_.log(buf);
+        Logging::log(buf);
     }
 
     return 0x0;
@@ -31,6 +31,6 @@ void Pia::out(uint8_t port, uint8_t value)
     case 3:
     default:
         snprintf(buf, sizeof(buf), "%s out %02x", name(), value);
-        Machine::instance().logging_.log(buf);
+        Logging::log(buf);
     }
 }
