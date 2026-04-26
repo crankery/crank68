@@ -1,12 +1,6 @@
 ; c68basic.asm
 ; from the disassembly of the mits_raw_bin.srec
 
-; monitor routines - C68 mikbug2 addresses
-
-INCH    EQU     $E8F9
-OUTCH   EQU     $E8ED
-POLCAT  EQU     $E903
-
 ; Missing referenced labels:
 
 M17D8   EQU     $17D8
@@ -80,6 +74,9 @@ MEA60   EQU     $EA60
 MF002   EQU     $F002
 MF600   EQU     $F600
 MFC18   EQU     $FC18
+INCH    EQU     $FF00
+POLCAT  EQU     $FF24
+OUTCH   EQU     $FF81
 MFFFF   EQU     $FFFF
 
 ;****************************************************
@@ -3508,3 +3505,15 @@ WORDS   FCC     " BYTES FRE"
 MEMORY  FCC     "MEMORY SIZ"
         FCB     'E'|$80,$00
 LASTWR  FCB     $00
+        FCC     " IS IT RETURN"
+        FCB     $0D
+        FCC     " BEQ OUT"
+        FCB     $0D
+        FCC     " BRA INTAPE GET NEXT CHARACTER"
+        FCB     $0D
+        FCC     " END"
+        FCB     $0D,$00
+
+; Original binary had 13 extra zeros at the end
+        FCB     $00,$00,$00,$00,$00,$00,$00,$00
+        FCB     $00,$00,$00,$00,$00

@@ -94,9 +94,9 @@
         "missing_tuning_profile": "warning",
         "net_conflict": "warning",
         "nonmirrored_text_on_back_layer": "warning",
-        "npth_inside_courtyard": "ignore",
+        "npth_inside_courtyard": "error",
         "padstack": "warning",
-        "pth_inside_courtyard": "ignore",
+        "pth_inside_courtyard": "error",
         "shorting_items": "error",
         "silk_edge_clearance": "warning",
         "silk_over_copper": "warning",
@@ -137,7 +137,7 @@
         "min_text_height": 0.8,
         "min_text_thickness": 0.08,
         "min_through_hole_diameter": 0.3,
-        "min_track_width": 0.0,
+        "min_track_width": 0.2,
         "min_via_annular_width": 0.1,
         "min_via_diameter": 0.5,
         "solder_mask_to_copper_clearance": 0.0,
@@ -433,7 +433,6 @@
       "footprint_filter": "ignore",
       "footprint_link_issues": "warning",
       "four_way_junction": "ignore",
-      "global_label_dangling": "warning",
       "ground_pin_not_ground": "warning",
       "hier_label_mismatch": "error",
       "isolated_pin_label": "warning",
@@ -473,7 +472,7 @@
     "pinned_symbol_libs": []
   },
   "meta": {
-    "filename": "BankedMemory.kicad_pro",
+    "filename": "BusDepot.kicad_pro",
     "version": 3
   },
   "net_settings": {
@@ -496,6 +495,21 @@
         "via_diameter": 0.6,
         "via_drill": 0.3,
         "wire_width": 6
+      },
+      {
+        "clearance": 0.2,
+        "diff_pair_gap": 0.25,
+        "diff_pair_width": 0.2,
+        "microvia_diameter": 0.6,
+        "microvia_drill": 0.2,
+        "name": "Power",
+        "pcb_color": "rgba(0, 0, 0, 0.000)",
+        "priority": 0,
+        "schematic_color": "rgba(0, 0, 0, 0.000)",
+        "track_width": 0.8,
+        "tuning_profile": "",
+        "via_diameter": 1.0,
+        "via_drill": 0.5
       }
     ],
     "meta": {
@@ -503,18 +517,47 @@
     },
     "net_colors": null,
     "netclass_assignments": null,
-    "netclass_patterns": []
+    "netclass_patterns": [
+      {
+        "netclass": "Power",
+        "pattern": "+5V"
+      },
+      {
+        "netclass": "Power",
+        "pattern": "+12V"
+      },
+      {
+        "netclass": "Power",
+        "pattern": "-12V"
+      },
+      {
+        "netclass": "Power",
+        "pattern": "GND"
+      },
+      {
+        "netclass": "Power",
+        "pattern": "+5V_IN"
+      },
+      {
+        "netclass": "Power",
+        "pattern": "+12V_IN"
+      },
+      {
+        "netclass": "Power",
+        "pattern": "-12V_IN"
+      },
+      {
+        "netclass": "Default",
+        "pattern": ""
+      }
+    ]
   },
   "pcbnew": {
     "last_paths": {
-      "gencad": "",
       "idf": "",
       "netlist": "",
-      "plot": "mega-gerbers",
-      "pos_files": "",
+      "plot": "",
       "specctra_dsn": "",
-      "step": "../3D/Mega.step",
-      "svg": "",
       "vrml": ""
     },
     "page_layout_descr_file": ""
@@ -599,6 +642,12 @@
           "label": "#",
           "name": "${ITEM_NUMBER}",
           "show": false
+        },
+        {
+          "group_by": false,
+          "label": "Sim.Pins",
+          "name": "Sim.Pins",
+          "show": false
         }
       ],
       "filter_string": "",
@@ -637,33 +686,25 @@
     "meta": {
       "version": 1
     },
-    "net_format_name": "",
     "page_layout_descr_file": "",
     "plot_directory": "",
     "reuse_designators": true,
-    "space_save_all_events": true,
-    "spice_current_sheet_as_root": false,
-    "spice_external_command": "spice \"%I\"",
-    "spice_model_current_sheet_as_root": true,
-    "spice_save_all_currents": false,
-    "spice_save_all_dissipations": false,
-    "spice_save_all_voltages": false,
     "subpart_first_id": 65,
     "subpart_id_separator": 0,
     "top_level_sheets": [
       {
-        "filename": "BankedMemory.kicad_sch",
-        "name": "BankedMemory",
-        "uuid": "c2f614e0-59f3-4965-8fae-e9c32622c27c"
+        "filename": "BusDepot.kicad_sch",
+        "name": "Root",
+        "uuid": "9902e8e7-9cb5-4cff-9022-547fcad637c2"
       }
     ],
-    "used_designators": "C12-13,#PWR20,#PWR31-38,U8-9",
+    "used_designators": "G1-3,H1-7",
     "variants": []
   },
   "sheets": [
     [
-      "c2f614e0-59f3-4965-8fae-e9c32622c27c",
-      "BankedMemory"
+      "9902e8e7-9cb5-4cff-9022-547fcad637c2",
+      "Root"
     ]
   ],
   "text_variables": {},

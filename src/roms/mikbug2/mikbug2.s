@@ -386,7 +386,7 @@ inch1:      ldaa acias
 ; x = pointer to ram bytes to be initialized 
 ; 
 start:                                  ; actual code start
-            lds #adrstr                 ; start of constant data
+            lds #adrstr-1               ; start of constant data
             ldx #sp                     ; start of ram area
 ; 
 inilp1:     pula                        ; get next constant byte
@@ -1834,6 +1834,13 @@ inchmits:   ldab acias
             bcc inchmits                ; receiver not ready
             ldab aciad                  ; input char
             rts                         ; else,return to caller
+
+; Altair-compatible console poll
+; C set if char available, B clobbered
+polcat_mits:
+        ldab    acias
+        asrb
+        rts
 
 ; 
 ; interrupt vectors 

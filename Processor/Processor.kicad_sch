@@ -14978,12 +14978,6 @@
 		(uuid "85521efc-1142-4b60-a759-6b6d6adfb4a2")
 	)
 	(junction
-		(at 162.56 93.98)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "9a2175ea-51e1-464d-814b-d4f5d4c091aa")
-	)
-	(junction
 		(at 257.81 50.8)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -14994,6 +14988,12 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "a47472ac-af63-435c-b3e4-5691c4953939")
+	)
+	(junction
+		(at 162.56 93.98)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "a7cbaa86-4f57-4779-b270-7be3c7652367")
 	)
 	(junction
 		(at 287.02 158.75)
@@ -15875,16 +15875,6 @@
 	)
 	(wire
 		(pts
-			(xy 162.56 93.98) (xy 166.37 93.98)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "71a3e0c8-5152-498b-8f2d-56efab06cc11")
-	)
-	(wire
-		(pts
 			(xy 294.64 166.37) (xy 275.59 166.37)
 		)
 		(stroke
@@ -16582,6 +16572,16 @@
 			(type default)
 		)
 		(uuid "e044c7c0-ba6f-4dec-8088-497445a4e23f")
+	)
+	(wire
+		(pts
+			(xy 162.56 93.98) (xy 166.37 93.98)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "e229db54-f542-47ca-bc6a-3e1b76a6ae8a")
 	)
 	(wire
 		(pts
@@ -22510,8 +22510,7 @@
 	)
 	(symbol
 		(lib_id "Device:C")
-		(at 162.56 97.79 0)
-		(mirror y)
+		(at 162.56 97.79 180)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -22521,7 +22520,7 @@
 		(dnp no)
 		(uuid "76bc52bb-c30a-473f-9af3-331c06523996")
 		(property "Reference" "C5"
-			(at 158.75 96.5199 0)
+			(at 159.512 96.52 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -22532,7 +22531,7 @@
 			)
 		)
 		(property "Value" "100n"
-			(at 158.75 99.0599 0)
+			(at 159.512 99.06 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -22543,7 +22542,7 @@
 			)
 		)
 		(property "Footprint" "0-Footprints:C_Disc_D5.0mm_W2.5mm_P5.00mm"
-			(at 161.5948 101.6 0)
+			(at 161.5948 93.98 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)

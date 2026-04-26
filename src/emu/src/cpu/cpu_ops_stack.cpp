@@ -85,7 +85,7 @@ bool Cpu::op_tsx(uint8_t opcode, op_names op, addr_mode mode)
     switch (mode)
     {
     case addr_mode::inh:
-        s_.x = s_.sp;
+        s_.x = s_.sp + 1;
         return true;
     default:
         return false;
@@ -97,7 +97,7 @@ bool Cpu::op_txs(uint8_t opcode, op_names op, addr_mode mode)
     switch (mode)
     {
     case addr_mode::inh:
-        s_.sp = s_.x;
+        s_.sp = s_.x - 1;
         return true;
     default:
         return false;

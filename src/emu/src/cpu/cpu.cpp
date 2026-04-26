@@ -58,7 +58,7 @@ uint16_t Cpu::fetch16()
 
 void Cpu::push8(uint8_t v)
 {
-    write8(--s_.sp, v);
+    write8(s_.sp--, v);
 }
 
 void Cpu::push16(uint16_t v)
@@ -69,7 +69,7 @@ void Cpu::push16(uint16_t v)
 
 uint8_t Cpu::pop8()
 {
-    return read8(s_.sp++);
+    return read8(++s_.sp);
 }
 
 uint16_t Cpu::pop16()
