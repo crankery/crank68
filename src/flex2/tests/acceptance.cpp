@@ -7,7 +7,7 @@ int main() {
         const auto wait=symbol("build/c68flex.lst","C68INW");
         auto run=[&](const std::string &keys) {
             bus.output.clear(); size_t next=0;
-            for(unsigned n=0;n<30000000;++n) {
+            for(unsigned n=0;n<500000000;++n) {
                 if(cpu.s_.pc==wait && bus.input<0) {
                     if(next<keys.size()) bus.input=uint8_t(keys[next++]);
                     else {
@@ -26,6 +26,19 @@ int main() {
         };
         std::copy_n(bus.disk.begin(),256,bus.ram.begin()+0x100);cpu.s_.pc=0x100;
         run("11,02,26\r");
+        auto build_output=run("LIST 0.BUILD.TXT\r");
+        auto build_stamp=file("build/BUILD.TXT");
+        std::string build_text(build_stamp.begin(),build_stamp.end());
+        // LIST may insert LF after CR; compare printable stamp lines.
+        size_t start=0;
+        while(start<build_text.size()) {
+            auto end=build_text.find('\r',start);
+            if(end==std::string::npos) end=build_text.size();
+            require(build_output.find(build_text.substr(start,end-start))!=std::string::npos,
+                    "Build information not readable through FLEX LIST: "+build_output);
+            start=end+1;
+        }
+        std::ofstream("build/build-info-list.txt")<<build_output;
         const auto czech=file("build/CZECH.DAT");
         require(czech[0]==3,"Acceptance story is not V3");
         auto output=run("Z68 3.CZECH.DAT\r");
@@ -90,19 +103,42 @@ int main() {
                 byte("vm_finished")==0,"Instruction budget did not stop execution");
         output=run("Z68 3.CZECH.DAT RUN\r");
         std::ofstream("build/czech-actual.txt")<<output;
-        require(byte("vm_raw_opcode")==0xe0 && byte("op_class")==3 && byte("op_number")==0 &&
-                byte("vm_operand_count")==1 && byte("vm_operand_types")==0 &&
-                word("vm_operands")==((unsigned(czech[unsigned(czech[6])*256+czech[7]+2])*256)+
-                                     czech[unsigned(czech[6])*256+czech[7]+3]) &&
-                byte("vm_store_variable")==255,"CZECH bootstrap call decoded incorrectly");
-        require(output.find("unimplemented opcode call")!=std::string::npos &&
-                byte("vm_finished")==0 && byte("op_halted")==1,"CZECH blocker missing or falsely completed");
+        std::smatch summary;
+        require(std::regex_search(output,summary,std::regex("Passed: ([0-9]+), Failed: ([0-9]+), Print tests: ([0-9]+)")),
+                "CZECH did not reach its test summary: "+output);
+        const unsigned passed=std::stoul(summary[1]), failed=std::stoul(summary[2]), visual=std::stoul(summary[3]);
+        require(passed==349 && failed==0 && visual==19 && byte("vm_finished")==1 &&
+                byte("op_halted")==0 && byte("vm_input_requested")==0,
+                "CZECH automatic checks failed or execution did not quit: "+output);
         require(byte("story_opened")==0,"Acceptance run leaked its story file");
+        bool zork=false;
+        // The copyrighted story is optional and supplied locally by its owner.
+        std::ifstream local("../z68/stories/ZORK1.DAT",std::ios::binary);
+        if(local.good()) {
+            output=run("Z68 3.ZORK1.DAT RUN\r");
+            std::ofstream("build/zork-startup.txt")<<output;
+            const auto title=output.find("ZORK I: The Great Underground Empire");
+            const auto room=output.find("West of House",title);
+            const auto description=output.find("You are standing in an open field west of a white house",room);
+            const auto mailbox=output.find("There is a small mailbox here.",description);
+            const auto prompt=output.find(">",mailbox);
+            const auto boundary=output.find("first input request reached",prompt);
+            require(title!=std::string::npos && room!=std::string::npos && description!=std::string::npos &&
+                    mailbox!=std::string::npos && prompt!=std::string::npos && boundary!=std::string::npos &&
+                    byte("vm_input_requested")==1 && byte("vm_finished")==0 && byte("op_halted")==0,
+                    "Zork failed to reach the first prompt normally: "+output);
+            require(byte("story_opened")==0,"Zork input boundary leaked its story file");
+            require((bus.ram[word("dynamic_start")+1]&0x70)==0x10,"Serial terminal capabilities incorrect");
+            zork=true;
+        }
         std::ofstream("build/acceptance.json")
-            <<"{\n  \"bootstrap_gates_passed\": 6,\n  \"czech_status\": \"blocked\",\n"
-            <<"  \"blocker\": \"call (VAR:00)\",\n  \"czech_checks_passed\": 0,\n"
-            <<"  \"czech_expected_automatic\": 349,\n  \"czech_visual_checks\": 19\n}\n";
-        std::cout<<"Acceptance: 6 bootstrap gates passed; CZECH BLOCKED at call (0 CZECH checks passed).\n";
+            <<"{\n  \"bootstrap_gates_passed\": 6,\n  \"czech_status\": \"passed\",\n"
+            <<"  \"czech_checks_passed\": "<<passed<<",\n  \"czech_checks_failed\": "<<failed<<",\n"
+            <<"  \"czech_expected_automatic\": 349,\n  \"czech_visual_checks\": "<<visual<<",\n"
+            <<"  \"zork_first_prompt\": "<<(zork?"true":"null")<<"\n}\n";
+        std::cout<<"Acceptance: 6 bootstrap gates; CZECH 349 automatic checks passed (19 visual checks require review).\n";
+        std::cout<<(zork?"Zork opening, West of House, mailbox and first input prompt passed.\n":
+                         "Zork startup skipped: no local ZORK1.DAT.\n");
         return 0;
     } catch(const std::exception &error) {
         std::cerr<<error.what()<<"\n";return 1;

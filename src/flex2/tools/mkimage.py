@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
-"""Build a deterministic 1 MiB FLEX disk and link its RAM boot sector."""
+"""Build a 1 MiB FLEX disk with build provenance and link its RAM boot sector."""
 from pathlib import Path
 import json
+import hashlib
+import os
+import subprocess
+from datetime import datetime, timezone
 import runpy
 from stories import story_files
 from disk_layout import DRIVES, TRACKS, SECTORS, DRIVE_BYTES, LABELS, file_drive
@@ -26,6 +30,37 @@ def ts(index):
     return bytes([index // SECTORS_PER_TRACK, index % SECTORS_PER_TRACK + 1])
 
 
+def build_info(root, files):
+    """Stamp each packaged image; content ID excludes the stamp itself."""
+    digest = hashlib.sha256()
+    for name, payload in sorted(files + [('BOOT.BIN', (root / 'boot.bin').read_bytes())]):
+        digest.update(name.encode('ascii') + b'\0')
+        digest.update(hashlib.sha256(payload).digest())
+    epoch = os.environ.get('SOURCE_DATE_EPOCH')
+    now = datetime.fromtimestamp(int(epoch), timezone.utc) if epoch else datetime.now(timezone.utc)
+    revision, dirty = 'unavailable', None
+    try:
+        source = Path(__file__).resolve().parents[2]
+        revision = subprocess.check_output(['git', 'rev-parse', '--short=12', 'HEAD'],
+                                           cwd=source, stderr=subprocess.DEVNULL, text=True).strip()
+        dirty = bool(subprocess.check_output(['git', 'status', '--porcelain', '--untracked-files=normal', '--', '.'],
+                                             cwd=source, stderr=subprocess.DEVNULL, text=True))
+    except (OSError, subprocess.CalledProcessError):
+        pass
+    info = dict(built_utc=now.strftime('%Y-%m-%d %H:%M:%S UTC'), revision=revision,
+                dirty=dirty, content_id=digest.hexdigest()[:16],
+                z68_sha256=hashlib.sha256((root / 'z68.bin').read_bytes()).hexdigest())
+    lines = ['C68 FLEX image build',
+             'Built: ' + info['built_utc'],
+             'Content ID: ' + info['content_id'],
+             'Git: ' + revision + (' (modified)' if dirty else ''),
+             'Z68 SHA256: ' + info['z68_sha256'][:16],
+             'Drives: 0 system, 1 BASIC, 2 games, 3 my files',
+             'Read this file: LIST 0.BUILD.TXT']
+    # FLEX text uses CR line endings; sector padding is supplied by make_drive.
+    return info, ('\r'.join(lines) + '\r').encode('ascii')
+
+
 def make_image():
     root = Path('build')
     z68 = (root / 'z68.bin').read_bytes()
@@ -37,6 +72,10 @@ def make_image():
     ]
     files.extend(distribution_files())
     stories = story_files()
+    fixtures = [(name, (root / name).read_bytes()) for name in
+                ('CZECH.DAT', 'VMBOOT.DAT', 'VMFAIL.DAT', 'VMLIMIT.DAT')]
+    info, stamp = build_info(root, files + stories + fixtures)
+    files.append(('BUILD.TXT', stamp))
     image = bytearray()
     drives = []
     for drive in range(DRIVES):
@@ -52,7 +91,7 @@ def make_image():
                            files=manifest, free_sectors=free))
     (root / 'flex2.dsk').write_bytes(image)
     (root / 'image.json').write_text(json.dumps(dict(
-        geometry=dict(drives=DRIVES, tracks_per_drive=TRACKS,
+        build=info, geometry=dict(drives=DRIVES, tracks_per_drive=TRACKS,
                       sectors_per_track=16, sector_bytes=256), drives=drives), indent=2) + '\n')
     print(f'Created {len(image):,}-byte SRAM image with {DRIVES} drives: ' +
           ', '.join(f"{d['drive']}: {len(d['files'])} files, {d['free_sectors']} free" for d in drives))

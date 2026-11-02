@@ -63,6 +63,16 @@ finish:
         .include "random.s"
         .include "decode.s"
         .include "execute.s"
+        .include "vars.s"
+        .include "calls.s"
+        .include "math.s"
+        .include "branch.s"
+        .include "arrays.s"
+        .include "objects.s"
+        .include "props.s"
+        .include "output.s"
+        .include "input.s"
+        .include "verify.s"
 
 ; Local writable storage is included in the binary so its full extent can be
 ; verified when packaging it. The original conceptual Z-machine modules are

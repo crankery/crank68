@@ -92,6 +92,7 @@ static void xbasic_test() {
 }
 #include "z68.h"
 #include "random.h"
+#include "vars.h"
 
 int main() {
     Bus bus;
@@ -100,6 +101,7 @@ int main() {
         xbasic_test();
         z68_test();
         random_test();
+        vars_test();
         auto inwait=symbol("build/c68flex.lst","C68INW");
         auto basicin=symbol("build/msbasic.lst","INCH");
         std::copy_n(bus.disk.begin(),256,bus.ram.begin()+0x100);

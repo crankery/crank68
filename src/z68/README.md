@@ -1,12 +1,11 @@
 # Z68 for C68 FLEX
 
-Z68 is currently a FLEX-loadable **Version 3 story memory loader**.
-It opens the supplied file through FLEX, reads its binary header, calculates
-a conventional-RAM layout, and loads the complete writable story region.
-It reports the header and RAM layout, demonstrates packed-text decoding,
-closes the file, and returns to FLEX.
-Explicit `RUN` mode currently executes only `nop`, inline `print`, `new_line`,
-and `quit`; all other operations still stop with a diagnostic.
+Z68 is a FLEX-loadable **Version 3 Z-machine interpreter in development**.
+It executes the local Zork I through its title, initial room description, mailbox,
+and first `>` prompt. At `sread` it reports that the first input request was
+reached, closes the story and returns to FLEX. Line input, tokenization and
+interactive play are not implemented yet. CZECH V3 completes with 349 automatic
+passes, zero failures, and 19 print checks requiring visual review.
 
 From this directory, `make` delegates to `../flex2` to assemble Z68 and package
 `Z68.CMD` on drive 0. Outputs are `../flex2/build/z68.bin`, `z68.lst`,
@@ -19,7 +18,13 @@ are rejected. Missing/empty `stories/` leaves drive 3 empty. The build preserves
 all supplied bytes, including any trailing padding beyond the declared story
 length. No game downloads are performed.
 
-At the FLEX prompt:
+At the FLEX prompt, execute the story:
+
+```text
+Z68 3.ZORK1.DAT RUN
+```
+
+Omit `RUN` to inspect its header, memory layout and sample object names:
 
 ```text
 Z68 3.ZORK1.DAT
@@ -68,7 +73,8 @@ Code, strings, the private 320-byte FCB, and the 64-byte header are loaded from
 `header[$0E]` bytes, mapping story address zero to that RAM base. It copies the
 already-read 64-byte header, then continues sequential binary reads from offset
 64 without reopening or skipping bytes. The loaded copy remains writable;
-interpreter capability adjustments will be added with execution support.
+RUN adjusts Flags 1 to advertise no status line, no split window and fixed-pitch
+output. Inspection mode preserves the story bytes.
 
 Above dynamic memory is free growth space. Fixed reservations are placed
 below the runtime RAM ceiling:
@@ -77,7 +83,7 @@ below the runtime RAM ceiling:
 | --- | --- | --- |
 | Sector index | 1,042 | Up to 521 track/sector pairs, built on first static read |
 | Read-only story cache | 504 | First 252-byte slot used; second reserved |
-| Z-stack and call frames | 2,048 | Reserved; execution not implemented |
+| Z-stack and call frames | 2,048 | Evaluation stack and routine frames |
 | 6800 hardware stack | 512 | Active while Z68 runs |
 
 All reservation bases, the dynamic exclusive end, and remaining growth bytes
@@ -92,9 +98,9 @@ With the current build and Zork I release 88, the layout is:
 
 | Region | Address range (end excluded) |
 | --- | --- |
-| Code and fixed data | `$0300–$1D95` |
-| Writable story | `$1D95–$4BE8` |
-| Free growth space (9,230 bytes) | `$4BE8–$6FF6` |
+| Code and fixed data | `$0300–$2C3B` |
+| Writable story | `$2C3B–$5A8E` |
+| Free growth space (5,480 bytes) | `$5A8E–$6FF6` |
 | Sector index reservation | `$6FF6–$7408` |
 | Cache reservation | `$7408–$7600` |
 | Z-stack/frame reservation | `$7600–$7E00` |
@@ -108,8 +114,8 @@ checks the 64-byte minimum, recovers from truncated files, and guards memory
 above a reduced `MEMEND` and below the reserved CPU stack.
 
 Console output and files use FLEX calls. There are no direct ACIA, SRAM-window,
-or bank-latch accesses. The other `z/` modules remain conceptual placeholders
-and are not linked; opcode execution and save/restore remain future work.
+or bank-latch accesses. Dictionary input, save/restore and debug modules remain
+conceptual placeholders and are not linked.
 
 ## Packed text and story reads
 
@@ -141,24 +147,67 @@ and cursor restoration, invalid nesting, incomplete escapes, file-sector
 crossings, and strings/abbreviations above 64 KiB. The existing RAM-limit and
 full writable-story byte-comparison tests remain in place.
 
+## Variables and evaluation stack
+
+`z/vars.s` resolves operands from left to right into `vm_resolved`, preserving
+raw decoder operands. Globals map to the 240 big-endian words in dynamic story
+memory. Locals use `vm_local_base` and `vm_local_count`; routine calls
+establish those fields. At startup there are no locals.
+
+`var_read` pops variable zero and `var_write` pushes it. `var_peek` and
+`var_replace` access its top in place for indirect variable operations.
+Each takes the variable number in A and reads/writes the word `vm_value`.
+`vm_store_result` applies the decoded store destination. Success clears carry;
+invalid variables, missing locals, and stack bounds failures halt with a diagnostic.
+The evaluation stack grows upward within the existing 2 KiB stack/frame arena;
+`vm_eval_base` protects the current frame's lower boundary. Checked increment
+and decrement reuse the indirect-variable path before signed comparison.
+
+Emulator tests cover all 240-word table endpoints, local limits, a full stack,
+overflow/underflow, wrapping increment/decrement, indirect stack operands,
+random result storage, and a decoded program using these operations.
+
+## Routine calls and returns
+
+`rtrue` and `rfalse` pass 1 and 0 to `vm_return` in `z/calls.s`.
+The shared return path restores the caller's locals, evaluation-stack boundary,
+17-bit PC, and frame link, discards the callee's stack, and stores the result in
+the caller's destination variable. Returning with no caller ends execution.
+
+The private frame header is 12 bytes, followed by callee locals. Its address
+also records the caller's saved stack pointer; field offsets are documented in
+`calls.s`. `vm_frame_pointer` is zero in the initial context and is reset for
+each RUN. Frame bounds and caller links are checked before restoration.
+`call` expands the packed address to 17 bits, reads V3 default locals, overrides
+locals with the supplied arguments, and creates a bounded frame. Call-to-zero
+stores zero without creating a frame. `ret` and `ret_popped` also use the shared
+return path. Tests cover nested calls, defaults/arguments, result destinations,
+malformed frames and initial-context returns. Return behavior follows
+[the standard’s routine-call rules](https://inform-fiction.org/zmachine/standards/z1point1/sect06.html).
+
 ## Opcode scaffold and next implementation steps
 
-All **68 V1–V3 opcode names** now have separate handler labels in
-`z/handlers.s`. Most are deliberately unimplemented: their handlers report the name,
-normalized opcode class/number, and 17-bit instruction address, set `op_halted`,
-and return carry set. Four handlers now implement `nop`, inline `print`,
-`new_line`, and `quit`. Reserved and V4+ opcode slots report an
-invalid-opcode error. The metadata includes V3's special `sound_effect` case
-for The Lurking Horror. Header loading and text decoding still support V3 only;
-adding V1/V2 metadata does not claim those story formats run yet.
+All **68 V1–V3 opcode names** have separate labels in `z/handlers.s`.
+58 execute their V3 operations; `sread` is a deliberate input boundary.
+The remaining nine handlers trap with their name, normalized class/number and
+17-bit PC: `save`, `restore`, `restart`, `show_status`, `split_window`,
+`set_window`, `output_stream`, `input_stream`, and `sound_effect`.
+Reserved and V4+ slots report an invalid-opcode error. V1/V2 table entries
+are retained, but the loader and text decoder currently accept V3 stories only.
 
-Start editing **`z/handlers.s`** when implementing operations. It is a manual
-source file and is not regenerated. Unimplemented bodies are short jumps to the
-common diagnostic; replace one body at a time, or jump into its owning module
-(objects, calls, variables, etc.). Inline `print` is connected to the text decoder; the other print operations
-remain stubs.
+The implementations live in their owning modules: `calls.s`, `branch.s`,
+`math.s`, `arrays.s`, `objects.s`, `props.s`, `output.s`, and `verify.s`.
+Branching supports both suffix lengths, signed offsets and return branches;
+arithmetic uses wrapping 16-bit values and signed division/remainder.
+Array writes are confined to dynamic RAM. Object/property support uses the
+V3 nine-byte entries, 32 attributes and descending property lists. Tree moves
+bound sibling/ancestor walks and reject cycles. `verify` checks original
+on-disk bytes, including the original dynamic region, rather than mutated RAM.
 
-`z/ops.s` documents the interface. The future decoder supplies:
+`handlers.s` is manual and is not regenerated. Replace a stub or jump into its
+owning module when implementing the remaining operations.
+
+`z/ops.s` documents the interface. The decoder supplies:
 
 - `op_class`: 0OP=0, 1OP=1, 2OP=2, VAR=3.
 - `op_number`: the normalized opcode number, not the raw instruction byte.
@@ -178,10 +227,10 @@ It never rewrites handler bodies. Emulator tests look up every slot for versions
 1, 2 and 3, exercise all 68 V3 slots, and check invalid slots, selected suffix
 flags, diagnostic PCs, halt state and unchanged story memory.
 
-Operand forms and suffixes are now decoded, preserving raw operand values and
-types. Variable resolution, the Z-stack, branch/store handling and routine
-calls/returns remain the next work. Tiny synthetic programs should establish
-those pieces before running Zork's initializer.
+The decoder preserves raw operand types and values. The execution loop resolves
+variables from left to right, dispatches the operation and enforces a
+30,000-instruction budget. `vm_input_requested`, `vm_finished` and `op_halted`
+distinguish the input milestone, normal termination and errors.
 
 ## Random-number service
 
@@ -209,9 +258,8 @@ modulo bias. The state is warmed after seeding, and an accidental zero state
 is repaired. Negative seeds use the same PRNG; the standard's optional
 small-seed counting sequence is not used.
 
-The opcode `op_random` remains a deliberate trap until operand decoding and
-result-variable storage exist. Its eventual body should pass its resolved
-operand to `rnd`, then store `rnd_result` using the common variable-store path.
+The `random` handler passes its resolved signed operand to `rnd` and stores the
+result through the common variable-store path.
 The service itself is complete and emulator-tested against a host reference,
 including the most-negative seed, repeatability, forced sample rejection,
 range boundaries, normal reseeding and console-counter wrap/register safety.
@@ -232,14 +280,14 @@ The FLEX image installs `CZECH.DAT`, `VMBOOT.DAT`, `VMFAIL.DAT` and `VMLIMIT.DAT
 on drive 3 along with local stories. These names are reserved for test fixtures.
 The three VM fixtures are ours; their results are **not** CZECH conformance
 checks. They test a print/nop/newline/quit sequence, a truncated call/store
-suffix, and the 10,000-instruction safety limit.
+suffix, and the 30,000-instruction safety limit.
 
 From this directory:
 
 ```sh
-make acceptance  # passing bring-up gates, with explicit CZECH blocked status
+make acceptance  # bootstrap gates, full CZECH V3, optional local Zork startup
 make test        # regression tests plus those acceptance gates
-make czech       # strict upstream conformance gate; currently FAILS as blocked
+make czech       # strict 349-pass upstream automatic conformance gate
 ```
 
 At the FLEX prompt:
@@ -249,24 +297,23 @@ Z68 3.CZECH.DAT RUN
 Z68 3.VMBOOT.DAT RUN
 ```
 
-The current **six bootstrap gates** cover CZECH V3 loading, writable-byte
-integrity, instruction forms/suffixes/raw operand decoding, print/quit execution,
-truncation rejection, and instruction-budget enforcement. The real CZECH entry
-instruction is decoded and then traps at unimplemented `call` (VAR:00), PC
-`$000823` in this compiler build. **Zero upstream CZECH checks have passed.**
-CZECH needs calls, variables and stack behavior before its tests can run.
+The **six bootstrap gates** cover CZECH V3 loading, writable-byte integrity,
+instruction forms/suffixes/raw decoding, print/quit execution, truncation
+rejection and instruction-budget enforcement. CZECH then runs through normal
+execution and must report **349 automatic passes, zero failures and 19 visual
+print checks**, followed by `quit`. Visual checks are recorded separately from
+automatic conformance; interpreter-specific header output may differ.
 
-`../flex2/build/acceptance.json` records this distinction. Transcripts are
-`czech-load.txt`, `czech-actual.txt` and `vmboot.txt` in the same build directory.
-The upstream full V3 baseline is **349 automatic passes, zero failures and
-19 visual print checks** (368 total); interpreter-specific header output may
-differ. The strict target will not treat a successful file load or a known
-unsupported opcode as a passing suite. As execution support advances, extend
-the acceptance runner and replace the current expected-blocker assertion.
+If the local `stories/ZORK1.DAT` is present, acceptance also asserts the title,
+West of House, its description, the mailbox, `>` and the deliberate first-read
+boundary, then verifies that the story file was closed and no error was raised.
+No copyrighted story is downloaded by the build.
 
-`z/decode.s` handles long, short and variable forms, raw operands/types, store
-bytes and one-/two-byte branch suffixes through the 17-bit story reader. It does
-not resolve variables, apply branches or store results yet. `z/execute.s` has
-the bounded loop and four implemented operations. A future implementation must
-not execute other operand-taking handlers until their variable-resolution and
-result-store paths are available.
+`../flex2/build/acceptance.json` records results. Transcripts are
+`czech-load.txt`, `czech-actual.txt`, `vmboot.txt` and `zork-startup.txt` in that
+build directory. `make -C ../flex2 zork` runs a diagnostic startup with the
+last 24 decoded operations and opcode counts; output is `ZORK1-run.txt`.
+
+The next milestone is real V3 line input, buffer writes and dictionary
+encoding/tokenization. Save/restore, screen/window and stream control remain
+separate work.

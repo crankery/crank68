@@ -6,9 +6,18 @@ First output, the title/banner, and the initial room description are separate
 checkpoints. Printing a string extracted from the story is a useful earlier
 test, but does not count as executing the story.
 
+**Reached:** local Zork I release 88 prints its banner, West of House, the
+opening description, mailbox and first `>` through normal story execution.
+`sread` sets `vm_input_requested`, emits an explicit milestone diagnostic and
+returns to FLEX. No command is consumed. `make -C ../flex2 acceptance` checks
+this startup when the local story exists and runs the full CZECH V3 suite:
+349 automatic passes, zero failures, plus 19 visual print checks.
+The sections below retain the original implementation plan and acceptance
+criteria; input/tokenization and interactive play are the next milestone.
+
 Implement V3 first. V1/V2 can follow with their different text and opcode
 semantics; no V4+ instructions, screen model, or addressing are in scope.
-The initial opcode set below is a development order, not a claim that every
+The initial opcode set below was a development order, not a claim that every
 opcode needed by this particular story's startup is already known.
 
 ## Evidence from the current story

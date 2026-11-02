@@ -5,11 +5,11 @@
 ; dynamic_end -> index_base: unallocated growth space
 ; index_base -> cache_base:  1042 bytes reserved for a future sector index
 ; cache_base -> vm_stack_base: 504 bytes reserved for future read-only cache
-; vm_stack_base -> cpu_stack_base: 2048 bytes for future Z-stack/call frames
+; vm_stack_base -> cpu_stack_base: 2048 bytes for Z-stack/call frames
 ; cpu_stack_base -> ram_top+1: 512-byte 6800 stack (already active)
 ;
 ; Dynamic memory is resident; static reads use a lazy sector index and cache.
-; Z-machine execution is not implemented. Story addresses are not host pointers.
+; Story addresses are not host pointers.
 memory_load:
         clr dynamic_loaded
         ldaa story_header+14

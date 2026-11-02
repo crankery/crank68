@@ -45,4 +45,4 @@ if __name__ == '__main__':
     root = Path('build')
     (root/'VMBOOT.DAT').write_bytes(story(b'\xb4\xb2'+text('Z68 execution smoke test')+b'\xbb\xba'))
     (root/'VMFAIL.DAT').write_bytes(story(bytes.fromhex('e0 3f 10 fe')))
-    (root/'VMLIMIT.DAT').write_bytes(story(b'\xb4'*10001+b'\xba'))
+    (root/'VMLIMIT.DAT').write_bytes(story(b'\xb4'*30001+b'\xba'))

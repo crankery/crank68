@@ -1,16 +1,25 @@
-; Deliberately small execution milestone: nop, inline print, new_line, quit.
-; Everything else still traps. No variables or routine calls are simulated.
+; Decode, resolve operands left to right, then dispatch.
+; Input is an explicit milestone boundary; unsupported operations still trap.
 vm_run:
+        ldaa app_end+1
+        anda #0x9f
+        oraa #0x10
+        staa app_end+1
+        jsr vars_init
+        jsr calls_init
+        clr vm_input_requested
         clr vm_finished
         clr op_halted
         clr vm_pc
         ldx story_header+6
         stx vm_pc+1
-        ldx #10000
+        ldx #30000
         stx vm_budget
 vm_run_loop:
         jsr vm_decode
         bcs vm_run_error
+        jsr vm_resolve
+        bcs vm_run_done
         jsr op_dispatch
         bcs vm_run_done
         ldaa vm_budget

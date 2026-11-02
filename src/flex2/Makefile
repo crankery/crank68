@@ -84,9 +84,16 @@ image: build/flex2.dsk
 verify-image: image tools/verify-image.py
 	$(PYTHON) tools/verify-image.py
 
-build/smoke: tests/smoke.cpp tests/flex_harness.h tests/z68.h tests/random.h $(EMU_SRCS) $(EMU_HEADERS)
+build/smoke: tests/smoke.cpp tests/flex_harness.h tests/z68.h tests/random.h tests/vars.h $(EMU_SRCS) $(EMU_HEADERS)
 	@mkdir -p build
 	$(CXX) -std=c++17 -O2 -I$(EMU_DIR)/src tests/smoke.cpp $(EMU_SRCS) -o $@
+
+build/story-runner: tests/story-runner.cpp tests/flex_harness.h $(EMU_SRCS) $(EMU_HEADERS)
+	$(CXX) -std=c++17 -O2 -I$(EMU_DIR)/src tests/story-runner.cpp $(EMU_SRCS) -o $@
+
+.PHONY: zork
+zork: all build/story-runner
+	./build/story-runner ZORK1 --expect-prompt
 
 build/acceptance: tests/acceptance.cpp tests/flex_harness.h $(EMU_SRCS) $(EMU_HEADERS)
 	@mkdir -p build
@@ -96,7 +103,7 @@ build/acceptance: tests/acceptance.cpp tests/flex_harness.h $(EMU_SRCS) $(EMU_HE
 acceptance: all build/acceptance
 	./build/acceptance
 
-# Deliberately red until the actual upstream suite completes successfully.
+# Require the complete upstream automatic-test count after acceptance.
 czech: acceptance
 	$(PYTHON) $(Z68_SRC_DIR)/tests/check-czech.py build/acceptance.json
 

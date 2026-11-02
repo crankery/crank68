@@ -1,6 +1,6 @@
 # Build the FLEX command and package it in the C68 SRAM disk image.
 # Keep all generated artifacts in the FLEX build directory.
-.PHONY: all test acceptance czech clean
+.PHONY: all test acceptance czech zork clean
 all:
 	$(MAKE) -C ../flex2 z68
 
@@ -12,6 +12,9 @@ acceptance:
 
 czech:
 	$(MAKE) -C ../flex2 czech
+
+zork:
+	$(MAKE) -C ../flex2 zork
 
 clean:
 	$(RM) ../flex2/build/z68.bin ../flex2/build/z68.lst ../flex2/build/Z68.CMD

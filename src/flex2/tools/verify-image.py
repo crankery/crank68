@@ -102,6 +102,10 @@ def verify(path):
             'overwritten by an emulator save. Exit the emulator and back up any '
             'wanted files, then run `make rebuild-image` to recreate the initial '
             'disk contents. Use a separate --sram-image working copy.')
+    assert 'BUILD.TXT' in disks[0], 'Missing BUILD.TXT: stale image? Run make rebuild-image.'
+    stamp = Path('build/BUILD.TXT').read_bytes()
+    actual = bytes(disks[0]['BUILD.TXT'][1])
+    assert actual == stamp + bytes((-len(stamp)) % 252), 'Build stamp differs: stale image?'
     acceptance_files = [(name, Path('build', name).read_bytes()) for name in
                         ('CZECH.DAT', 'VMBOOT.DAT', 'VMFAIL.DAT', 'VMLIMIT.DAT')]
     for name, expected in story_files() + acceptance_files:

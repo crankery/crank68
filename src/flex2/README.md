@@ -19,7 +19,7 @@ make test
 | --- | --- |
 | `build/flex2.dsk` | Complete SRAM disk image, ready to preload into banked SRAM |
 | `build/FLEX2.SYS` | FLEX binary load records, entry `$AD00` |
-| `build/Z68.CMD` | V3 story memory loader, load/entry `$0300`; source in `../z68` |
+| `build/Z68.CMD` | V3 story interpreter, load/entry `$0300`; source in `../z68` |
 | `build/MSBASIC.CMD` | BASIC binary load records, load/entry `$0000` |
 | `build/boot.bin` | Boot code assembled for `$0100`; the image contains its linked copy |
 | `build/image.json` | Geometry, file locations, sector counts, free-space count |
@@ -45,7 +45,7 @@ the emulator still takes a single `--sram-image` argument.
 
 | Drive | Label | Contents | Files | Free sectors |
 | --- | --- | --- | --- | --- |
-| 0 | C68SYS | FLEX, Z68, and utilities | 61 | 801 |
+| 0 | C68SYS | FLEX, Z68, and utilities | 62 | 785 |
 | 1 | C68BASIC | BASIC interpreters, renumbering tools, CONVERT.BAS | 6 | 827 |
 | 2 | C68GAMES | BASIC games | 34 | 507 |
 | 3 | C68FILES | Your files and local stories | varies | varies |
@@ -147,27 +147,39 @@ this build assumes polling devices with no active interrupt sources. MIKBUG2's
 workspace and stack overlap resident FLEX, so returning to the monitor means a
 reset, not preserving a resumable monitor/FLEX session.
 
+## Identifying the loaded image
+
+Run `LIST 0.BUILD.TXT` in FLEX to see the image packaging time in UTC, source
+revision (marked modified for local changes), content ID and Z68 binary hash.
+The matching host file is `build/BUILD.TXT`; `build/image.json` also records the
+metadata. The stamp is regenerated when the image is packaged, including
+`make rebuild-image`. `SOURCE_DATE_EPOCH` can supply a fixed UTC timestamp for
+reproducible packaging. The content ID covers packaged file contents and the
+boot sector, excluding the stamp itself.
+
 ## Z68 command
 
 The build assembles `../z68` and installs `Z68.CMD` on drive 0. Run
 `Z68 3.ZORK1.DAT` to inspect and load the writable region of a raw Version 3 story through
-FLEX file I/O. The `.DAT` extension is the default. This milestone fills writable story RAM and reports the full memory layout; explicit `RUN` supports four bring-up operations; save/restore and general
-story execution are not implemented.
+FLEX file I/O. The `.DAT` extension is the default. `Z68 3.ZORK1.DAT RUN` executes its title, opening room description and first
+`>` prompt. At the first input request it closes the file and returns to FLEX
+with an explicit milestone message. Line input/tokenization and save/restore
+are not implemented yet.
 The builder imports local `.DAT`/`.z3` files from `../z68/stories` to drive 3
 as uppercase `NAME.DAT` files, preserving raw bytes and adding only FLEX sector
 padding. Only V3 files with valid FLEX names are accepted. The folder can be
 absent or empty. No stories are downloaded. Adding, removing, or editing files
 in that folder updates the build dependencies. With the current local
-`ZORK1.DAT`, drive 3 has five files and 557 free sectors, including acceptance fixtures.
+`ZORK1.DAT`, drive 3 has five files and 477 free sectors, including acceptance fixtures.
 
 Z68 loads at `$0300`, uses its own FCB and header buffer, reserves a 512-byte
 6800 stack below the lower of FLEX `MEMEND` and `$7FFF`, plus 2,048 bytes for
-future Z-stack/call frames, 1,042 bytes for a sector index and 504 bytes for a
+Z-stack/call frames, 1,042 bytes for a sector index and 504 bytes for a
 story cache, and restores FLEX's incoming stack on return. Packaging verifies that its code/data fit below `$7E00`.
 The story-memory budget excludes code/data and all reservations. Packed text
 can now be inspected with an optional hex byte address (or `P` plus a packed
 address); without an address it prints three object-name samples. Static reads
-use a lazy file-sector index and cache. Use `RUN` to exercise the limited execution core. See `../z68/README.md`
+use a lazy file-sector index and cache. Use `RUN` to execute the story. See `../z68/README.md`
 for details. `Z68_SRC_DIR` and `VASM_STD_BIN` can override its source directory
 and assembler.
 
@@ -265,8 +277,10 @@ These are emulator checks, not a physical-hardware boot test.
 `make clean` removes generated build files.
 
 CZECH V3 is compiled locally using vendored Inform 6.44 source and installed as
-`3.CZECH.DAT`. `make acceptance` runs six bootstrap gates and records its blocked
-state in `build/acceptance.json`; `make czech` is the strict upstream gate and
-currently fails at unimplemented `call`. No upstream CZECH checks have passed.
+`3.CZECH.DAT`. `make acceptance` runs six bootstrap gates, the full V3 suite
+(349 automatic passes, zero failures; 19 visual print checks), and the local
+Zork startup when present. Results are recorded in `build/acceptance.json`.
+`make czech` enforces the automatic conformance count. `make zork` runs the
+local story with a short instruction trace and asserts the first prompt.
 See `../z68/README.md` for commands, provenance and the distinction between
 bootstrap tests and conformance checks.

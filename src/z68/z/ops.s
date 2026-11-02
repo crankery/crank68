@@ -1,11 +1,10 @@
-; Dispatch contract for the future instruction decoder. This is not execution.
+; Dispatch contract for the instruction decoder and execution loop.
 ; Set op_class (0OP=0, 1OP=1, 2OP=2, VAR=3), op_number (0..31), and
 ; op_pc (three-byte byte address of the instruction). story_header[0] is version.
 ; op_lookup returns handler in X and flags in op_flags; carry set for invalid
 ; group/slot/version. It never fetches operands or changes story memory.
-; op_dispatch invokes the handler. Every current handler sets op_halted=1 and
-; returns carry set, with a diagnostic. The eventual loop must close/return on
-; that status, not continue execution. No stub pretends it succeeded.
+; op_dispatch invokes the handler. Success clears carry; traps set op_halted
+; and carry. quit sets vm_finished and carry. The loop closes/returns on carry.
         .equ op_store_flag, 1
         .equ op_branch_flag, 2
         .equ op_text_flag, 4

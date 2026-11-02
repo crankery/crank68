@@ -253,7 +253,10 @@ static void z68_test() {
                               "Opcode dispatched to wrong handler");
             if(v==3 && valid) {
                 ++handlers;
-                if(group==0 && (number==2 || number==4 || number==10 || number==11)) continue; bus.output.clear();
+                const std::vector<std::string> remaining={"save","restore","restart","show_status",
+                    "split_window","set_window","output_stream","input_stream","sound_effect"};
+                if(std::find(remaining.begin(),remaining.end(),names[group][number])==remaining.end()) continue;
+                bus.output.clear();
                 const auto before=std::vector<uint8_t>(bus.ram.begin()+app_end,bus.ram.begin()+app_end+64);
                 const auto pc=symbol("build/z68.lst","op_pc");
                 bus.ram[pc]=1; bus.ram[pc+1]=0x23; bus.ram[pc+2]=0x45;
