@@ -1,0 +1,26 @@
+GAL22V10
+cpu-decode
+PHI2 RE VMA A15 A14 A13 A12    A11      A10        A9        A8        GND
+NC   NC NC  NC  NC  NC  BUS_OK IO_SEL_N BANK_SEL_N ROM_SEL_N RAM_SEL_N VCC
+
+/* ------------ Internal nodes ------------ */
+
+BUSOK = PHI2 & VMA;
+
+RAMSEL = BUSOK  & !(A15 & A14);
+BANKSEL = BUSOK & A15 & A14 & !A13;
+IOSEL = BUSOK &
+        A15 & A14 & A13 &
+        !A12 & !A11 & !A10 & !A9 & !A8;
+ROMSEL = BUSOK &
+         A15 & A14 & A13 &
+         (A12 # A11 # A10 # A9 # A8);
+
+/* ------------ Outputs ------------ */
+
+RAM_SEL_N  = !RAMSEL;
+BANK_SEL_N = !FRAMSEL;
+IO_SEL_N   = !IOSEL;
+ROM_SEL_N  = !ROMSEL;
+
+BUS_OK = BUSOK;

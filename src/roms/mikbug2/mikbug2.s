@@ -120,6 +120,7 @@
 ; c continue execution from current location 
 ; n next instruction 
 ; t trace 'N' instructions 
+; f boot FLEX 2 from banked SRAM (cold handoff)
 ; g go to location 'N' 
 ; d delete all breakpoints 
 ; u reset breakpoint with address 'N' 
@@ -455,7 +456,7 @@ cnta:       jsr outs                    ; print space after command
 ; b register holds character input by user 
 ; use jump table to go to appropriate routine. 
 ; 
-            ldx #fctabl                 ; x:= address of jump table
+            jmp flexdispatch            ; handle F, then original command table
 nxtchr:     cmpb 0,x                    ; does input char match?
             beq goodch                  ; yes, goto apropriate routine
             inx                         ; else, update index into table
@@ -1841,6 +1842,34 @@ polcat_mits:
         ldab    acias
         asrb
         rts
+
+; Keep existing monitor entry addresses stable by extending dispatch here.
+            .org 0xff80
+flexdispatch:
+            cmpb #0x46                  ; F - boot FLEX
+            beq flexboot
+            ldx #fctabl
+            jmp nxtchr
+
+; FLEX 2 cold boot entry. Fixed address for JMP/JSR callers and G FFC0.
+; Does not return: FLEX replaces monitor workspace/stack. Requires a
+; preloaded raw FLEX SRAM disk, as built by src/flex2. A, X and SP clobbered.
+; The sector loader sets its own stack; no monitor RAM or stack is needed.
+            .org 0xffc0
+flexboot:   sei
+            ldaa #3                     ; reset first MC6850
+            staa acias
+            ldaa #0x11                  ; polling, 8 data bits, 2 stop bits
+            staa acias
+            clr 0xe002                  ; select SRAM page zero
+            lds #0x01ff                 ; copy backwards using stack stores
+            ldx #0xc100
+flexcopy:   dex
+            ldaa 0,x
+            psha
+            cpx #0xc000
+            bne flexcopy
+            jmp 0x0100                  ; linked boot sector owns the machine
 
 ; 
 ; interrupt vectors 

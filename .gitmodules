@@ -13,3 +13,6 @@
 [submodule "src/emu/gtest"]
 	path = src/emu/gtest
 	url = https://github.com/google/googletest
+[submodule "src/tools/GALasm"]
+	path = src/tools/GALasm
+	url = git@github.com:daveho/GALasm.git

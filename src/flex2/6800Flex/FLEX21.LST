@@ -1,0 +1,2890 @@
+0001                            	TTL	FLEX		2.0
+FLEX21.ASM                                   page   2
+0003                            
+0004                            * FLEX 2.0
+0005                            * DATE: 09/15/79  15:50
+0006                            * LAST CHANGE DATE 11.7.79  13:35
+0007                            
+0008                            * EQUATES
+0009                            
+0010 a000                       BASE	EQU	$A000		BASE ADDR ($A000=FLEX2.0)
+0011                            
+0012 000d                       CRC	EQU	$D		CARRIAGE RETURN
+0013 000a                       LFC	EQU	$A		LINE FEED
+0014 0020                       SPC	EQU	$20		SPACE
+0015 ad00                       XFR	EQU	BASE+$D00	DOS XFER ADDRESS
+0016 8014                       DRVREG	EQU	$8014		DRIVE SELECT REGISTER FOR DC-2
+0017 8018                       COMREG	EQU	$8018		1771 COMMAND AND STATUS REGISTER
+0018 8019                       TRKREG	EQU	$8019		1771 CURRENT TRACK REGISTER
+0019 801a                       SECREG	EQU	$801A		1771 SECTOR REGISTER
+0020 801b                       DATREG	EQU	$801B		1771 DATA REGISTER
+0021 e1ac                       INCH1	EQU	$E1AC		INPUT CHAR ROUTINE
+0022 e1ac                       INCH21	EQU	$E1AC		INPUT CHAR ROUNTINE
+0023 e1d1                       OUTCH1	EQU	$E1D1		OUTPUT CHAR ROUTINE
+0024 e1d1                       OUTC21	EQU	$E1D1		OUTPUT CHAR ROUTINE
+0025 8004                       CTLPOR	EQU	$8004		ADDR OF SERIAL CNTRL PORT
+0026 8010                       TIMERA	EQU	$8010		TIMER BOARD BASE (PORT 4)
+0027 a000                       IRQVEC	EQU	$A000		IRQ VECTOR LOCATION
+0028 a012                       SWIVEC	EQU	$A012		SWI VECTOR LOCATION
+0029 e0d0                       MONITR	EQU	$E0D0		MONITOR ENTRY ADDRESS
+0030 a048                       PCVEC	EQU	$A048		MONITOR PC LOCATION
+0031 a080                       LBUFFR	EQU	BASE+$80	LINE BUFFER (END = $A0FF)
+0032                            
+0033                            * TTYSET DEFINITIONS
+0034                            
+0035 ac00                       	ORG	BASE+$C00
+0036                            
+0037 ac00 08                    BSP	FCB	8		BACKSPACE CHAR
+0038 ac01 18                    DEL	FCB	$18		DELETE CHAR
+0039 ac02 3a                    EOL	FCC	':'		END OF LINE CHAR
+0040 ac03 00                    DEPTH	FCB	0		DEPTH COUNT
+0041 ac04 00                    WIDTH	FCB	0		WIDTH COUNT
+0042 ac05 04                    NULCNT	FCB	4		NULL COUNT
+0043 ac06 00                    TAB	FCB	0		TAB CHAR
+0044 ac07 00                    BSECHO	FCB	0		BACKSPACE ECHO CHAR
+0045 ac08 00                    EJECTC	FCB	0		EJECT COUNT
+0046 ac09 ff                    PAUSEC	FCB	$FF		PAUSE CONTROL
+0047 ac0a 1b                    ESCCHR	FCB	$1B		ESCAPE CHAR
+0048 ac0b 00                    SASN	FCB	0		SYSTEM DRIVE NUMBER
+0049 ac0c 00                    WASN	FCB	0		WORKING DRIVE NUMBER
+0050 ac0c                       ASN	EQU	WASN
+0051 ac0d 00                    TEMP1	FCB	0		SYSTEM SCRATCH
+0052 ac0e 00                    DATE	FCB	0		MONTH-SYSTEM DATE REGS
+0053 ac0f 00                    	FCB	0		DAY
+0054 ac10 00                    	FCB	0		YEAR
+0055 ac11 00                    LSTTRM	FCB	0		LAST TERMINATOR
+0056 ac12 00 00                 USRCMD	FDB	0		USER COMMAND TABLE ADDR
+0057 ac14 00 00                 BUFPNT	FDB	0		LINE BUFFER POINTER
+0058 ac16 00 00                 ESCRET	FDB	0		ESCAPE RETURN REG
+0059 ac18 00                    CURCHR	FCB	0		CURRENT CHAR
+0060 ac19 00                    PRVCHR	FCB	0		PREVIOUS CHAR
+0061 ac1a 00                    CURLIN	FCB	0		CURRENT LINE NUMBER
+0062 ac1b 00 00                 OFFSET	FDB	0		LOADER ADDR OFFSET
+0063 ac1d 00                    XFERFL	FCB	0		TRANSFER FLAG
+0064 ac1e 00 00                 XFERAD	FDB	0		TRANSFER ADDRESS
+0065 ac20 00                    ERRTYP	FCB	0		ERROR TYPE
+0066 ac21 00                    IOFLAG	FCB	0		SPECIAL I/O FLAG
+0067 ac22 00                    OUTCHN	FCB	0		OUTPUT SWITCH
+0068 ac23 00                    INSW	FCB	0		INPUT SWITCH
+0069 ac24 00 00                 FOUTAD	FDB	0		FILE OUTPUT ADDRESS
+0070 ac26 00 00                 FINADD	FDB	0		FILE INPUT ADDRESS
+0071 ac28 00                    CMDFLG	FCB	0		COMMAND FLAG
+0072 ac29 00                    CURCOL	FCB	0		CURRENT OUTPUT COLUMN
+0073 ac2a 00                    TEMP2	FCB	0		SYSTEM SCRATCH
+0074 ac2b 00 00                 MEMEND	FDB	0		MEMORY END
+0075 ac2d 00 00                 ERRVEC	FDB	0		ERROR NAME VECTOR
+0076 ac2f 01                    ECHOFL	FCB	1		FILE INPUT ECHO FLAG
+0077                            *
+0078                            * SYSTEM SCRATCH
+0079                            *
+0080 ac30 00                    FMSFLG	FCB	0
+0081 ac31 00 00                 CURTSK	FDB	0
+0082 ac33 00                    DTEMP3	FCB	0
+0083 ac34 00                    MODE	FCB	0
+0084 0000                       DTEMP5	EQU	$
+0085 ac3b                       DTEMP6	EQU	FMSFLG+$B
+0086 ac3d                       INDEX	EQU	FMSFLG+$D	COMMAND TABLE POINTER STORAGE
+0087 ac3e                       DTEMP8	EQU	FMSFLG+$E
+0088 ac3f                       DTEMP9	EQU	FMSFLG+$F
+0089 ac40                       DTEMPA	EQU	FMSFLG+$10
+0090 ac41                       DATPNT	EQU	FMSFLG+$11	POINTER TO COMMAND BEING LOOKED UP
+0091 ac43                       DTEMPC	EQU	FMSFLG+$13
+0092 ac44                       DTEMPD	EQU	FMSFLG+$14
+0093 ac45                       DTEMPE	EQU	FMSFLG+$15
+0094 ac47                       DTEMPF	EQU	FMSFLG+$17
+0095 ac49                       	ORG	FMSFLG+$19
+0096 ac49 00                    DTEMPG	FCB	0		ESCAPE FLAG
+0097 ac4a                       DTEMPH	EQU	DTEMPG+1
+0098 ac4b                       DTEMPI	EQU	DTEMPG+2
+0099 ac4c                       DTEMPJ	EQU	DTEMPG+3
+0100 ac4d                       DTEMPK	EQU	DTEMPG+4
+0101                            
+0102                            * SYSTEM CONSTANTS
+0103                            
+0104 ac4e                       	ORG	BASE+$C4E
+0105 ac4e 46 4c 45 58 20 32 2e  SIGNON	FCC	'FLEX 2.0'
+          30
+0106 ac56 04                    	FCB	4
+0107 ac57 2b 2b 2b              PROMPT	FCC	'+++'
+0108 ac5a 04                    	FCB	4
+0109 ac5b 3f 3f 3f              CPRMPT	FCC	'???'
+0110 ac5e 04                    	FCB	4
+0111 ac5f 57 48 41 54 3f        WHAT	FCC	'WHAT?'
+0112 ac64 04                    	FCB	4
+0113 ac65 43 41 4e 27 54 20 54  NOXFER	FCC	\CAN'T TRANSFER\
+          52 41 4e 53 46 45 52
+0114 ac73 04                    	FCB	4
+0115 ac74 4e 4f 54 20 46 4f 55  NOTFND	FCC	'NOT FOUND'
+          4e 44
+0116 ac7d 04                    	FCB	4
+0117 ac7e 44 49 53 4b 20 45 52  DISKER	FCC	'DISK ERROR #'
+          52 4f 52 20 23
+0118 ac8a 04                    	FCB	4
+0119 ac8b 44 52 49 56 45 53 20  DRNRDY	FCC	'DRIVES NOT READY'
+          4e 4f 54 20 52 45 41
+          44 59
+0120 ac9b 04                    	FCB	4
+0121                            
+0122                            * DOS COMMAND TABLE
+0123                            
+0124 ac9c 47 45 54              GET	FCC	'GET'
+0125 ac9f 00                    	FCB	0
+0126 aca0 b2 68                 	FDB	LOAD10
+0127 aca2 4d 4f 4e              	FCC	'MON'
+0128 aca5 00                    	FCB	0
+0129 aca6 b3 ab                 	FDB	JMONTR
+0130 aca8 00                    	FCB	0
+0131                            *
+0132                            *  OUTPUT DECIMAL # CONSTANTS
+0133                            *
+0134 aca9 27 10                 ODECON	FDB	$2710		DECIMAL 10,000
+0135 acab 03 e8                 	FDB	$3E8		DECIMAL 1,000
+0136 acad 00 64                 	FDB	$64		DECIMAL 100
+0137 acaf 00 0a                 	FDB	$A		DECIMAL 10
+0138                            
+0139                            * RESERVED FOR PRINTER ROUNTINES
+0140                            
+0141 acc0                       	ORG	BASE+$CC0
+0142 acc0 39                    PRTINZ	RTS			PRINTER INITIALIZE
+0143 acd8                       	ORG	BASE+$CD8
+0144 acd8 39                    PRTRDY	RTS			PRINTER READY CHECK
+0145 ace4                       	ORG	BASE+$CE4
+0146 ace4 39                    PRTOUT	RTS			PRINTER OUTPUT
+0147                            
+0148                            * SYSTEM SCRATCH
+0149                            
+0150 acf8                       	ORG	BASE+$CF8
+0151 acf8 01 00                 FGTASK	FCB	1,0		FIRST BYTE NON-ZERO IF RUNNING
+0152 acfa 00 00                 	FDB	0		EXECUTION ADDRESS SAVED HERE
+0153                            
+0154 acfc 00 00                 BGTASK	FCB	0,0		FIRST BYTE NON-ZERO IF RUNNING
+0155 acfe 00 00                 	FDB	0		EXECUTION ADDRESS SAVED HERE
+0156                            
+0157                            * JUMP TABLE FOR DOS
+0158                            
+0159 ad00 7e ad 57              COLDS	JMP	COLDS1		COLDSTART ENTRY POINT
+0160 ad03 7e ad 6f              WARMS	JMP	WARMS1		WARMSTART ENTRY POINT
+0161 ad06 7e ad b8              RENTER	JMP	RENTR1		DOS MAIN LOOP RE-ENTRY
+0162 ad09 7e e1 ac              INCH	JMP	INCH1		INPUT CHAR
+0163 ad0c 7e e1 ac              INCH2	JMP	INCH21		INPUT CHAR
+0164 ad0f 7e e1 d1              OUTCH	JMP	OUTCH1		OUTPUT CHAR
+0165 ad12 7e e1 d1              OUTCH2	JMP	OUTC21		OUTPUT CHAR
+0166 ad15 7e af 15              GETCHR	JMP	GETCH1		GET CHAR
+0167 ad18 7e af 5c              PUTCHR	JMP	PUTCH1		PUT CHAR
+0168 ad1b 7e ae 51              INBUFF	JMP	INBUF1		INPUT INTO LINE BUFFER
+0169 ad1e 7e ae a7              PSTRNG	JMP	PSTRG1		PRINT STRING
+0170 ad21 7e b0 1f              CLASS	JMP	CLASS1		CLASSIFY CHAR
+0171 ad24 7e ae cf              PCRLF	JMP	PCRLF1		OUTPUT CR AND LF
+0172 ad27 7e b0 3e              NXTCH	JMP	NXTCH1		GET NEXT BUFFER CHAR
+0173 ad2a 7e ad f2              RSTRIO	JMP	RSTIO1		RESTORE I/O VECTORS
+0174 ad2d 7e b0 69              GETFIL	JMP	GETFI1		GET FILE SPECIFICATION
+0175 ad30 7e b1 fa              LOAD	JMP	LOAD1		FILE LOADER
+0176 ad33 7e b1 10              SETEXT	JMP	SETXT1		SET EXTENSION
+0177 ad36 7e b1 e8              ADDBX	JMP	ADDBX1		ADD B-REG TO X-REG
+0178 ad39 7e af b2              OUTDEC	JMP	ODEC1		OUTPUT DECIMAL NUMBER
+0179 ad3c 7e b0 06              OUTHEX	JMP	OHEX1		OUTPUT HEX NUMBER
+0180 ad3f 7e b2 d9              RPTERR	JMP	RPTER1		REPORT ERROR
+0181 ad42 7e b1 67              GETHEX	JMP	GETHX1		GET HEX NUMBER
+0182 ad45 7e b0 03              OUTADR	JMP	OADR1		OUTPUT HEX ADDR
+0183 ad48 7e b1 ac              INDEC	JMP	INDEC1		INPUT DECIMAL NUMBER
+0184 ad4b 7e b3 89              DOCMND	JMP	DOCMD1		CALL DOS AS A SUBRTN
+0185 ad4e 7e ae 0d              	JMP	RTS1
+0186 ad51 7e ae 0d              	JMP	RTS1
+0187 ad54 7e ae 0d              	JMP	RTS1
+0188                            
+0189                            * DOS = DISK OPERATING SYSTEM
+0190                            * COLD START OF FLEX 2.0
+0191                            
+0192 ad57 8e a0 7f              COLDS1	LDS	#LBUFFR-1	INZ STACK POINTER SCRATCH PAD RAM
+0193 ad5a ce ac 4e              	LDX	#SIGNON
+0194 ad5d bd ae a7              	JSR	PSTRG1		DISPLAY 'FLEX 2.0'
+0195 ad60 bd ae cf              	JSR	PCRLF1		PRINT CR/LF
+0196 ad63 7f ac 11              COLDS2	CLR	LSTTRM		CLEAR LAST TERMINATOR
+0197 ad66 bd b4 00              	JSR	FMSINZ		INITIALIZE FMS
+0198 ad69 7f ac 28              	CLR	CMDFLG		CLEAR COMMAND FLAG
+0199 ad6c bd b3 fd              	JSR	JFMEME		FIND END OF MEMORY
+0200                            
+0201                            * HOT RESTART ADDRESS
+0202                            
+0203 ad6f 8e a0 7f              WARMS1	LDS	#LBUFFR-1	INZ STACK POINTER
+0204 ad72 ce ad 03              	LDX	#WARMS		SET MONITOR PC LOCATION
+0205 ad75 ff a0 48              	STX	PCVEC		SWTBUG/MIKBUG 'GO' ADDRESS
+0206 ad78 ff ac 16              	STX	ESCRET		SET ESCAPE RETURN VECTOR
+0207 ad7b ce a7 00              	LDX	#SWI		SET SWI VECTOR
+0208 ad7e ff a0 12              	STX	SWIVEC		SWTBUG SWI VECTOR ADDRESS
+0209 ad81 ce a7 0f              	LDX	#IRQ		SET IRQ VECTOR
+0210 ad84 ff a0 00              	STX	IRQVEC		SWTBUG IRQ VECTOR ADDRESS
+0211 ad87 ce ac f8              	LDX	#FGTASK		FOREGROUND TASK IS CURRENT TASK
+0212 ad8a ff ac 31              	STX	CURTSK
+0213 ad8d 7f ac 34              	CLR	MODE		ZERO MEANS FOREGROUND TASK IS RUNNING
+0214 ad90 7f ac 4c              	CLR	DTEMPJ
+0215 ad93 8d 5d                 	BSR	RSTIO1		RESTORE I/O VECTORS
+0216 ad95 b6 ac 11              	LDAA	LSTTRM		GET LAST TERMINATOR
+0217 ad98 b1 ac 02              	CMPA	EOL		IS IT MULTIPLE COMMANDS PER LINE
+0218 ad9b 26 05                 	BNE	WARMS2		NO: CHECK FOR 'DOCMND'
+0219 ad9d 7c ac 15              	INC	BUFPNT+1	INCREMENT BUFFER POINTER
+0220 ada0 20 16                 	BRA	RENTR1		AND GET SOME MORE
+0221 ada2 7d ac 28              WARMS2	TST	CMDFLG		CHECK FOR 'DOCMND' ENTRY
+0222 ada5 27 03                 	BEQ	WARMS3		NO: DO WARM START
+0223 ada7 7e b3 9d              	JMP	DOCMD3		YES: RE-ENTER 'DOCMND'
+0224 adaa bd b4 03              WARMS3	JSR	FMSCLS		CLOSE ALL FILES
+0225 adad 26 b4                 	BNE	COLDS2		IF ERROR IN CLOSING THEN REPORT IT
+0226 adaf ce ac 57              	LDX	#PROMPT		POINT TO '+++' PROMPT
+0227 adb2 bd ae a7              	JSR	PSTRG1		PRINT IT
+0228 adb5 bd ae 51              	JSR	INBUF1		GET INPUT FROM TERMINAL INTO LINE BUFFER
+0229                            *
+0230                            * MAIN LOOP RE-ENTRY ADDRESS
+0231                            *
+0232 adb8 bd b0 fa              RENTR1	JSR	GETFIE		GET NEXT CHAR IN LINEBUFFER
+0233 adbb 81 0d                 	CMPA	#CRC		IS IT A CARRIAGE RETURN
+0234 adbd 27 e3                 	BEQ	WARMS2		YES: WARM START
+0235 adbf ce a8 40              RENTR2	LDX	#FCB		POINT TO FCB
+0236 adc2 7c ac 0d              	INC	TEMP1
+0237 adc5 bd b0 69              	JSR	GETFI1		GET FILE NAME FROM BUFFER
+0238 adc8 25 17                 	BCS	RENTR5		ERROR: SAY SO
+0239 adca ce ac 9c              	LDX	#GET		RESIDENT CMD?
+0240 adcd 8d 3f                 	BSR	FFILN1		CHECK COMMAND TABLE
+0241 adcf 27 09                 	BEQ	RENTR3		YES: JUMP TO IT
+0242 add1 fe ac 12              	LDX	USRCMD		NO, USER CMD?
+0243 add4 27 08                 	BEQ	RENTR4		NO USER CMDS
+0244 add6 8d 36                 	BSR	FFILN1		IS IT ONE OF USER CMD?
+0245 add8 26 04                 	BNE	RENTR4		NO: LOAD DISK FILE
+0246 adda ee 01                 RENTR3	LDX	1,X		FOUND IT, NOW GET ADDRESS TO JUMP TO
+0247 addc 6e 00                 	JMP	0,X		AND JUMP TO IT
+0248 adde bd b2 89              RENTR4	JSR	LOAD14		LOAD FILE & RET IF ERROR
+0249 ade1 ce ac 5f              RENTR5	LDX	#WHAT		ILLEGAL FILE
+0250 ade4 86 15                 	LDAA	#$15		SPECIFICATION
+0251 ade6 b7 ac 20              RENTR6	STAA	ERRTYP		SAVE ERROR TYPE
+0252 ade9 bd ae a7              RENTR7	JSR	PSTRG1		DISPLAY ERROR MESSAGE
+0253 adec 7f ac 11              RENTR8	CLR	LSTTRM		CLEAR REST OF COMMAND LINE
+0254 adef 7e ad 6f              	JMP	WARMS1		AND DO A WARM START
+0255                            *
+0256                            * RESTORE I/O VECTORS
+0257                            *
+0258 adf2 fe ad 13              RSTIO1	LDX	OUTCH2+1	TERMINL OUTPUT ADDRESS
+0259 adf5 ff ad 10              	STX	OUTCH+1		CHANGED OUTPUT ADDRESS
+0260 adf8 fe ad 0d              	LDX	INCH2+1		TERMINAL INPUT ADDRESS
+0261 adfb ff ad 0a              	STX	INCH+1		CHANGED INPUT ADDRESS
+0262 adfe 7f ac 23              	CLR	INSW		CLEAR INPUT SWITCH
+0263 ae01 7f ac 22              	CLR	OUTCHN		CLEAR OUTPUT CHANNEL
+0264 ae04 7f ac 21              	CLR	IOFLAG		CLEAR SPECIAL I/O FLAG
+0265 ae07 7f ac 26              	CLR	FINADD		CLEAR FILE INPUT ADDRESS
+0266 ae0a 7f ac 24              	CLR	FOUTAD		CLEAR FILE OUTPUT ADDRESS
+0267 ae0d 39                    RTS1	RTS			RETURN
+0268                            *
+0269                            * FIND FILENAME
+0270                            *
+0271 ae0e ff ac 3d              FFILN1	STX	INDEX		SAVE COMMAND TABLE ADDRESS
+0272 ae11 ce a8 44              	LDX	#FCB+4		POINT TO FCB FILENAME
+0273 ae14 a6 00                 FFILN2	LDAA	0,X		GET CHARACTER
+0274 ae16 81 5f                 	CMPA	#$5F		UPPER CASE?
+0275 ae18 23 02                 	BLS	FFILN3		YES
+0276 ae1a 80 20                 	SUBA	#$20		NO, MAKE UPPER CASE
+0277 ae1c ff ac 41              FFILN3	STX	DATPNT		SAVE FILENAME POINTER
+0278 ae1f fe ac 3d              	LDX	INDEX		POINT TO COMMAND TABLE
+0279 ae22 a1 00                 	CMPA	0,X		COMPARE CHARACTERS
+0280 ae24 26 1b                 	BNE	FFILN5		NOT THE SAME THEN FIND NEXT ENTRY
+0281 ae26 08                    	INX			BUMP POINTER
+0282 ae27 ff ac 3d              	STX	INDEX		SAVE IT
+0283 ae2a 6d 00                 	TST	0,X		END OF ENRTY?
+0284 ae2c 26 0d                 	BNE	FFILN4		NO: COMPARE NEXT CHARACTER
+0285 ae2e fe ac 41              	LDX	DATPNT		YES: POINT TO COMMMAND
+0286 ae31 a6 01                 	LDAA	1,X		GET LAST CHARACTER+1
+0287 ae33 fe ac 3d              	LDX	INDEX		POINT TO COMMAND TABLE
+0288 ae36 4d                    	TSTA			END OF COMMAND?
+0289 ae37 27 17                 	BEQ	FFILN6		YES: EXIT
+0290 ae39 20 06                 	BRA	FFILN5		NO: FIND NEXT ENTRY
+0291 ae3b fe ac 41              FFILN4	LDX	DATPNT		POINT TO COMMAND POINTER
+0292 ae3e 08                    	INX			BUMP POINTER
+0293 ae3f 20 d3                 	BRA	FFILN2		CHECK NEXT CHARACTER
+0294 ae41 08                    FFILN5	INX			FIND NEXT ENTRY
+0295 ae42 6d 00                 	TST	0,X		END OF TABLE?
+0296 ae44 26 fb                 	BNE	FFILN5		NO: LOOP UNTILL DONE
+0297 ae46 08                    	INX			INCREMENT AROUND
+0298 ae47 08                    	INX			END OF COMMAND BYTE
+0299 ae48 08                    	INX			AND ADDRESS
+0300 ae49 6d 00                 	TST	0,X		END OF TABLE?
+0301 ae4b 26 c1                 	BNE	FFILN1		NO: GET NEXT ENTRY
+0302 ae4d 8c 00 00              	CPX	#0		SET 'Z' BIT FOR PROPER CODE FOR RETURN
+0303 ae50 39                    FFILN6	RTS			RETURN
+0304                            *
+0305                            * INPUT TO LINE BUFFER
+0306                            *
+0307 ae51 ce a0 80              INBUF1	LDX	#LBUFFR		POINT TO START OF LINEBUFFER
+0308 ae54 ff ac 14              	STX	BUFPNT		RESET LINE BUFFER POINTER
+0309 ae57 bd af 15              INBUF2	JSR	GETCH1		GET CHARACTER FROM TERMINAL
+0310 ae5a b1 ac 01              	CMPA	DEL		IS IT A DELETE LINE CHARACTER
+0311 ae5d 27 1e                 	BEQ	DOWHAT		YES: PRINT ??? AND START AGAIN
+0312 ae5f b1 ac 00              	CMPA	BSP		IS IT A BACKSPACE
+0313 ae62 27 20                 	BEQ	BACKSP		YES: DO BACKSPACE
+0314 ae64 81 0d                 	CMPA	#CRC		IS IT A CARRIAGE RETURN
+0315 ae66 27 0d                 	BEQ	INBUF4		YES: ENTER IT RESET POINTER AND EXIT
+0316 ae68 81 0a                 	CMPA	#LFC		IS IT A LINEFEED
+0317 ae6a 27 32                 	BEQ	LINFED		YES: ENTER SPACE AND ECHO CR/LF
+0318 ae6c 81 1f                 	CMPA	#$1F		IS IT A CONTROL CHARACTER?
+0319 ae6e 23 e7                 	BLS	INBUF2		YES: THEN IGNORE IT
+0320 ae70 8c a0 ff              INBUF3	CPX	#LBUFFR+$7F	END OF INPUT BUFFER?
+0321 ae73 27 e2                 	BEQ	INBUF2		YES: IGNORE IT
+0322 ae75 a7 00                 INBUF4	STAA	0,X		STORE CHARACTER IN BUFFER
+0323 ae77 08                    	INX			BUMP POINTER
+0324 ae78 81 0d                 	CMPA	#CRC		IS IT A CARRAIGE RETURN
+0325 ae7a 26 db                 	BNE	INBUF2		NO: CONTINUE
+0326 ae7c 39                    	RTS			RETURN
+0327 ae7d ce ac 5b              DOWHAT	LDX	#CPRMPT		"???" PROMPT
+0328 ae80 8d 25                 	BSR	PSTRG1		PRINT IT
+0329 ae82 20 cd                 	BRA	INBUF1		AND DO AGAIN
+0330 ae84 8c a0 80              BACKSP	CPX	#LBUFFR		START OF BUFFER?
+0331 ae87 27 f4                 	BEQ	DOWHAT		YES: SAY WHAT '???'
+0332 ae89 09                    	DEX			DECRIMENT POINTER
+0333 ae8a b6 ac 07              	LDAA	BSECHO		BACKSPACE ECHO CHAR?
+0334 ae8d 81 08                 	CMPA	#8		IS IT AN $08
+0335 ae8f 26 08                 	BNE	NBSECH		NO: DON'T ECHOE SPACE
+0336 ae91 86 20                 	LDAA	#SPC		YES, ERASE CHAR BY PRINTING SPACE
+0337 ae93 bd af 94              	JSR	PUTCH6		PRINT IT
+0338 ae96 b6 ac 07              	LDAA	BSECHO		GET ECHO CHARACTER
+0339 ae99 bd af 94              NBSECH	JSR	PUTCH6		PRINT IT
+0340 ae9c 20 b9                 	BRA	INBUF2		INPUT MORE
+0341 ae9e 86 0d                 LINFED	LDAA	#CRC		CARRIAGE RETURN INTO A
+0342 aea0 bd af 5c              	JSR	PUTCH1		OUTPUT IT
+0343 aea3 86 20                 	LDAA	#SPC		SPACE INTO A
+0344 aea5 20 c9                 	BRA	INBUF3		ENTER SPACE INTO LINE BUFFER
+0345                            *
+0346                            * PRINT STRING
+0347                            *
+0348 aea7 8d 26                 PSTRG1	BSR	PCRLF1		PRINT CARRIAGE RETURN/LINEFEED
+0349 aea9 a6 00                 PSTRG2	LDAA	0,X		GET NEXT CHARACTER TO PRINT
+0350 aeab 81 04                 	CMPA	#4		END OF STRING?
+0351 aead 27 64                 	BEQ	PCRLFA		YES, CLEAR CARRY & RETURN
+0352 aeaf bd ad 18              	JSR	PUTCHR		NO: OUTPUT CHARACTER
+0353 aeb2 08                    	INX			INCREMENT POINTER
+0354 aeb3 20 f4                 	BRA	PSTRG2		GET NEXT CHARACTER
+0355                            *
+0356                            *  TTYSET PAUSE ROUTINE
+0357                            *
+0358 aeb5 7f ac 1a              PAUSE	CLR	CURLIN		CLEAR CURRENT LINA
+0359 aeb8 7f ac 49              	CLR	DTEMPG
+0360 aebb bd ad 09              PAUSE1	JSR	INCH		RESTART OUTPUT,IF ESC
+0361 aebe b1 ac 0a              	CMPA	ESCCHR		ESCAPE CHARACTER?
+0362 aec1 27 50                 	BEQ	PCRLFA		YES: PRINT CR/LFAND CONTINUE
+0363 aec3 81 0d                 	CMPA	#CRC		CARRIAGE RETURN?
+0364 aec5 26 f4                 	BNE	PAUSE1		NO: GET ANOTHER CHARACTER
+0365 aec7 7f ac 11              	CLR	LSTTRM		YES: CLEAR LAST TERMINATOR
+0366 aeca fe ac 16              	LDX	ESCRET		GET ESCAPE RETURN ADDRESS
+0367 aecd 6e 00                 	JMP	0,X		AND JUMP TO IT
+0368                            *
+0369                            * PRINT C/R, L/F
+0370                            *
+0371 aecf 7d ac 21              PCRLF1	TST	IOFLAG		IGNORE TTYSET?
+0372 aed2 26 2a                 	BNE	PCRLF7		YES: BRANCH AROUND CHECKS
+0373 aed4 7d ac 49              	TST	DTEMPG		ESCAPE TYPED?
+0374 aed7 27 02                 	BEQ	PCRLF2		NO: CHECK DEPTH
+0375 aed9 8d da                 	BSR	PAUSE		YES: PAUSE
+0376 aedb b6 ac 03              PCRLF2	LDAA	DEPTH		DEPTH SET?
+0377 aede 27 1e                 	BEQ	PCRLF7		NO: DON'T CHECK CURLIN
+0378 aee0 b1 ac 1a              	CMPA	CURLIN		YES, CURRENT LINE > DEPTH?
+0379 aee3 22 16                 	BHI	PCRLF6		NO: PRINT AND EXIT
+0380 aee5 7f ac 1a              	CLR	CURLIN		YES, CLEAR CURRENT LINE
+0381 aee8 7d ac 09              	TST	PAUSEC		PAUSE ENABLED?
+0382 aeeb 27 02                 	BEQ	PCRLF3		NO: CONTINUE
+0383 aeed 8d c6                 	BSR	PAUSE		YES: PAUSE
+0384 aeef 37                    PCRLF3	PSHB			SAVE B
+0385 aef0 f6 ac 08              	LDAB	EJECTC		GET EJECT COUNT
+0386 aef3 27 05                 	BEQ	PCRLF5		NOT SET CONTINUE
+0387 aef5 8d 07                 EJECTN	BSR	PCRLF7		OUTPUT CR/LF
+0388 aef7 5a                    	DECB			DECRIMENT COUNTER
+0389 aef8 26 fb                 	BNE	EJECTN		IF NOT DONE LOOP
+0390 aefa 33                    PCRLF5	PULB			RESTORE B
+0391 aefb 7c ac 1a              PCRLF6	INC	CURLIN		BUMP CURRENT LINE COUNTER
+0392 aefe 86 0d                 PCRLF7	LDAA	#CRC		CARRIAGE RETURN
+0393 af00 8d 5a                 	BSR	PUTCH1		OUTPUT IT
+0394 af02 86 0a                 	LDAA	#LFC		LINE FEED
+0395 af04 8d 56                 	BSR	PUTCH1		OUTPUT IT
+0396 af06 37                    	PSHB			SAVE B
+0397 af07 f6 ac 05              	LDAB	NULCNT		GET NULL COUNT
+0398 af0a 27 06                 	BEQ	PCRLF9		ZERO: RETURN
+0399 af0c 4f                    PNULL	CLRA			CLEAR A
+0400 af0d 8d 4d                 	BSR	PUTCH1		OUTPUT NULL
+0401 af0f 5a                    	DECB			DECRIMENT COUNTER
+0402 af10 26 fa                 	BNE	PNULL		NOT DONE THEN LOOP
+0403 af12 33                    PCRLF9	PULB			RESTORE B
+0404 af13 0c                    PCRLFA	CLC			CLEAR CARRY FOR NO ERROR
+0405 af14 39                    	RTS			RETURN
+0406                            *
+0407                            * PREFERRED GET CHAR
+0408                            *
+0409 af15 7d ac 23              GETCH1	TST	INSW		FILE INPUT?
+0410 af18 26 1b                 	BNE	GETCH3		NO, TERMINAL
+0411 af1a 7d ac 26              	TST	FINADD		FILE INPUT ADDRESS?
+0412 af1d 27 11                 	BEQ	GETCH2		NO, DEFAULT TO TERMINAL
+0413 af1f 8d 1b                 	BSR	GETCH5		YES, LOAD INPUT FILE
+0414 af21 7d ac 2f              	TST	ECHOFL		ECHO INPUT?
+0415 af24 27 12                 	BEQ	GETCH4		NO: RETURN
+0416 af26 7d ac 24              	TST	FOUTAD		YES, FILE OUTPUT ADDRESS?
+0417 af29 27 0d                 	BEQ	GETCH4		NO: RETURN
+0418 af2b bd af 94              	JSR	PUTCH6		YES, ECHO INPUT
+0419 af2e 20 08                 	BRA	GETCH4		AND RETURN
+0420 af30 bd ad 09              GETCH2	JSR	INCH		INPUT CHAR FROM TERMINAL
+0421 af33 20 03                 	BRA	GETCH4		AND RETURN
+0422 af35 bd ad 0c              GETCH3	JSR	INCH2		INPUT CHAR, ALTER INPUT
+0423 af38 7f ac 1a              GETCH4	CLR	CURLIN		RESET CURRENT LINE
+0424 af3b 39                    	RTS			RETURN
+0425                            *
+0426                            * LOAD ALTERNATE INPUT FILE
+0427                            *
+0428 af3c ff ac 47              GETCH5	STX	DTEMPF		GET FCB ADDRESS OF
+0429 af3f fe ac 26              	LDX	FINADD		ALTERNATE INPUT FILE
+0430 af42 20 06                 	BRA	FILIO1		GET CHARACTR FROM FILE
+0431                            *
+0432                            *  FILE I/O FOR 'PUTCHR'
+0433                            *
+0434 af44 ff ac 47              FILEIO	STX	DTEMPF		SAVE INDEX REGISTER
+0435 af47 fe ac 24              	LDX	FOUTAD		GET FILE OUTPUT ADDRESS
+0436 af4a bd b4 06              FILIO1	JSR	FMS		WRITE ALTERNATE FILE
+0437 af4d 26 04                 	BNE	FILERR		IF ERROR, REPORT IT
+0438 af4f fe ac 47              	LDX	DTEMPF		RESTORE INDEX REGISTER
+0439 af52 39                    	RTS			RETURN
+0440                            *
+0441                            *  FILE OUTPUT ERROR
+0442                            *
+0443 af53 7f ac 24              FILERR	CLR	FOUTAD		CLEAR FILE OUTPUT ADDRESS
+0444 af56 bd b2 d9              	JSR	RPTER1		REPORT THE ERROR
+0445 af59 7e ad 03              	JMP	WARMS		RE-ENTER FLEX THROUGH WARM START
+0446                            *
+0447                            * PERFERRED OUTPUT CHAR
+0448                            *
+0449 af5c 7d ac 21              PUTCH1	TST	IOFLAG		IGNORE TTYSET?
+0450 af5f 26 33                 	BNE	PUTCH6		YES: BRANCH AROUND CHECK
+0451 af61 81 1f                 	CMPA	#$1F		PRINTER CONTROL CHAR?
+0452 af63 22 05                 	BHI	PUTCH2		NO: TAKE CARE OF PRINTABLE CHARACTER
+0453 af65 7f ac 29              	CLR	CURCOL		YES, CLEAR CURRENT COLUMN
+0454 af68 20 15                 	BRA	PUTCH4		BRANCH AROUND COLLUMN JUNK
+0455 af6a 7c ac 29              PUTCH2	INC	CURCOL		INC CURRENT COLUMN
+0456 af6d 36                    	PSHA			SAVE A
+0457 af6e b6 ac 04              	LDAA	WIDTH		CURRENT COLUMN > WIDTH?
+0458 af71 27 0b                 	BEQ	PUTCH3		WIDTH NOT SET THEN BRANCH AROUND
+0459 af73 b1 ac 29              	CMPA	CURCOL		CURRENT COLUMN >=WIDTH?
+0460 af76 24 06                 	BCC	PUTCH3		NO: CONTINUE
+0461 af78 bd ae cf              	JSR	PCRLF1		YES: PRINT CR/LF
+0462 af7b 7c ac 29              	INC	CURCOL		SET FOR COLUMN #1
+0463 af7e 32                    PUTCH3	PULA			RESTORE A
+0464 af7f 36                    PUTCH4	PSHA			SAVE A
+0465 af80 b6 80 04              	LDAA	CTLPOR		CHAR FROM TERMINAL?
+0466 af83 44                    	LSRA			GET RDRF FLAG INTO CARRY
+0467 af84 24 0d                 	BCC	PUTCH5		NOTHING TYPED
+0468 af86 b6 80 05              	LDAA	CTLPOR+1	YES: GET CHARACTER TYPED
+0469 af89 84 7f                 	ANDA	#$7F		MAKE SURE IT'S ASCII
+0470 af8b b1 ac 0a              	CMPA	ESCCHR		ESCAPE CHAR?
+0471 af8e 26 03                 	BNE	PUTCH5		NO: CONTINUE
+0472 af90 7c ac 49              	INC	DTEMPG		YES: SET ESCAPE FLAG
+0473 af93 32                    PUTCH5	PULA			RESTORE A
+0474 af94 36                    PUTCH6	PSHA			SAVE A
+0475 af95 7d ac 22              	TST	OUTCHN		OUTPUT CHANNEL 0 OR 1?
+0476 af98 26 13                 	BNE	PUTCH8		OUTPUT TO CHANNEL 1
+0477 af9a 7d ac 24              	TST	FOUTAD		FILE OUTPUT?
+0478 af9d 27 04                 	BEQ	PUTCH7		NO: OUTPUT TO CHANNEL ZERO
+0479 af9f 8d a3                 	BSR	FILEIO		OUTPUT TO FILE
+0480 afa1 20 0d                 	BRA	PUTCH9		RETURN
+0481                            *
+0482                            *  ECHO INPUT TO OUTPUT FILE
+0483                            *
+0484 afa3 7d ac 26              PUTCH7	TST	FINADD		FILE INPUT ADDRESS?
+0485 afa6 26 08                 	BNE	PUTCH9		YES: RETURN
+0486 afa8 bd ad 0f              	JSR	OUTCH		NO OUTPUT THROUGH NORMAL CHANNEL
+0487 afab 20 03                 	BRA	PUTCH9		RETURN
+0488 afad bd ad 12              PUTCH8	JSR	OUTCH2		OUTPUT THROUGH ALTERNATE CHANNEL
+0489 afb0 32                    PUTCH9	PULA			RESTORE A
+0490 afb1 39                    	RTS			RETURN
+0491                            *
+0492                            * OUTPUT DECIMAL NUMBER
+0493                            *
+0494 afb2 7f ac 4a              ODEC1	CLR	DTEMPH
+0495 afb5 f7 ac 1d              	STAB	XFERFL		PUT B IN COMPRESSION FLAG
+0496 afb8 86 04                 	LDAA	#4		PASS COUNT
+0497 afba b7 ac 4d              	STAA	DTEMPK		SWVE IN PASS COUNTER
+0498 afbd a6 00                 	LDAA	0,X		GET 1ST BYTE OF NUMBER
+0499 afbf e6 01                 	LDAB	1,X		GET 2ND BYTE OF NUMBER
+0500 afc1 ce ac a9              	LDX	#ODECON		POINT TO DECIMAL CONSTANTS
+0501 afc4 8d 0a                 ODEC2	BSR	ODEC3		DIVIDE BY CONSTANT
+0502 afc6 08                    	INX			BUMP TO NEXT
+0503 afc7 08                    	INX			DECIMAL CONSTANT
+0504 afc8 7a ac 4d              	DEC	DTEMPK		DECRIMENT PASS COUNTER
+0505 afcb 26 f7                 	BNE	ODEC2		IF NOT DONE THEN LOOP
+0506 afcd 17                    	TBA			PUTB IN A
+0507 afce 20 42                 	BRA	OHEX3		OUTPUT LSB AND EXIT THROUGH OUTHEX
+0508 afd0 7f ac 4b              ODEC3	CLR	DTEMPI		CLEAR DIVISOR COUNT
+0509 afd3 a1 00                 ODEC4	CMPA	0,X		CONSTANT MSB>A
+0510 afd5 25 0f                 	BCS	ODEC6		NO: FIGURE OUT MULTIPLIER
+0511 afd7 22 04                 	BHI	ODEC5		YES: FIGURE OUT MULTIPLIER
+0512 afd9 e1 01                 	CMPB	1,X		IF EQUAL COMPARE LSB
+0513 afdb 25 09                 	BCS	ODEC6		IF GREATER THEN FIGURE OUT MULTIPLIER
+0514 afdd e0 01                 ODEC5	SUBB	1,X		SUBTRACT CONSTANT LSB FROM LSB
+0515 afdf a2 00                 	SBCA	0,X		SUBTRACT CONSTANT MSB FROM MSB
+0516 afe1 7c ac 4b              	INC	DTEMPI		INCREMENT MULTIPLIER
+0517 afe4 20 ed                 	BRA	ODEC4		REPEAT
+0518 afe6 36                    ODEC6	PSHA			SAVE A (MSB)
+0519 afe7 b6 ac 4b              	LDAA	DTEMPI		GET MULTIPLIER
+0520 afea 26 10                 	BNE	ODEC7		IF NOT ZERO THEN INCREMENT HIGH MULTIPLIER
+0521 afec 7d ac 4a              	TST	DTEMPH		HIGH MULTIPLIER=0
+0522 afef 26 0b                 	BNE	ODEC7		NO: INCREMENT HIGH MULTIPLIER
+0523 aff1 7d ac 1d              	TST	XFERFL		SUPPRESS ZEROS?
+0524 aff4 27 0b                 	BEQ	ODEC8		NO THEN RETURN
+0525 aff6 86 20                 	LDAA	#$20		SPACE
+0526 aff8 8d 22                 	BSR	OHEX4		OUTPUT IT
+0527 affa 20 05                 	BRA	ODEC8		RETURN
+0528 affc 7c ac 4a              ODEC7	INC	DTEMPH		BUMP HIGH MULTIPLIER
+0529 afff 8d 11                 	BSR	OHEX3		OUTPUT MSB
+0530 b001 32                    ODEC8	PULA			RESTORE A
+0531 b002 39                    	RTS			RETURN
+0532                            *
+0533                            * OUTPUT 2 HEX BYTE ( ADDR)
+0534                            *
+0535 b003 8d 01                 OADR1	BSR	OHEX1		OUTPUT FIRST BYTE
+0536 b005 08                    	INX			BUMP POINTER
+0537                            *
+0538                            * OUTPUT HEX BYTE
+0539                            *
+0540 b006 a6 00                 OHEX1	LDAA	0,X		GET BYTE TO OUTPUT
+0541 b008 8d 04                 	BSR	OHEX2		OUTPUT MOST SIGNIFICANT NIBBLE
+0542 b00a a6 00                 	LDAA	0,X		GET BYTE AGAIN
+0543 b00c 20 04                 	BRA	OHEX3		OUTPUT LEAST SIGNIFICANT NIBBLE
+0544 b00e 44                    OHEX2	LSRA			SHIFT
+0545 b00f 44                    	LSRA			MOST SIGNIFICANT
+0546 b010 44                    	LSRA			TO LEAST
+0547 b011 44                    	LSRA			SIGNIFICANT NIBBLE
+0548 b012 84 0f                 OHEX3	ANDA	#$F		MASK OUT HIGH ORDER NIBBLE
+0549 b014 8b 30                 	ADDA	#'0		ADD ASCII CODE FOR ZERO
+0550 b016 81 39                 	CMPA	#'9		GREATER THEN '9'
+0551 b018 23 02                 	BLS	OHEX4		NO: OUTPUT NUMBER
+0552 b01a 8b 07                 	ADDA	#7		ADJUST FOR HEXIDECIMAL 'A' - 'F'
+0553 b01c 7e af 5c              OHEX4	JMP	PUTCH1		OUTPUT NIBBLE AND RETURN
+0554                            *
+0555                            * CLASSIFY CHAR
+0556                            *
+0557 b01f 81 30                 CLASS1	CMPA	#'0		ZERO?
+0558 b021 25 14                 	BCS	CLASS2		<0 SET CARRY
+0559 b023 81 39                 	CMPA	#'9		NINE?
+0560 b025 23 15                 	BLS	CLASS3		<9 OKAY CLEAR CARRY
+0561 b027 81 41                 	CMPA	#'A		'A'?
+0562 b029 25 0c                 	BCS	CLASS2		LESS THEN CHARACTER 'A' SET CARRY
+0563 b02b 81 5a                 	CMPA	#'Z		'Z'?
+0564 b02d 23 0d                 	BLS	CLASS3		LESS THEN 'Z' OKAY CLEAR CARRY
+0565 b02f 81 61                 	CMPA	#'a		'a'
+0566 b031 25 04                 	BCS	CLASS2		LESS THEN 'a' SET CARRY
+0567 b033 81 7a                 	CMPA	#'z		'z'?
+0568 b035 23 05                 	BLS	CLASS3		LESS THEN 'z' OKAY
+0569 b037 0d                    CLASS2	SEC			SET CARRY FOR NON-ALPHANUMERIC
+0570 b038 b7 ac 11              	STAA	LSTTRM		SAVE A IN LAST TERMINATOR
+0571 b03b 39                    	RTS			RETURN
+0572 b03c 0c                    CLASS3	CLC			CLEAR CARRY FOR ALPHA-NUMERIC
+0573 b03d 39                    	RTS			RETURN
+0574                            *
+0575                            * NEXT CHAR
+0576                            *
+0577 b03e ff ac 3d              NXTCH1	STX	INDEX		SAVE INDEX REGISTER
+0578 b041 fe ac 14              	LDX	BUFPNT		GET BUFFER POINTER
+0579 b044 b6 ac 18              	LDAA	CURCHR		GET CURRENT CHARACTER
+0580 b047 b7 ac 19              	STAA	PRVCHR		AND SAVE IN PREVIOUS CHARACTER
+0581 b04a a6 00                 NXTCH2	LDAA	0,X		GET CHARACTER
+0582 b04c b7 ac 18              	STAA	CURCHR		SAVE AS CURRENT CHARACTER
+0583 b04f 81 0d                 	CMPA	#CRC		IS IT A CARRIAGE RETURN
+0584 b051 27 11                 	BEQ	NXTCH3		YES: RETURN WITH CARRIAGE RETURN IN A
+0585 b053 b1 ac 02              	CMPA	EOL		IS IT AN END OF LINE CHARACTER
+0586 b056 27 0c                 	BEQ	NXTCH3		YES: RETURN WITH EOL IN A
+0587 b058 08                    	INX			BUMP POINTER TO NEXT CHARACTER
+0588 b059 ff ac 14              	STX	BUFPNT		SAVE NEW BUFFER POINTER
+0589 b05c 81 20                 	CMPA	#$20		IS IT A SPACE
+0590 b05e 26 04                 	BNE	NXTCH3		NO: RETURN WITH CHARACTER IN A
+0591 b060 a1 00                 	CMPA	0,X		IS NEXT CHARACTER A SPACE
+0592 b062 27 e6                 	BEQ	NXTCH2		YES: LOOP UNTILL NO SPACES
+0593 b064 fe ac 3d              NXTCH3	LDX	INDEX		GET INDEX REGISTER
+0594 b067 20 b6                 	BRA	CLASS1		CLASSIFY CHARACTER AND RETURN
+0595                            *
+0596                            * PARSE FILE SPEC.
+0597                            *
+0598 b069 86 15                 GETFI1	LDAA	#$15		SET $15 IN ERROR
+0599 b06b a7 01                 	STAA	1,X		STATUS OF FCB
+0600 b06d 86 ff                 	LDAA	#$FF		SET DR # TO ALL
+0601 b06f a7 03                 	STAA	3,X		SAVE IN FCB DRIVE NUMBER
+0602 b071 6f 04                 	CLR	4,X		CLR 1ST BYTE OF
+0603 b073 6f 0c                 	CLR	12,X		FILENAME & EXTENSION
+0604 b075 bd b0 fa              	JSR	GETFIE		GET NEXT CHAR FROM LINE BUFFER
+0605 b078 86 08                 	LDAA	#8		BUFFER CHARACTER COUNT FOR FILE NAME
+0606 b07a b7 ac 4b              	STAA	DTEMPI		SAVE COUNT
+0607 b07d 8d 34                 	BSR	GETFI7		GET NEXT CHARACTER
+0608 b07f 25 2e                 	BCS	GETFI6		IF NOT LEGAL CHARACTER EXIT WITH ERROR
+0609 b081 26 0f                 	BNE	GETFI2
+0610 b083 8d 2e                 	BSR	GETFI7		GET NEXT CHARACTER FROM BUFFER
+0611 b085 25 28                 	BCS	GETFI6		IF NOT LEGAL CHARACTER EXIT WITH ERROR
+0612 b087 26 09                 	BNE	GETFI2		CHECK FOR ERROR
+0613 b089 bc ac 3f              	CPX	DTEMP9
+0614 b08c 27 61                 	BEQ	GETFIC		RETURN
+0615 b08e 8d 23                 	BSR	GETFI7		GET NEXT CHARACTER
+0616 b090 23 5d                 	BLS	GETFIC		RETURN
+0617                            *
+0618                            * VERIFY FILENAME ENTERED, DRIVE ENTERED OR
+0619                            * DEFAULT AND EXTENSION ENTERED OR DEFAULT
+0620                            *
+0621 b092 fe ac 3f              GETFI2	LDX	DTEMP9		FCB ADDRESS
+0622 b095 6d 04                 	TST	4,X		CURRENT CHARACTER OF FILE NAME
+0623 b097 27 56                 	BEQ	GETFIC		IF ZERO THEN RETURN
+0624 b099 6d 03                 	TST	3,X		DRIVE #
+0625 b09b 2a 0f                 	BPL	GETFI5		IF NOT ALL THEN RETURN
+0626 b09d 7d ac 0d              	TST	TEMP1		COMMAND FILE OR PASSED FILE NAME
+0627 b0a0 27 05                 	BEQ	GETFI3		PASSED: GET WORKING DRIVE
+0628 b0a2 b6 ac 0b              	LDAA	SASN		COMMAND: GET SYSTEM DRIVE
+0629 b0a5 20 03                 	BRA	GETFI4		STORE IT
+0630 b0a7 b6 ac 0c              GETFI3	LDAA	WASN		GET WOKING DRIVE
+0631 b0aa a7 03                 GETFI4	STAA	3,X		STORE IT IN DRIVE NUMBER OF FCB
+0632 b0ac 7f ac 0d              GETFI5	CLR	TEMP1		SET FOR PASSED FILE NAME
+0633 b0af fe ac 3f              GETFI6	LDX	DTEMP9		POINT TO FCB AGAIN
+0634 b0b2 39                    	RTS			RETURN
+0635                            *
+0636                            * PARSE DRIVE NUMBER
+0637                            *
+0638 b0b3 8d 89                 GETFI7	BSR	NXTCH1		GET NEXT CHARACTER FROM LINE BUFFER
+0639 b0b5 25 38                 	BCS	GETFIC		TERMINATOR RETURN
+0640 b0b7 81 39                 	CMPA	#'9		IS IT A NINE
+0641 b0b9 22 14                 	BHI	GETFI9		>9 IS NAME OR ILLEGAL
+0642 b0bb fe ac 3f              	LDX	DTEMP9		GET FCB ADDRESS
+0643 b0be 6d 03                 	TST	3,X		DRIVE 0?
+0644 b0c0 2a 2d                 	BPL	GETFIC		IF ALL THEN RETURN
+0645 b0c2 84 03                 	ANDA	#3		MASK OUT GARBAGE
+0646 b0c4 a7 03                 	STAA	3,X		SAVE IN DRIVE NUMBER
+0647 b0c6 bd b0 3e              	JSR	NXTCH1		GET NEXT CHARACTER
+0648 b0c9 24 24                 	BCC	GETFIC		ERROR
+0649 b0cb 81 2e                 GETFI8	CMPA	#'.		IS IT A PERIOD
+0650 b0cd 0c                    	CLC			CLEAR CARRY FOR NO ERROR RETURN
+0651 b0ce 39                    	RTS			RETURN
+0652                            *
+0653                            * PARSE FILENAME AND EXTENSION
+0654                            *
+0655 b0cf f6 ac 4b              GETFI9	LDAB	DTEMPI		GET CHARACTER COUNT
+0656 b0d2 2b 1b                 	BMI	GETFIC
+0657 b0d4 37                    	PSHB			SAVE IT
+0658 b0d5 c0 05                 	SUBB	#5		B-5 NUMBER OF CHARACTERS IN EXTENSION
+0659 b0d7 f7 ac 4b              	STAB	DTEMPI		SAVE IT
+0660 b0da 33                    	PULB			RESTORE # OF CHARACTERS IN FILE NAME
+0661 b0db a7 04                 GETFIA	STAA	4,X		STORE CHARACTER IN FCB
+0662 b0dd 08                    	INX			BUMP POINTER
+0663 b0de 5a                    	DECB			DECRIMENT COUNTER
+0664 b0df bd b0 3e              	JSR	NXTCH1		GET NEXT CHARACTER
+0665 b0e2 24 08                 	BCC	GETFIB		IF LEGAL DON'T CHECK FOR '-'
+0666 b0e4 81 2d                 	CMPA	#'-		IS IT A '-'?
+0667 b0e6 27 04                 	BEQ	GETFIB		YES: OKAY CONTINUE
+0668 b0e8 81 5f                 	CMPA	#'_		IS IT AN UNDERLINE?
+0669 b0ea 26 05                 	BNE	GETFID		NO: ERROR OUT
+0670 b0ec 5d                    GETFIB	TSTB			LAST CHARACTER?
+0671 b0ed 26 ec                 	BNE	GETFIA		NO: GET ANOTHER
+0672 b0ef 0d                    GETFIC	SEC			SET CARRY (ERROR OUT)
+0673 b0f0 39                    	RTS			RETURN
+0674 b0f1 5d                    GETFID	TSTB			LAST CHARACTER OF FILE NAME
+0675 b0f2 27 d7                 	BEQ	GETFI8		YES: RETURN
+0676 b0f4 6f 04                 	CLR	4,X		CLEAR BYTE
+0677 b0f6 08                    	INX			POINT TO NEXT BYTE
+0678 b0f7 5a                    	DECB			DECRIMENT COUNTER
+0679 b0f8 20 f7                 	BRA	GETFID		CLEAR TILL END OF FILE NAME
+0680                            *
+0681                            * GET NEXT CHAR IN LINE BUFFER
+0682                            *
+0683 b0fa ff ac 3f              GETFIE	STX	DTEMP9		SAVE FCB ADDRESS
+0684 b0fd fe ac 14              	LDX	BUFPNT		GET LINE BUFFER POINTER
+0685 b100 a6 00                 GETFIF	LDAA	0,X		GET CHARACTER
+0686 b102 81 20                 	CMPA	#$20		SPACE?
+0687 b104 26 03                 	BNE	GETFIG		NO: CONTINUE
+0688 b106 08                    	INX			YES: BUMP POINTER
+0689 b107 20 f7                 	BRA	GETFIF		AND TRY AGAIN
+0690 b109 ff ac 14              GETFIG	STX	BUFPNT		SAVE BUFFER POINTER ADDRESS
+0691 b10c fe ac 3f              	LDX	DTEMP9		RESTORE FCB ADDRESS
+0692 b10f 39                    	RTS			RETURN TO GETFIL
+0693                            *
+0694                            * SET EXTENSION
+0695                            *
+0696 b110 ff ac 3b              SETXT1	STX	DTEMP6		SAVE FCB POINTER
+0697 b113 e6 0c                 	LDAB	12,X		ALREADY EXTENSION THERE?
+0698 b115 26 28                 	BNE	SETXT3		YES: RETURN
+0699 b117 ff ac 3d              	STX	INDEX		NO: SAVE INDEX REGISTER
+0700 b11a ce b1 43              	LDX	#EXTTBL		POINT TO EXTENSION TABLE
+0701 b11d 81 0b                 	CMPA	#$B		GREATER THAN LAST EXTENSION IN TABLE?
+0702 b11f 22 1e                 	BHI	SETXT3		YES: RETURN
+0703 b121 16                    	TAB			SAVE A IN B
+0704 b122 58                    	ASLB			B=B*2
+0705 b123 1b                    	ABA			A=3*A
+0706 b124 16                    	TAB			SAVE A IN B
+0707 b125 bd b1 e8              	JSR	ADDBX1		ADDB TO X FOR TABLE OFFSET
+0708 b128 c6 03                 	LDAB	#3		NUMBER OF CHARACTERS IN EXTENSION
+0709 b12a a6 00                 SETXT2	LDAA	0,X		GET CHARACTER FROM TABLE
+0710 b12c 08                    	INX			BUMP POINTER
+0711 b12d ff ac 41              	STX	DATPNT		SAVE POINTER
+0712 b130 fe ac 3d              	LDX	INDEX		GET FCB ADDRESS
+0713 b133 a7 0c                 	STAA	12,X		SAVE IN EXTENSION BYTES
+0714 b135 08                    	INX			BUMP POINTER
+0715 b136 ff ac 3d              	STX	INDEX		SAVE FCB ADDRESS
+0716 b139 fe ac 41              	LDX	DATPNT		GET TABLE POINTER
+0717 b13c 5a                    	DECB			BECRIMENT CONTER
+0718 b13d 26 eb                 	BNE	SETXT2		IF NOT DONE THEN LOOP
+0719 b13f fe ac 3b              SETXT3	LDX	DTEMP6		RESTORE FCB ADDRESS
+0720 b142 39                    	RTS			RETURN
+0721 b143 42 49 4e 54 58 54 43  EXTTBL	FCC	'BINTXTCMDBASSYSBAK'
+          4d 44 42 41 53 53 59
+          53 42 41 4b
+0722 b155 53 43 52 44 41 54 42  	FCC	'SCRDATBACDIRPRTOUT'
+          41 43 44 49 52 50 52
+          54 4f 55 54
+0723                            *
+0724                            * GET HEX NUMBER FROM BUFFER
+0725                            *
+0726 b167 5f                    GETHX1	CLRB			CLEAR B
+0727 b168 f7 ac 1b              	STAB	OFFSET		CLEAR OFFSET
+0728 b16b f7 ac 1c              	STAB	OFFSET+1	BYTES
+0729 b16e bd b0 3e              GETHX2	JSR	NXTCH1		GET CHARACTER FROM BUFFER
+0730 b171 25 20                 	BCS	GETHX5		IF NOT ALPHA-NUMERIC SET TO ZERO AND RETURN
+0731 b173 8d 23                 	BSR	GETHX6		GET HEX VALUE
+0732 b175 25 16                 	BCS	GETHX4		IGNORE ADDITIONAL CHARACTERS
+0733 b177 37                    	PSHB			SAVE B
+0734 b178 c6 04                 	LDAB	#4		NUMBER OF BITS TO ROTATE
+0735 b17a 78 ac 1c              GETHX3	ASL	OFFSET+1	SHIFT MOST SIGNIFICANT BYTE
+0736 b17d 79 ac 1b              	ROL	OFFSET		SHIFT LEAST SIGNIFICANT BYTE
+0737 b180 5a                    	DECB			DECRIMENT SHIFT COUNTER
+0738 b181 26 f7                 	BNE	GETHX3		SHIFT SOME MORE
+0739 b183 33                    	PULB			RESTORE B
+0740 b184 bb ac 1c              	ADDA	OFFSET+1	ADD NEW NIBBLE TO OLD ONES
+0741 b187 b7 ac 1c              	STAA	OFFSET+1	SAVE VALUE
+0742 b18a 5c                    	INCB
+0743 b18b 20 e1                 	BRA	GETHX2		GET NEXT NIBBLE
+0744 b18d bd b0 3e              GETHX4	JSR	NXTCH1		GET NEXT DIGIT
+0745 b190 24 fb                 	BCC	GETHX4		IGNORE ALL CHARACTERS TILL TERMINATOR
+0746 b192 39                    	RTS			RETURN
+0747 b193 fe ac 1b              GETHX5	LDX	OFFSET		GET VALUE
+0748 b196 0c                    	CLC			NO ERROR FLAG
+0749 b197 39                    	RTS			RETURN
+0750 b198 80 47                 GETHX6	SUBA	#$47		SUBTRACT ASCII CODE FOR 'F'
+0751 b19a 2a 0e                 	BPL	GETHX8		IF GREATER THEN 'F' THEN ERROR
+0752 b19c 8b 06                 	ADDA	#6		ADD SIX STRIPPED CODE FOR 0-9
+0753 b19e 2a 04                 	BPL	GETHX7		IF NOT NEGATIVE THEN A-F
+0754 b1a0 8b 07                 	ADDA	#7		ADD SEVEN FOR 0-9
+0755 b1a2 2a 06                 	BPL	GETHX8		IF BETWEEN ':' AND '@' THEN ERROR
+0756 b1a4 8b 0a                 GETHX7	ADDA	#10		ADD TEN FOR A-F
+0757 b1a6 2b 02                 	BMI	GETHX8		STILL NEGATIVE THEN ERROR
+0758 b1a8 0c                    	CLC			CLEAR CARRY FOR NO ERROR FLAG
+0759 b1a9 39                    	RTS			RETURN
+0760 b1aa 0d                    GETHX8	SEC			SET CARRY FOR ERROR FLAG
+0761 b1ab 39                    	RTS			RETURN
+0762                            *
+0763                            * INPUT DECIMAL NUMBER
+0764                            *
+0765 b1ac bd b2 77              INDEC1	JSR	LOAD11		CLEAR OFFSET ADDRESS
+0766 b1af 5f                    	CLRB			CLEAR B
+0767 b1b0 bd b0 3e              INDEC2	JSR	NXTCH1		GET CHARACTER FROM BUFFER
+0768 b1b3 25 de                 	BCS	GETHX5		IF NOT LEGAL THEN SET FOR ZERO
+0769 b1b5 81 39                 	CMPA	#'9		GREATER THEN NINE?
+0770 b1b7 22 d4                 	BHI	GETHX4		YES: ERROR
+0771 b1b9 84 0f                 	ANDA	#$F		AND OUT LS NIBBLE
+0772 b1bb 37                    	PSHB			SAVE B
+0773 b1bc 36                    	PSHA			SAVE A
+0774 b1bd b6 ac 1b              	LDAA	OFFSET		GET MSB OF VALUE
+0775 b1c0 f6 ac 1c              	LDAB	OFFSET+1	GET LSB OF VALUE
+0776 b1c3 58                    	ASLB			ROTATE
+0777 b1c4 49                    	ROLA			AROUND
+0778 b1c5 58                    	ASLB			FOR CONVERSION
+0779 b1c6 49                    	ROLA			FROM
+0780 b1c7 58                    	ASLB			THE
+0781 b1c8 49                    	ROLA			ASCII
+0782 b1c9 78 ac 1c              	ASL	OFFSET+1	CHARACTERS
+0783 b1cc 79 ac 1b              	ROL	OFFSET		MORE
+0784 b1cf fb ac 1c              	ADDB	OFFSET+1	MATH
+0785 b1d2 b9 ac 1b              	ADCA	OFFSET		FOR
+0786 b1d5 f7 ac 1c              	STAB	OFFSET+1	THE CONVERSION
+0787 b1d8 33                    	PULB			RESTORE B
+0788 b1d9 fb ac 1c              	ADDB	OFFSET+1	MORE
+0789 b1dc 89 00                 	ADCA	#0		CONVERSOIN
+0790 b1de f7 ac 1c              	STAB	OFFSET+1	ROUTINE
+0791 b1e1 b7 ac 1b              	STAA	OFFSET		GARBAGE
+0792 b1e4 33                    	PULB			RESTORE B
+0793 b1e5 5c                    	INCB			NUMBER FOUND
+0794 b1e6 20 c8                 	BRA	INDEC2		GET NEXT DIGIT
+0795                            *
+0796                            * ADD "ACC-B" TO "X"
+0797                            *
+0798 b1e8 ff ac 3f              ADDBX1	STX	DTEMP9		SAVE X
+0799 b1eb fb ac 40              	ADDB	DTEMPA		ADD B TO LS BYTE
+0800 b1ee f7 ac 40              	STAB	DTEMPA		SAVE IT
+0801 b1f1 24 03                 	BCC	ADDBX2		IF NO CARRY THEN RETURN
+0802 b1f3 7c ac 3f              	INC	DTEMP9		BUMP MS BYTE WITH CARRY
+0803 b1f6 fe ac 3f              ADDBX2	LDX	DTEMP9		POINT TO NEW X VALUE
+0804 b1f9 39                    	RTS			RETURN
+0805                            *
+0806                            * FILE LOADER
+0807                            *
+0808 b1fa 7f ac 1d              LOAD1	CLR	XFERFL		CLEAR TRANSFER FLAG
+0809 b1fd 8d 40                 LOAD2	BSR	LOAD5		GET BYTE FROM FILE
+0810 b1ff 81 02                 	CMPA	#2		IS IT AN ADDRESS CODE?
+0811 b201 27 15                 	BEQ	ADDRES		YES: SET LOAD ADDRESS
+0812 b203 81 16                 	CMPA	#$16		IS IT A TRANSFER ADDRESS CODE?
+0813 b205 26 f6                 	BNE	LOAD2		NO: GET ANOTHER CHARACTER
+0814 b207 8d 36                 	BSR	LOAD5		GET BYTE
+0815 b209 b7 ac 1e              	STAA	XFERAD		SAVE IN TRANSFER ADDRESS MSB
+0816 b20c 8d 31                 	BSR	LOAD5		GET BYTE
+0817 b20e b7 ac 1f              	STAA	XFERAD+1	SAVE IN TRANSFER ADDRES LSB
+0818 b211 86 01                 	LDAA	#1		SET TRANSFER FLAG
+0819 b213 b7 ac 1d              	STAA	XFERFL		STORE IT
+0820 b216 20 e5                 	BRA	LOAD2		CONTINUE LOADING
+0821 b218 8d 25                 ADDRES	BSR	LOAD5		GET MSB OF LOAD ADDRESS
+0822 b21a 36                    	PSHA			SAVE IT
+0823 b21b 8d 22                 	BSR	LOAD5		GET LSB OF LOAD ADDRESS
+0824 b21d 33                    	PULB			PUT MSB INTO B
+0825 b21e bb ac 1c              	ADDA	OFFSET+1	ADD IN CURRRENT LOAD OFFSET
+0826 b221 f9 ac 1b              	ADCB	OFFSET		AND NOW MSB
+0827 b224 b7 ac 3e              	STAA	DTEMP8		SAVE LSB OF ADDRESS
+0828 b227 f7 ac 3d              	STAB	INDEX		SAVE MSB OF ADDRESS
+0829 b22a 8d 13                 	BSR	LOAD5		GET NUMBER OF BYTES TO LOAD
+0830 b22c 16                    	TAB			PUT # INTO B
+0831 b22d 27 ce                 	BEQ	LOAD2		IF ZERO THEN GET NEXT ADDRESS
+0832 b22f 8d 0e                 LOAD4	BSR	LOAD5		GET BYTE FROM FILE
+0833 b231 fe ac 3d              	LDX	INDEX		GET ADDRESS TO LOAD INTO
+0834 b234 a7 00                 	STAA	0,X		SAVE BYTE IN MEMORY
+0835 b236 08                    	INX			BUMP POINTER
+0836 b237 ff ac 3d              	STX	INDEX		SAVE IT
+0837 b23a 5a                    	DECB			DECRIMENT COUNTER
+0838 b23b 26 f2                 	BNE	LOAD4		IF NOT DONE THEN READ SOME MORE DATA
+0839 b23d 20 be                 	BRA	LOAD2		WHEN DONE LOOP AND START AGAIN
+0840 b23f ce a8 40              LOAD5	LDX	#FCB		POINT TO FCB
+0841 b242 bd b4 06              	JSR	FMS		READ SINGLE BYTE
+0842 b245 27 11                 	BEQ	LOAD7		NO ERROR RETURN
+0843 b247 a6 01                 	LDAA	1,X		GET ERROR STATUS
+0844 b249 81 08                 	CMPA	#8		END OF FILE ERROR
+0845 b24b 26 0d                 	BNE	LOAD8		NO: REPORT ERROR
+0846 b24d 32                    	PULA			YES: RESTORE STACK
+0847 b24e 32                    	PULA			(NO RTS EXIT)
+0848                            *
+0849                            * CLOSE LOAD FILE
+0850                            *
+0851 b24f 86 04                 LOAD6	LDAA	#4		FMS CLOSE FILE CODE
+0852 b251 a7 00                 	STAA	0,X		FCB COMMAND BYTE
+0853 b253 bd b4 06              	JSR	FMS		CLOSE FILE
+0854 b256 26 0b                 	BNE	LOAD9		ERROR, REPORT IT
+0855 b258 0c                    LOAD7	CLC			SET FOR NO ERROR RETURN
+0856 b259 39                    	RTS			RETURN
+0857                            *
+0858                            * REPORT ALL LOAD ERRORS
+0859                            *
+0860 b25a b7 ac 20              LOAD8	STAA	ERRTYP		SAVE ERROR TYPE
+0861 b25d 81 04                 	CMPA	#4		NOT FOUND ERROR
+0862 b25f 26 02                 	BNE	LOAD9		NO: REPORT ERROR
+0863 b261 0d                    	SEC			ERROR RETURN
+0864 b262 39                    	RTS			RETURN
+0865 b263 8d 74                 LOAD9	BSR	RPTER1		REPORT ERROR
+0866 b265 7e ad ec              	JMP	RENTR8		AND EXIT TO DOS
+0867 b268 86 00                 LOAD10	LDAA	#0
+0868 b26a 8d 38                 	BSR	LOAD16		GET FILE NAME
+0869 b26c 25 10                 	BCS	LOAD12		IF ERROR TAKE CARE OF IT
+0870 b26e 8d 07                 	BSR	LOAD11		CLEAR OFFSET
+0871 b270 7c ac 4c              	INC	DTEMPJ		FLAG FOR INTERNAL LOAD
+0872 b273 8d 85                 	BSR	LOAD1		LOAD FILE
+0873 b275 20 f1                 	BRA	LOAD10		DO SOME MORE
+0874 b277 7f ac 1b              LOAD11	CLR	OFFSET		CLEAR OFFSET
+0875 b27a 7f ac 1c              	CLR	OFFSET+1	AND DO LSB ALSO
+0876 b27d 39                    	RTS			RETURN
+0877 b27e f6 ac 4c              LOAD12	LDAB	DTEMPJ		INTERNAL CALL?
+0878 b281 27 03                 	BEQ	LOAD13		NO: RETURN TO DOS
+0879 b283 7e ad 03              	JMP	WARMS		YES: WARM START
+0880 b286 7e ad e1              LOAD13	JMP	RENTR5		RE-ENTER DOS
+0881 b289 86 02                 LOAD14	LDAA	#2		SET FOR 'CMD' EXTENSION
+0882 b28b 8d 21                 	BSR	LOAD17		SET EXTENSION
+0883 b28d 8d e8                 	BSR	LOAD11		CLEAR OFFSET
+0884 b28f bd b1 fa              	JSR	LOAD1		LOAD IT
+0885 b292 f6 ac 1d              	LDAB	XFERFL		DO WE HAVE A TRANSFER ADDRESS?
+0886 b295 27 05                 	BEQ	LOAD15		NO: NO TRANSFER ERROR
+0887 b297 fe ac 1e              	LDX	XFERAD		YES: GET TRANSFER ADDRESS
+0888 b29a 6e 00                 	JMP	0,X		AND JUMP TO IT
+0889                            *
+0890                            * REPORT NO TRANSFER ADDRESS
+0891                            *
+0892 b29c ce ac 65              LOAD15	LDX	#NOXFER		POINT TO NO TRANSFER MESSAGE
+0893 b29f 86 81                 	LDAA	#$81		ERROR TYPE
+0894 b2a1 7e ad e6              	JMP	RENTR6		PRINT ERROR AND EXIT TO DOS
+0895 b2a4 36                    LOAD16	PSHA			SAVE A
+0896 b2a5 ce a8 40              	LDX	#FCB		POINT TO FCB
+0897 b2a8 bd b0 69              	JSR	GETFI1		GET FILE NAME
+0898 b2ab 32                    	PULA			RESTORE A
+0899 b2ac 25 1a                 	BCS	LOAD19		IF ERROR THEN TAKE CARE OF IT
+0900 b2ae ce a8 40              LOAD17	LDX	#FCB		POINT TO FCB
+0901 b2b1 bd b1 10              	JSR	SETXT1		SET EXTENSION
+0902 b2b4 ce a8 40              	LDX	#FCB		POINT TO FCB
+0903 b2b7 86 01                 	LDAA	#1		SET FOR OPEN TO READ
+0904 b2b9 a7 00                 	STAA	0,X		SAVE IN COMMAND BYTE
+0905 b2bb bd b2 3f              	JSR	LOAD5		GET BYTE FROM FILE
+0906 b2be 24 03                 	BCC	LOAD18		IF NO ERROR THEN BRANCH AROUND ERROR JUNK
+0907 b2c0 7e b3 83              	JMP	RPTERC		REPORT ERROR AND RETURN TO DOS
+0908 b2c3 86 ff                 LOAD18	LDAA	#$FF		SET FOR BINARY READ
+0909 b2c5 a7 3b                 	STAA	59,X		STORE IN FCB
+0910 b2c7 39                    	RTS			RETURN
+0911 b2c8 b6 ac 11              LOAD19	LDAA	LSTTRM		GET LAST TERMINATOR
+0912 b2cb 81 0d                 	CMPA	#CRC		CARRIAGE RETURN?
+0913 b2cd 27 08                 	BEQ	LOAD20		YES: THEN JSR ENTRY
+0914 b2cf b1 ac 02              	CMPA	EOL		MULTIPLE COMMAND ON LINE?
+0915 b2d2 27 03                 	BEQ	LOAD20		YES: THEN JSR ENTRY
+0916 b2d4 7e ad e1              	JMP	RENTR5		EXIT TO DOS
+0917 b2d7 0d                    LOAD20	SEC			SET CARRY FOR EXIT OUT
+0918 b2d8 39                    	RTS			RETURN
+0919                            *
+0920                            * REPORT ERROR
+0921                            *
+0922 b2d9 ff ac 3f              RPTER1	STX	DTEMP9		SAVE FCB ADDRESS
+0923 b2dc a6 01                 	LDAA	1,X		GET ERROR NUMBER
+0924 b2de b7 ac 20              	STAA	ERRTYP		SAVE IN ERROR TYPE
+0925 b2e1 27 6b                 	BEQ	RPTER6		NO ERROR THEN RETURN
+0926 b2e3 bd ad f2              	JSR	RSTIO1		RESTORE I/O VECTORS
+0927 b2e6 fe ac 2d              	LDX	ERRVEC		GET ERROR NAME VECTOR
+0928 b2e9 26 07                 	BNE	RPTER2		IF THERE IS ONE GET THAT FILE NAME
+0929 b2eb 81 10                 	CMPA	#$10		DRIVES NOT READY ERROR?
+0930 b2ed 27 60                 	BEQ	RPTER7		YES: PRINT ERROR MESSAGE
+0931 b2ef ce b3 c0              	LDX	#ERRORS		POINT TO 'ERRORS.SYS' STRING
+0932 b2f2 ff ac 41              RPTER2	STX	DATPNT		SAVE ADDRESS
+0933 b2f5 ce a8 40              	LDX	#FCB		POINT TO FCB
+0934 b2f8 6d 02                 	TST	2,X		ACTIVE?
+0935 b2fa 27 09                 	BEQ	RPTER3		NO: DON'T CLOSE FILE
+0936 b2fc 86 04                 	LDAA	#4		CLOSE FILE CODE
+0937 b2fe a7 00                 	STAA	0,X		STORE IN COMMAND BYTE
+0938 b300 bd b4 06              	JSR	FMS		CLOSE FILE
+0939 b303 26 32                 	BNE	RPTER4		ERROR:  PRINT STANDERD MESSAGE
+0940 b305 ce a8 38              RPTER3	LDX	#FCB-8		COMPENSATE FOR FILE NAME
+0941 b308 ff ac 3d              	STX	INDEX		SAVE POINTER
+0942 b30b c6 0b                 	LDAB	#$B		NUMBER OF CHARACTERS IN FILE NAME
+0943 b30d fe ac 41              	LDX	DATPNT		GET POINTER
+0944 b310 bd b1 2a              	JSR	SETXT2		SET EXTENSION
+0945 b313 ce a8 40              	LDX	#FCB		POINT TO FCB
+0946 b316 86 ff                 	LDAA	#$FF		SET FOR ALL DRIVES
+0947 b318 a7 03                 	STAA	3,X		STOE IN FCB
+0948 b31a 86 01                 	LDAA	#1		OPEN FILE FOR READ
+0949 b31c a7 00                 	STAA	0,X		STORE IN COMMAND BYTE
+0950 b31e bd b4 06              	JSR	FMS		OPEN FILE
+0951 b321 26 14                 	BNE	RPTER4		ERROR: PRINT DISK ERROR MESSAGE
+0952 b323 b6 ac 20              	LDAA	ERRTYP		GET ERROR TYPE
+0953 b326 4a                    	DECA			ADJUST FOR RANDOM READ
+0954 b327 47                    	ASRA			DIVIDE BY 2
+0955 b328 47                    	ASRA			DIVIDE BY 2
+0956 b329 4c                    	INCA			ADJUST FOR RANDOM READ
+0957 b32a 6f 20                 	CLR	32,X		CLEAR MSB OF RECORD NUMBER
+0958 b32c a7 21                 	STAA	33,X		SET FOR PROPER RECORD NUMBER
+0959 b32e 86 15                 	LDAA	#$15		POSITION TO RECORD "N"
+0960 b330 a7 00                 	STAA	0,X		SAVE IN COMMAND BYTE
+0961 b332 bd b4 06              	JSR	FMS		DO RANDOM READ
+0962 b335 27 20                 	BEQ	RPTER8		NO ERRORS: CONTINUE
+0963 b337 ce ac 7e              RPTER4	LDX	#DISKER		POINT TO DISK ERROR MESSAGE
+0964 b33a bd ae a7              	JSR	PSTRG1		PRINT PRINT IT
+0965 b33d fe ac 3f              	LDX	DTEMP9		GET FCB ADDRESS
+0966 b340 b6 ac 20              	LDAA	ERRTYP		GET ERROR TYPE
+0967 b343 a7 01                 	STAA	1,X		SAVE IN FCB
+0968 b345 6f 00                 	CLR	0,X		CLEAR COMMAND BYTE
+0969 b347 5f                    	CLRB			CLEAR B
+0970 b348 bd af b2              	JSR	ODEC1		OUTPUT DECIMAL ERROR NUMBER
+0971 b34b fe ac 3f              RPTER5	LDX	DTEMP9		RESTORE FCB ADDRESS
+0972 b34e 39                    RPTER6	RTS			RETURN
+0973 b34f ce ac 8b              RPTER7	LDX	#DRNRDY		POINT TO DISK NOT READY MESSAGE
+0974 b352 bd ae a7              	JSR	PSTRG1		PRINT IT
+0975 b355 20 f4                 	BRA	RPTER5		RESTORE FCB ADDRESS AND RETURN
+0976 b357 bd ae cf              RPTER8	JSR	PCRLF1		PRINT CR/LF
+0977 b35a ce a8 40              	LDX	#FCB		POINT TO FCB
+0978 b35d b6 ac 20              	LDAA	ERRTYP		GET ERROR TYPE
+0979 b360 c6 04                 	LDAB	#4		START OF FIRST READABLE MESSAGE
+0980 b362 4a                    	DECA			ADJUST A
+0981 b363 84 03                 	ANDA	#3		MASK OUT FOR 0-3
+0982 b365 27 05                 	BEQ	RPTERA		IF ZERO THEN JUST OUTPUT IT
+0983 b367 cb 3f                 RPTER9	ADDB	#$3F		63 CHARACTERS PER MESSAGE
+0984 b369 4a                    	DECA			DECRIMENT A FOR PROPER INDEX
+0985 b36a 26 fb                 	BNE	RPTER9		LOOP UNTIL DONE
+0986 b36c e7 22                 RPTERA	STAB	34,X		SAVE IN RANDOM INDEX
+0987 b36e bd b4 06              RPTERB	JSR	FMS		AND READ RECORD
+0988 b371 26 c4                 	BNE	RPTER4		ERROR: GIVE UP
+0989 b373 bd af 5c              	JSR	PUTCH1		OUTPUT CHARACTER FROM ERRORS FILE
+0990 b376 81 0d                 	CMPA	#CRC		CARRIAGE RETURN?
+0991 b378 26 f4                 	BNE	RPTERB		NO: GET MORE CHARACTERS
+0992 b37a 86 04                 	LDAA	#4		YES: CLOSE FILE CODE
+0993 b37c a7 00                 	STAA	0,X		SAVE IN FCB
+0994 b37e bd b4 06              	JSR	FMS		CLOSE FILE
+0995 b381 20 c8                 	BRA	RPTER5		RESTORE X AND RETURN
+0996 b383 ce ac 74              RPTERC	LDX	#NOTFND		POINT TO NOT FOUND MESSAGE
+0997 b386 7e ad e9              	JMP	RENTR7		PRINT IT AND EXIT TO DOS
+0998                            *
+0999                            * CALL DOS
+1000                            *
+1001 b389 32                    DOCMD1	PULA			GET MSB RETURN ADDRESS
+1002 b38a 33                    	PULB			GET LSB OF RETURN ADDRESS
+1003 b38b b7 ac 43              	STAA	DTEMPC		SAVE FOR
+1004 b38e f7 ac 44              	STAB	DTEMPD		LATER RETURN
+1005 b391 bf ac 45              DOCMD2	STS	DTEMPE		SAVE THE STACK REGISTER
+1006 b394 7f ac 20              	CLR	ERRTYP		CLEAR ANY OLD ERRORS
+1007 b397 7c ac 28              	INC	CMDFLG		SET FOR 'DOCMND' CALL
+1008 b39a 7e ad bf              	JMP	RENTR2		RE-ENTER DOS AND EXECUTE
+1009 b39d 7f ac 28              DOCMD3	CLR	CMDFLG		ZERO COMMAND FLAG
+1010 b3a0 fe ac 43              	LDX	DTEMPC		GET RETURN ADDRESS
+1011 b3a3 be ac 45              	LDS	DTEMPE		RESTORE STACK
+1012 b3a6 f6 ac 20              	LDAB	ERRTYP		PASS ANY ERRORS ON TO CALLING PROGRAM
+1013 b3a9 6e 00                 	JMP	0,X		AND RETURN TO CALLING PROGRAM
+1014                            *
+1015                            *  MON COMMAND.  GIVES ERROR IF PRINTING
+1016                            *
+1017 b3ab 7d ac fc              JMONTR	TST	BGTASK		PRINTING?
+1018 b3ae 26 03                 	BNE	DOCMD4		YES: ERROR
+1019 b3b0 7e e0 d0              	JMP	MONITR		EXIT TO MONITER LOCATION
+1020 b3b3 ce a8 40              DOCMD4	LDX	#FCB		POINT TO FCB
+1021 b3b6 86 1b                 	LDAA	#$1B		SET FOR NOT ALLOWED WHILE PRINTING ERROR
+1022 b3b8 a7 01                 	STAA	1,X		SAVE IN ERROR BYTE
+1023 b3ba bd b2 d9              	JSR	RPTER1		REPORT ERROR
+1024 b3bd 7e ad 6f              	JMP	WARMS1		AND EXIT TO DOS
+1025                            *
+1026                            *  FILENAME FOR SYSTEM ERROR NAME FILE
+1027                            *
+1028 b3c0 45 52 52 4f 52 53     ERRORS	FCC	'ERRORS'
+1029 b3c6 00 00                 	FCB	0,0
+1030 b3c8 53 59 53              	FCC	'SYS'
+1031                            *
+1032                            *  SELF MODIFYING CODE.  COLD START ALWAYS DOES A 'JSR' HERE
+1033                            *  BUT ON THE FIRST TIME AFTER BOOT, THE MEMORY SIZE UP ROUTINE
+1034                            *  PUT AN 'RTS' HERE.  CLEVER HUH?
+1035                            *
+1036 b3fd                       	ORG	BASE+$13FD
+1037 b3fd 7e aa 00              JFMEME	JMP	FMEME		WILL BE SET AN 'RTS' AFTER INITIAL COLD START
+1038                            *
+1039                            * FIND THE END OF MEMORY
+1040                            *
+1041 aa00                       	ORG	BASE+$A00
+1042 aa00 86 39                 FMEME	LDAA	#$39		HEX CODE FOR 'RTS'
+1043 aa02 b7 b3 fd              	STAA	JFMEME		STORE IN 'COLDS' SUBROUTINE CALL
+1044 aa05 ce 00 00              	LDX	#0		START AT LOCATION ZERO
+1045 aa08 c6 b9                 	LDAB	#$B9		MEMORY TEST CODE
+1046 aa0a e7 00                 FMEME1	STAB	0,X		SAVE IN MEMORY
+1047 aa0c 01                    	NOP			ADDED TIME FOR DYANMIC RAMS
+1048 aa0d e1 00                 	CMPB	0,X		DID WE STORE?
+1049 aa0f 26 06                 	BNE	FMEME2		NO: FOUND ENDOF MEMORY
+1050 aa11 08                    	INX			BUMP POINTER
+1051 aa12 8c 80 00              	CPX	#$8000		START OF PORTS
+1052 aa15 26 f3                 	BNE	FMEME1		NO: CONTINUE SEARCHING FOR END OF MEMORY
+1053 aa17 09                    FMEME2	DEX			ADJUST X FOR PROPER LOCATION
+1054 aa18 ff ac 2b              	STX	MEMEND		SAVE IN MEMORY END BYTES OF FLEX
+1055                            *
+1056                            * INITIALIZE FLEX 2.0
+1057                            *
+1058 aa1b ce ad 03              	LDX	#WARMS		PUT WARM START ADDRESS
+1059 aa1e ff ac 16              	STX	ESCRET		IN ESCAPE RETURN REGISTER
+1060 aa21 fe be a3              	LDX	INVEC		ROM MONITER INPUT VECTOR
+1061 aa24 ff ad 0a              INZ1	STX	INCH+1		SETUP FOR INCH ROUTINE
+1062 aa27 ff ad 0d              	STX	INCH2+1		AND INCH2
+1063 aa2a fe be a5              	LDX	OUTVEC		ROM MONITER OUTPUT VECTOR
+1064 aa2d ff ad 10              	STX	OUTCH+1		SET UP FOR OUTCH ROUTINE
+1065 aa30 ff ad 13              	STX	OUTCH2+1	AND OUTCH2
+1066 aa33 fe be af              	LDX	MON		GET MONITER ENTRY ADDRESS
+1067 aa36 ff b3 b1              	STX	JMONTR+6	SET UP JUMP FOR MON
+1068 aa39 fe be a7              	LDX	ACIA		ACIA BASE ADDRESS
+1069 aa3c ff af 81              	STX	PUTCH4+2	STORE IN OUTPUT ROUTINE FOR ESCAPE CHECK
+1070 aa3f 08                    	INX			SET FOR ACIA DATA REGISTER
+1071 aa40 ff af 87              	STX	PUTCH4+8	STORE IN OUTPUT ROUTINE FOR ESCAPE CHECK
+1072 aa43 fe be b1              	LDX	PCV		GET ROM P.C. LOCATION
+1073 aa46 ff ad 76              	STX	WARMS1+7	SAVE IN WARM START FOR SWTBUG/MIKBUG 'G'
+1074 aa49 fe be ab              	LDX	IRQADD		ROM IRQ VECTOR ADDRESS
+1075 aa4c ff ad 85              	STX	WARMS1+22	SAVE IN SPOOLER
+1076 aa4f fe be ad              	LDX	SWIADD		ROM SWI VECTOR ADDRESS
+1077 aa52 ff ad 7f              	STX	WARMS1+16	SAVE IN SPOOLER
+1078 aa55 fe be a9              	LDX	TIMER		GET TIMER BASE ADDRESS
+1079 aa58 ff a7 20              	STX	SPOOL1+1	STORE IN SPOOLER
+1080 aa5b ff a7 76              	STX	SCH4+3		TWICE EVEN!
+1081                            *
+1082                            * GET DATE
+1083                            *
+1084 aa5e ce aa d2              DATE1	LDX	#DPROMP		GET DATE (MM,DD,YY)
+1085 aa61 bd ae a7              	JSR	PSTRG1		PRINT IT
+1086 aa64 bd ae 51              	JSR	INBUF1		INPUT TO LINE BUFFER
+1087 aa67 8d 5a                 	BSR	DATE5		PARSE MONTH
+1088 aa69 25 f3                 	BCS	DATE1		INPUT ERROR
+1089 aa6b b7 ac 0e              	STAA	DATE		SAVE MONTH
+1090 aa6e 8d 53                 	BSR	DATE5		PARSE DAY
+1091 aa70 25 ec                 	BCS	DATE1		INPUT ERROR
+1092 aa72 b7 ac 0f              	STAA	DATE+1		SAVE DAY
+1093 aa75 8d 4c                 	BSR	DATE5		PARSE YEAR
+1094 aa77 25 e5                 	BCS	DATE1		INPUT ERROR
+1095 aa79 b7 ac 10              	STAA	DATE+2		SAVE YEAR
+1096 aa7c bd ae cf              	JSR	PCRLF1		DO CRLF
+1097 aa7f ce a8 40              	LDX	#FCB		POINT TO FCB
+1098 aa82 86 01                 	LDAA	#1		OPEN FOR READ (NAME ALREADY THERE)
+1099 aa84 a7 00                 	STAA	0,X		SAVE IN COMMAND BYTE
+1100 aa86 bd b4 06              	JSR	FMS		OPEN FILE
+1101 aa89 27 08                 	BEQ	DATE2		NO ERRORS THEN CONTINUE
+1102 aa8b a6 01                 	LDAA	1,X		GET ERROR NUMBER
+1103 aa8d bd b2 5a              	JSR	LOAD8		IGNORE NOT FOUND ERROR OTHER WISE PRINT MESSAGE
+1104 aa90 7e ad 6f              	JMP	WARMS1		AND EXIT TO DOS
+1105 aa93 ce a0 80              DATE2	LDX	#LBUFFR		GET START OF BUFFER INTO X
+1106 aa96 ff ac 14              DATE3	STX	BUFPNT		SAVE IT IN POINTER
+1107 aa99 ce a8 40              	LDX	#FCB		POINT TO FCB
+1108 aa9c bd b4 06              	JSR	FMS		READ BYTE FROM FILE
+1109 aa9f 27 03                 	BEQ	DATE4		NO ERROR: CONTINUE
+1110 aaa1 7e b3 37              	JMP	RPTER4		ERRORS: ERPORT ERROR
+1111 aaa4 fe ac 14              DATE4	LDX	BUFPNT		GET BUFFER ADDRESS
+1112 aaa7 a7 00                 	STAA	0,X		SAVE CHARACTER IN BUFFER
+1113 aaa9 08                    	INX			BUMP POINTER
+1114 aaaa 81 0d                 	CMPA	#$D		CARRIAGE RETURN?
+1115 aaac 26 e8                 	BNE	DATE3		NO: CONTINUE
+1116 aaae ce a8 40              	LDX	#FCB		YES: POINT TO FCB
+1117 aab1 bd b2 4f              	JSR	LOAD6		CLOSE FILE
+1118 aab4 ce a0 80              	LDX	#LBUFFR		RESTORE TO START OF LINE
+1119 aab7 ff ac 14              	STX	BUFPNT		TELL FLEX ITS THERE
+1120 aaba ce ad 03              	LDX	#WARMS		GET WARM START ADDRESS
+1121 aabd ff ac 43              	STX	DTEMPC		SET IN 'DOCMND' ADDRESS REGISTER
+1122 aac0 7e b3 91              DATE8	JMP	DOCMD2		AND FAKE OUT DO COMMAND
+1123 aac3 bd b1 ac              DATE5	JSR	INDEC1		INPUT DECIMAL FROM LINEBUFFER
+1124 aac6 25 09                 	BCS	DATE7		ERROR: RETURN
+1125 aac8 b6 ac 1c              	LDAA	OFFSET+1	LSB OF NUMBER
+1126 aacb 5d                    	TSTB			NUMBER FOUND?
+1127 aacc 27 02                 	BEQ	DATE6		NO: ERROR
+1128 aace 0c                    	CLC			CLEAR ERROR FLAG (CARRY) AND RETURN
+1129 aacf 39                    	RTS			RETURN
+1130 aad0 0d                    DATE6	SEC			SET ERROR FLAG (CARRY)
+1131 aad1 39                    DATE7	RTS			RETURN
+1132 aad2 44 41 54 45 20 28 4d  DPROMP	FCC	'DATE (MM,DD,YY)? '
+          4d 2c 44 44 2c 59 59
+          29 3f 20
+1133 aae3 04                    	FCB	4
+1134                            *
+1135                            * FILE CONTROL BLOCK
+1136                            *
+1137 a840                       	ORG	BASE+$840
+1138 a840 ff                    FCB	FCB	$FF		FMS FUNCTION CODE
+1139 a841 00                    	FCB	0		ERROR STATUS BYTE
+1140 a842 00                    	FCB	0		ACTIVITY STATUS
+1141 a843 00                    	FCB	0		DRIVE NUMBER
+1142 a844 53 54 41 52 54 55 50  	FCC	'STARTUP'	FILE NAME FOR INITIAL COLD START
+1143 a84b 00                    	FCB	0
+1144 a84c 54 58 54              	FCC	'TXT'		EXTENSION
+1145 a84f 00                    	FCB	0		FILE ATTRIBUTES
+1146                            *
+1147                            * SCHEDULER
+1148                            *
+1149 a700                       	ORG	BASE+$700
+1150 a700 7e a7 22              SWI	JMP	SPOOL2		SWI JUMP
+1151 a703 7e a7 03              JSELF	JMP	JSELF		DUMMY LOOP
+1152 a706 7e a7 44              JSCH1	JMP	SCH1
+1153 a709 7e a7 7e              JTSTSET	JMP	TSTSET
+1154 a70c 7e a7 8c              JCLRFLG	JMP	CLRFLG
+1155 a70f 7e a7 1f              IRQ	JMP	SPOOL1		IRQ JUMP
+1156                            
+1157 a712 0c                    FFCHAR	FCB	$C		FORM FEED CHAR
+1158 a713 00 00 00 00           	FDB	0,0
+1159 a717 a8 10                 	FDB	BEGINQ
+1160 a719 a8 10                 OUTQ	FDB	BEGINQ
+1161 a71b 00                    QCNT	FCB	0
+1162 a71c 00                    PSTMP3	FCB	0
+1163 a71d 00                    PSTMP4	FCB	0
+1164 a71e 00                    PSTMP5	FCB	0
+1165 a810                       BEGINQ	EQU	BASE+$810
+1166 a840                       ENDQ	EQU	FCB
+1167                            
+1168                            * PRINT SPOOLER
+1169                            
+1170 a71f b6 80 12              SPOOL1	LDAA	TIMERA+2	CLEAR TIMER INTERRUPT
+1171                            
+1172 a722 fe ac 31              SPOOL2	LDX	CURTSK		GET POINTER TO CURRENT TASK
+1173 a725 af 02                 	STS	2,X		SAVE RE-ENTRY ADDRESS
+1174 a727 7d ac 34              	TST	MODE		FOREGROUND OR BACKGROUND RUNNING?
+1175 a72a 26 10                 	BNE	FORGND		BG RUNNING, SWITCH TO FORGND
+1176                            
+1177 a72c ce ac fc              	LDX	#BGTASK		X->BG TASK STATUS BLOCK
+1178 a72f 7c ac 34              	INC	MODE		NON-ZERO MEANS BG RUNNING
+1179 a732 6d 00                 	TST	0,X		DOES BG TASK NEED TO RUN?
+1180 a734 27 06                 	BEQ	FORGND		NO, RUN FG TASK INSTEAD
+1181                            
+1182 a736 ff ac 31              TSKRTN	STX	CURTSK		POINT TO TASK BLOCK THAT IS NOW RUNNING
+1183 a739 ae 02                 	LDS	2,X		RESTORE STACK PTR TO RE-ENTER
+1184 a73b 3b                    	RTI			...THE NEW TASK
+1185                            
+1186 a73c ce ac f8              FORGND	LDX	#FGTASK		X->FG TASK STATUS BLOCK
+1187 a73f 7f ac 34              	CLR	MODE		0 MEANS FG TASK IS RUNNING
+1188 a742 20 f2                 	BRA	TSKRTN		SET CURRENT TASK AND EXIT
+1189                            
+1190 a744 01                    SCH1	NOP			NECESSARY FOR NEXT INSTRUCTION
+1191 a745 0f                    	SEI			DISABLE INTERRUPTS
+1192 a746 7d a7 1b              	TST	QCNT		QUEUE EMPTY?
+1193 a749 27 26                 	BEQ	SCH3		YES: RETURN
+1194 a74b fe a7 19              	LDX	OUTQ		NO: GET ADDRESS OF OUTPUT QUEUE
+1195 a74e a6 00                 	LDAA	0,X		GET DRIVE NUMBER OF FILE BEING OUTPUTTED
+1196 a750 36                    	PSHA			SAVE IT
+1197 a751 a6 01                 	LDAA	1,X		GET TRACK ADDRESS FROM QUEUE
+1198 a753 e6 02                 	LDAB	2,X		GET SECTOR ADDRESS FROM QUEUE
+1199 a755 ce aa c0              	LDX	#DATE8		POINT TO QUEUE FCB
+1200 a758 a7 40                 	STAA	64,X		ADDRESS OF NEXT TRACK
+1201 a75a e7 41                 	STAB	65,X		ADDRESS OF NEXT SECTOR
+1202 a75c 32                    	PULA			RECALL FIRST BYTE READ
+1203 a75d a7 03                 	STAA	3,X		SAVE IN DRIVE NUMBER
+1204 a75f 6f 00                 	CLR	0,X		CLEAR COMMAND BYTE
+1205 a761 86 01                 	LDAA	#1		OPEN FOR READ CODE
+1206 a763 a7 02                 	STAA	2,X		SAVE IN STATUS BYTE
+1207 a765 6f 22                 	CLR	34,X		CLEAR DATA INDEX
+1208 a767 6f 3b                 	CLR	59,X		CLER SPACE COMPRESSION FLAG
+1209 a769 7d a7 1e              SCH2	TST	PSTMP5
+1210 a76c 27 25                 	BEQ	SCH8
+1211 a76e 3f                    	SWI
+1212 a76f 20 f8                 	BRA	SCH2
+1213 a771 01                    SCH3	NOP			NECESSARY FOR NEXT INSTRUCTION
+1214 a772 0e                    	CLI			ENABLE INTERRUPTS
+1215 a773 86 8f                 SCH4	LDAA	#$8F		RESET AND NO OUTPUT FOR MP-T
+1216 a775 b7 80 12              	STAA	TIMERA+2	STORE IN TIMER REGISTER
+1217 a778 7f ac fc              	CLR	BGTASK		CLEAR PRINT FLAG
+1218 a77b 3f                    	SWI
+1219 a77c 20 f5                 	BRA	SCH4
+1220                            
+1221                            * TEST AND SET SEMAPHORE FOR FMS ACCESS
+1222                            
+1223 a77e 01                    TSTSET	NOP
+1224 a77f 0f                    	SEI			DISABLE INTERRUPTS
+1225 a780 7d ac 30              	TST	FMSFLG		FMS IN USE?
+1226 a783 27 03                 	BEQ	SETFLG		NO, GO CLAIM IT
+1227 a785 3f                    	SWI			ELSE, RELEASE AND WAIT
+1228 a786 20 f6                 	BRA	TSTSET
+1229                            
+1230 a788 7c ac 30              SETFLG	INC	FMSFLG		SET THE FLAG TO CLAIM FMS ACCESS
+1231 a78b 39                    	RTS
+1232                            
+1233 a78c 7f ac 30              CLRFLG	CLR	FMSFLG		RELEASE FMS ACCESS
+1234 a78f 01                    	NOP
+1235 a790 0e                    	CLI			ENABLE INTERRUPTS
+1236 a791 39                    	RTS
+1237 a792 39                    	RTS			RETURN FOR SPECIAL CASE INTERRUPTS
+1238                            
+1239 a793 7d a7 1d              SCH8	TST	PSTMP4		END OF PAGE?
+1240 a796 26 27                 	BNE	SCH11		YES: PRINT FORM FEED
+1241 a798 ce aa c0              	LDX	#DATE8		POINT TO QUEUE FCB
+1242 a79b bd b4 06              	JSR	FMS		READ BYTE
+1243 a79e 26 1f                 	BNE	SCH11		ERROR: FORMFEED AND AGAIN
+1244 a7a0 7d a7 1c              	TST	PSTMP3
+1245 a7a3 26 09                 	BNE	SCH9
+1246 a7a5 81 0d                 	CMPA	#CRC		CARRIAGE RETURN?
+1247 a7a7 26 12                 	BNE	SCH10		NO: OUTPUT IT
+1248 a7a9 b7 a7 1c              	STAA	PSTMP3		YES: SAVE IT AS A FLAG
+1249 a7ac 20 0d                 	BRA	SCH10		OUTPUT IT
+1250 a7ae 7f a7 1c              SCH9	CLR	PSTMP3		CLEAR RETURN FLAG
+1251 a7b1 81 0a                 	CMPA	#$A		IS IT A LINE FEED
+1252 a7b3 27 06                 	BEQ	SCH10		YES: OUTPUT IT
+1253 a7b5 36                    	PSHA			NO: SAVE IT
+1254 a7b6 86 0a                 	LDAA	#$A		LINE FEED
+1255 a7b8 8d 36                 	BSR	OUTPUT		OUTPUT IT
+1256 a7ba 32                    	PULA			RESTORE CHARACTER
+1257 a7bb 8d 33                 SCH10	BSR	OUTPUT		OUTPUT IT
+1258 a7bd 20 d4                 	BRA	SCH8		AND RETURN TO MAIN OUTPUT LOOP
+1259 a7bf 86 0d                 SCH11	LDAA	#CRC		GET CARRAIGE RETURN INTO A
+1260 a7c1 8d 2d                 	BSR	OUTPUT		OUTPUT IT
+1261 a7c3 86 0a                 	LDAA	#LFC		GET LINE FEED CODE INTO A
+1262 a7c5 8d 29                 	BSR	OUTPUT		OUTPUT IT
+1263 a7c7 b6 a7 12              	LDAA	FFCHAR		FORM FEED (F.F.=0C)
+1264 a7ca 8d 24                 	BSR	OUTPUT		OUTPUT IT
+1265 a7cc 7f a7 1d              	CLR	PSTMP4		CLEAR END OF PAGE FLAG
+1266 a7cf fe a7 19              	LDX	OUTQ		POINT TO OUTPUT QUEUE
+1267 a7d2 6d 03                 	TST	3,X		ZERO REPEAT COUNT?
+1268 a7d4 27 05                 	BEQ	SCH12		YES: GET NEXT ENTRY
+1269 a7d6 6a 03                 	DEC	3,X		DECRIMENT QUEUE COUNT
+1270 a7d8 7e a7 44              	JMP	SCH1		AND START AGAIN
+1271 a7db 08                    SCH12	INX			BUMP
+1272 a7dc 08                    	INX			QUEUE COUNTER
+1273 a7dd 08                    	INX			TO NEXT
+1274 a7de 08                    	INX			ENTRY
+1275 a7df 8c a8 40              	CPX	#FCB		END OF QUEUE?
+1276 a7e2 26 03                 	BNE	SCH13		NO: CONTINUE
+1277 a7e4 ce a8 10              	LDX	#BEGINQ		YES: POINT TO START OF QUEUE
+1278 a7e7 ff a7 19              SCH13	STX	OUTQ		SAVE IN QUEUE POINTER
+1279 a7ea 7a a7 1b              	DEC	QCNT		DECRIMENT NUMBER OF FILES IN QUEUE
+1280 a7ed 7e a7 44              	JMP	SCH1		AND START AGAIN
+1281 a7f0 bd ac d8              OUTPUT	JSR	PRTRDY		PRINTER READY?
+1282 a7f3 2b 03                 	BMI	SCH15		YES: OUTPUT CHARACTER
+1283 a7f5 3f                    	SWI			NO: RETURN
+1284 a7f6 20 f8                 	BRA	OUTPUT		AND LOOP
+1285 a7f8 7e ac e4              SCH15	JMP	PRTOUT		OUTPUT TO PRINTER
+1286                            *
+1287                            * FMS
+1288                            *
+1289 b400                       	ORG	BASE+$1400
+1290 b400 7e b4 36              FMSINZ	JMP	FMSI1
+1291 b403 7e b4 5e              FMSCLS	JMP	FMSC1
+1292 b406 7e b4 7f              FMS	JMP	FMS1
+1293 b409                       FCBBPT	RMB	2		FILE CONTROL BLOCK BASE POINTER
+1294 b40b                       CFCBAD	RMB	2		CURRENT FILE CONTROL BLOCK ADDRESS
+1295 b40d                       FTMP1	RMB	2
+1296 b40f                       FTMP2	RMB	2
+1297 b411                       FTMP3	RMB	1		ATTEMPT COUNTER
+1298 b412                       FTMP4	RMB	1		RESTORE COUNTER
+1299 b413                       FTMP5	RMB	2
+1300 b415                       FTMP6	RMB	2
+1301 b417                       FTMP7	RMB	1
+1302 b418                       FTMP8	RMB	2
+1303 b41a                       FTMP9	RMB	1
+1304 b41b                       FTMP10	RMB	2
+1305 b41d                       FTMP11	RMB	1
+1306                            *
+1307                            * FMS INITIALIZATION
+1308                            *
+1309 b435                       	ORG	BASE+$1435
+1310 b435 ff                    VERFLG	FCB	$FF		VERIFY ON
+1311 b436 ce be 95              FMSI1	LDX	#BASE+$1E95	CLEAR 8 BYTE STATUS BUFFER
+1312 b439 c6 08                 	LDAB	#8
+1313 b43b 8d 18                 	BSR	FMSI3
+1314 b43d ce b4 09              	LDX	#FCBBPT		CLEAR 10 BYTE BUFFER
+1315 b440 c6 0a                 	LDAB	#10
+1316 b442 8d 11                 	BSR	FMSI3
+1317 b444 ce 00 05              	LDX	#5
+1318 b447 ff b4 13              	STX	FTMP5
+1319 b44a ff b4 15              	STX	FTMP6
+1320 b44d 7f b4 1a              	CLR	FTMP9
+1321 b450 ce b4 1b              FMSI2	LDX	#FTMP10		CLEAR 26 BYTE BUFFER
+1322 b453 c6 1a                 	LDAB	#26		
+1323                            *
+1324                            * CLEAR MEMORY STARTING AT
+1325                            * ADDR IN "X" FOR COUNT IN "B"
+1326                            *
+1327 b455 6f 00                 FMSI3	CLR	0,X		CLEAR BYTE
+1328 b457 08                    	INX			BUMP POINTER
+1329 b458 5a                    	DECB			DECRIMENT COUNTER
+1330 b459 26 fa                 	BNE	FMSI3		NOT DONE: CLEAR MORE
+1331 b45b 7e a7 0c              	JMP	JCLRFLG		ENABLE SPOOLER
+1332                            *
+1333                            * FMS CLOSE
+1334                            *
+1335 b45e bd a7 09              FMSC1	JSR	JTSTSET		LOCK ACCESS TO FMS
+1336 b461 fe b4 09              FMSC2	LDX	FCBBPT		GET FCB BASE ADDRESS
+1337 b464 27 ea                 	BEQ	FMSI2		NO ADDRESS: NO FILES OPENED: CLEAR BUFFER AND RETURN
+1338 b466 c6 1c                 	LDAB	#$1C		BACK UP TO BEGINNING OF FCB (BASE POINTER POINTS TO FCB LIST POINTER)
+1339 b468 09                    FMSC3	DEX			BACKUP FCB POINTER
+1340 b469 5a                    	DECB			DECRIMENT BACKUP COUNTER
+1341 b46a 26 fc                 	BNE	FMSC3		NOT DONE: LOOP
+1342 b46c ff b4 0b              	STX	CFCBAD		SAVE IN CURRENT FCB ADDRESS
+1343 b46f bd ba e8              	JSR	CLSFIL		CLOSE FILE
+1344 b472 24 ed                 	BCC	FMSC2		NO ERROR: CONTINUE
+1345 b474 fe b4 0b              	LDX	CFCBAD		GET FCB ADDRESS
+1346 b477 6f 02                 	CLR	2,X		CLEAR ACTIVITY STATUS
+1347 b479 bd a7 0c              	JSR	JCLRFLG		RELEASE FMS SEMAPHORE
+1348 b47c c6 ff                 	LDAB	#$FF		NON-ZERO STATUS FOR ERROR IN CLOSE
+1349 b47e 39                    	RTS			RETURN
+1350                            *
+1351                            *  START OF FILE MANAGEMENT SYSTEM
+1352                            *
+1353 b47f 7d ac fc              FMS1	TST	BGTASK		IS SPOOLER ACTIVE?
+1354 b482 27 03                 	BEQ	FMS2		NO: CONTINUE
+1355 b484 bd a7 09              	JSR	JTSTSET		YES: LOCK ACCESS TO FMS
+1356 b487 37                    FMS2	PSHB			SAVE B REGISTER
+1357 b488 ff b4 0b              	STX	CFCBAD		SAVE FCB ADDRESS
+1358 b48b 6f 01                 	CLR	1,X		CLEAR ERROR STATUS
+1359 b48d e6 00                 	LDAB	0,X		GET FMS COMMAND
+1360 b48f 26 21                 	BNE	FMS6		NOT READ/WRITE SINGLE BYTE: GOTO DISPATCH
+1361 b491 e6 02                 	LDAB	2,X		GET STATUS
+1362 b493 27 19                 	BEQ	FMS5		IF ZERO THEN SYSTEM FILE STATUS ERROR (NOT OPEN)
+1363 b495 c1 02                 	CMPB	#2		OPEN FOR WRITE?
+1364 b497 27 10                 	BEQ	FMS4		YES: WRITE BYTE
+1365 b499 bd b5 dd              	JSR	SPCOMP		NO: DO READ W/SPACE COMPRESSION
+1366 b49c fe b4 0b              FMS3	LDX	CFCBAD		GET CURRENT FCB ADDRESS
+1367 b49f 25 2a                 	BCS	FMS9		ERROR: ATTEND TO IT
+1368 b4a1 7d ac fc              	TST	BGTASK		PRINTING?
+1369 b4a4 26 27                 	BNE	FMS10		YES: RE-ENABLE PRINTER
+1370 b4a6 5f                    	CLRB			SET ZERO FOR NO ERROR
+1371 b4a7 33                    	PULB			RESTORE OLD VALUE OF B
+1372 b4a8 39                    	RTS			RETURN
+1373                            
+1374 b4a9 bd b6 ed              FMS4	JSR	WRBUF		WRITE BUFFER
+1375 b4ac 20 ee                 	BRA	FMS3		AND RETURN
+1376 b4ae c6 12                 FMS5	LDAB	#18		SYSTEM FILE STATUS ERROR
+1377 b4b0 20 19                 	BRA	FMS9		SAVE IN FCB AND RETURN
+1378                            
+1379 b4b2 c1 16                 FMS6	CMPB	#$16		VALID F.C.?
+1380 b4b4 23 04                 	BLS	FMS7		YES
+1381 b4b6 c6 01                 	LDAB	#1		NO, ILLEGAL FMS F.C.
+1382 b4b8 20 11                 	BRA	FMS9
+1383                            
+1384 b4ba 5a                    FMS7	DECB			ADJUST CMD TO LOOKUP IN
+1385 b4bb 58                    	ASLB			FMS COMMAND TABLE
+1386 b4bc ce b4 d4              FMS8	LDX	#FTBL1		GET BEGIN ADDR OF CMD
+1387 b4bf bd b5 83              	JSR	FMS26		TABLE AND ADD CMD OFFSET
+1388 b4c2 ee 00                 	LDX	0,X		GET CMD ADDR AND DO IT
+1389 b4c4 ad 00                 	JSR	0,X
+1390 b4c6 fe b4 0b              	LDX	CFCBAD		ERROR?
+1391 b4c9 24 02                 	BCC	FMS10		YES
+1392 b4cb e7 01                 FMS9	STAB	1,X		PUT ERROR IN ERROR STATUS BYTE OF FCB
+1393 b4cd bd a7 0c              FMS10	JSR	JCLRFLG		RELEASE FMS SEMAPHORE
+1394 b4d0 6d 01                 	TST	1,X		SET CC FOR ERROR FLAG IN 'Z' BIT
+1395 b4d2 33                    	PULB			RESTORE VALUE OF B-REG
+1396 b4d3 39                    	RTS			RETURN TO CALLING PROGRAM
+1397                            *
+1398                            * FMS COMMAND TABLE
+1399                            *
+1400 b4d4 b9 b1                 FTBL1	FDB	OPENRD		OPEN FOR READ
+1401 b4d6 b9 ff                 	FDB	OPENWR		OPEN FOR WRITE
+1402 b4d8 bb 1c                 	FDB	OPENUP		OPEN FOR UPDATE
+1403 b4da ba e8                 	FDB	CLSFIL		CLOSE FILE
+1404 b4dc b6 08                 	FDB	REWFIL		REWIND FILE
+1405 b4de b8 37                 	FDB	OPENDI		OPEN DIRECTORY
+1406 b4e0 b8 4e                 	FDB	GETINF		GET INFORMATION RECORD
+1407 b4e2 b8 91                 	FDB	PUTINF		PUT INFORMATION RECORD
+1408 b4e4 b6 60                 	FDB	RDSSEC		READ SINGLE SECTOR
+1409 b4e6 b6 be                 	FDB	WRSSEC		WRITE SINGLE SECTOR
+1410 b4e8 b9 92                 	FDB	RESER1		EXTEND DIRECTORY
+1411 b4ea bb ee                 	FDB	DELFIL		DELETE FILE
+1412 b4ec bb 4e                 	FDB	RENAME		RENAME FILE
+1413 b4ee b6 ba                 	FDB	RESER2		OPEN FOR APPEND
+1414 b4f0 ba ac                 	FDB	NXTSEQ		NEXT SEQUENTIAL SECTOR
+1415 b4f2 b8 2b                 	FDB	OPNINF		OPEN SYS INFORMATION REC
+1416 b4f4 b5 95                 	FDB	GRANBY		GET RANDOM BYTE FM SECTOR
+1417 b4f6 b5 b8                 	FDB	PRANBY		PUT RANDOM BYTE IN SECTOR
+1418 b4f8 bb 2a                 	FDB	RESER3		RESERVED/FUTURE USE
+1419 b4fa bd f2                 	FDB	FNXTDR		FIND NEXT DRIVE
+1420 b4fc bd 2e                 	FDB	POSREC		POSITION TO RECORD N
+1421 b4fe bd 16                 	FDB	BKUP1R		BACKUP ONE RECORD
+1422                            *
+1423 b500 8d 2c                 FMS11	BSR	FMS15		MOVE FCB POINTER TO POINT TO ADDRESS OF NEXT FCB IN CHAIN
+1424 b502 26 04                 	BNE	FMS12		ALL HUNKY DORY?
+1425 b504 c6 02                 	LDAB	#2		NO: FILE IN USE ERROR
+1426 b506 0d                    	SEC			SET ERROR FLAG IN CC
+1427 b507 39                    	RTS			RETURN
+1428                            *
+1429                            *  ROUTINE TO PUT THE CONTENTS OF THEA REGISTER
+1430                            *  INTO THE MOST SIGNIFICANT BYTE OF THE X REGISTER
+1431                            *  AND THEN B REGISTER INTO THE LEAST SIGNIFICANT
+1432                            *  BYTE OF THE INDEX REGISTER.
+1433                            *
+1434 b508 a7 00                 FMS12	STAA	0,X		SAVE MSB
+1435 b50a e7 01                 	STAB	1,X		SAVE LSB
+1436 b50c ee 00                 	LDX	0,X		LOAD INDEX REGISTER
+1437 b50e 6f 00                 	CLR	0,X		CLEAR OUT
+1438 b510 6f 01                 	CLR	1,X		TEMPORARY BYTES
+1439 b512 0c                    	CLC			SET FOR NO ERROR
+1440 b513 39                    	RTS			RETURN
+1441 b514 8d 18                 FMS13	BSR	FMS15		BUMP POINTER BY 28 DECIMAL (TO FCB CHAIN ADDRESS)
+1442 b516 27 04                 	BEQ	FMS14		IF COOL THEN TRANSFER NEXT FCB BYTES TO CURRENT FCB POINTER
+1443 b518 c6 0d                 	LDAB	#$D		ILLEGAL FCB CODE
+1444 b51a 0d                    	SEC			SET FOR ERROR
+1445 b51b 39                    	RTS			RETURN
+1446 b51c ff b4 0d              FMS14	STX	FTMP1		SAVE X IN TEMP
+1447 b51f ee 00                 	LDX	0,X		GET POINTED TO ADDRESS (ADDRESS OF NEXT FCB)
+1448 b521 a6 00                 	LDAA	0,X		GET BYTE
+1449 b523 e6 01                 	LDAB	1,X		GET NEXT BYTE
+1450 b525 fe b4 0d              	LDX	FTMP1		RESTORE POINTER
+1451 b528 a7 00                 	STAA	0,X		SAVE BYTE
+1452 b52a e7 01                 	STAB	1,X		SAVE NEXT BYTE
+1453 b52c 0c                    	CLC			SET FOR NO ERROR
+1454 b52d 39                    	RTS			RETURN
+1455 b52e b6 b4 0b              FMS15	LDAA	CFCBAD		MSB OF CURRENT FCB ADDRESS
+1456 b531 f6 b4 0c              	LDAB	CFCBAD+1	LSB OF CURRENT FCB ADDRESS
+1457 b534 cb 1c                 	ADDB	#$1C		ADD 28 TO POINT TO ADDRESS OF NEXT FCB IN CHAIN
+1458 b536 89 00                 	ADCA	#0		ADD CARRY TO MSB
+1459 b538 ce b4 09              	LDX	#FCBBPT		GET ADDRESS OF FCB BASE POINTER
+1460 b53b 6d 00                 FMS16	TST	0,X		DO WE HAVE A CHAIN?
+1461 b53d 26 08                 	BNE	FMS17		YES: CONTINUE
+1462 b53f 6d 01                 	TST	1,X		DO WE HAVE A CHAIN (LSB)
+1463 b541 26 04                 	BNE	FMS17		YES: CONTINUE
+1464 b543 8c ff ff              	CPX	#$FFFF		SET APPROPRIATE CC BITS FOR PROPER ERROR
+1465 b546 39                    	RTS			RETURN
+1466 b547 a1 00                 FMS17	CMPA	0,X
+1467 b549 26 05                 	BNE	FMS18
+1468 b54b e1 01                 	CMPB	1,X
+1469 b54d 26 01                 	BNE	FMS18
+1470 b54f 39                    	RTS
+1471 b550 ee 00                 FMS18	LDX	0,X
+1472 b552 20 e7                 	BRA	FMS16
+1473                            *
+1474                            * CLEAR STARTING ADDR TO END OF FCB BUFFER
+1475                            *
+1476 b554 fe b4 0b              FMS19	LDX	CFCBAD		GET ADDRESS OF CURRENT FCB
+1477 b557 4f                    	CLRA			CLEAR A
+1478 b558 c6 00                 	LDAB	#0		CLEAR A
+1479 b55a 8d 02                 	BSR	FMS20		CLEAR 'B' BYTES
+1480 b55c c6 2f                 	LDAB	#$2F		CLEAR $2F (47) BYTES
+1481 b55e a7 11                 FMS20	STAA	17,X		SAVE A AT X+17  (STARTING TRACK ADDRESS IF X=FCB)
+1482 b560 08                    	INX			BUMP POINTER
+1483 b561 5a                    	DECB			DECRIMENT LOOP COUNTER
+1484 b562 26 fa                 	BNE	FMS20		NOT DONE: LOOP
+1485 b564 39                    	RTS			RETURN
+1486                            *
+1487                            * TRANSFER FILENAME & EXT TO NAME WORK BUFFER
+1488                            *
+1489 b565 fe b4 0b              FMS21	LDX	CFCBAD		GET CURRECT FCB ADDRESS
+1490 b568 c6 0b                 	LDAB	#11		#OF BYTES TO MOVE
+1491 b56a a6 04                 FMS22	LDAA	4,X		GET FILE NAME AND EXTENSION
+1492 b56c a7 24                 	STAA	36,X		AND SAVE IN NAME WORK BUFFER
+1493 b56e 08                    	INX			INCREMENT POINTER
+1494 b56f 5a                    	DECB			DECRIMENT COUNTER
+1495 b570 26 f8                 	BNE	FMS22		LOOP UNTIL DONE
+1496 b572 39                    	RTS			RETURN
+1497                            *
+1498                            * COMPARE FILENAME & EXT TO NAME IN WORK BUFFER
+1499                            *
+1500 b573 fe b4 0b              FMS23	LDX	CFCBAD		GET CURRENT FCB ADDRESS
+1501 b576 c6 0b                 	LDAB	#11		# OF BYTES TO COMPARE
+1502 b578 a6 04                 FMS24	LDAA	4,X		GET BYTE
+1503 b57a a1 24                 	CMPA	36,X		COMPARE TO NAME WORK BUFFER
+1504 b57c 26 04                 	BNE	FMS25		IF NOT EQUAL: RETURN WITH 'Z'=0
+1505 b57e 08                    	INX			BUMP POINTER
+1506 b57f 5a                    	DECB			DECRIMENT COUNTER
+1507 b580 26 f6                 	BNE	FMS24		LOOP TILL DONE
+1508 b582 39                    FMS25	RTS			RETURN
+1509                            *
+1510                            * ADD B-REG TO X-REG
+1511                            *
+1512 b583 ff b4 0d              FMS26	STX	FTMP1		SAVE INDEX REGISTER
+1513 b586 fb b4 0e              	ADDB	FTMP1+1		ADD LSB OF INDEX REGISTER TO 'B'
+1514 b589 f7 b4 0e              	STAB	FTMP1+1		SAVE NEW VALUE IN LSB OF X TEMPORARY
+1515 b58c 24 03                 	BCC	FMS27		NO CARRY JUST RETURN
+1516 b58e 7c b4 0d              	INC	FTMP1		CARRY: INCREMENT MSB OF INDEX TEMPORARY
+1517 b591 fe b4 0d              FMS27	LDX	FTMP1		GET NEW VALUE INTO INDEX REGISTER
+1518 b594 39                    	RTS			RETURN
+1519                            *
+1520                            * GET RANDOM BYTE FROM SECTOR
+1521                            *
+1522 b595 fe b4 0b              GRANBY	LDX	CFCBAD		GET FCB ADDRESS
+1523 b598 e6 02                 	LDAB	2,X		GET STATUS
+1524 b59a 54                    	LSRB			SHIFT BIT 1 INTO CARRY
+1525 b59b 25 04                 	BCS	GRANB1		YES: OPEN FOR READ
+1526 b59d c6 12                 	LDAB	#$12		NO, SYS FILE STAUS ERROR
+1527 b59f 20 15                 	BRA	GRANB3		REPORT ERROR
+1528 b5a1 e6 23                 GRANB1	LDAB	35,X		GET RANDOM INDEX
+1529 b5a3 7e b6 23              	JMP	DINDX1		GET BYTE AND RETURN
+1530                            *
+1531                            * STORE BYTE IN FCB AND INC DATA INDEX TO
+1532                            * NEXT ADDRESS DISPLACEMENT
+1533                            *
+1534 b5a6 fe b4 0b              GRANB2	LDX	CFCBAD		GET ADDRESS OF CURRENT FCB
+1535 b5a9 e6 22                 	LDAB	34,X		GET DATA INDEX
+1536 b5ab 37                    	PSHB			SAVE IT
+1537 b5ac 6c 22                 	INC	34,X		BUMP INDEX
+1538 b5ae 8d d3                 	BSR	FMS26		ADDB TO X FOR READ
+1539 b5b0 a7 40                 	STAA	64,X		STORE IN RANDOMLY IN FCB SECTOR BUFFER
+1540 b5b2 33                    	PULB			RESTORE DATA INDEX INTO B
+1541 b5b3 5c                    	INCB			INCREMENT DATA INDEX
+1542 b5b4 26 21                 	BNE	PRANB2		NO ERROR THEN RETURN
+1543 b5b6 0d                    GRANB3	SEC			SET CARRY FOR ERROR
+1544 b5b7 39                    	RTS			RETURN
+1545                            *
+1546                            * PUT RANDOM BYTE IN SECTOR
+1547                            *
+1548 b5b8 fe b4 0b              PRANBY	LDX	CFCBAD		GET ADDRESS OF FCB
+1549 b5bb e6 02                 	LDAB	2,X		GET STATUS
+1550 b5bd c4 03                 	ANDB	#3		MASK OUT UNNECESSARY GARBAGE
+1551 b5bf c1 03                 	CMPB	#3		OPEN FOR UPDATE?
+1552 b5c1 27 04                 	BEQ	PRANB1		YES: THEN PUT BYTE
+1553 b5c3 c6 12                 	LDAB	#18		NO, SYS FILE STATUS ERROR
+1554 b5c5 0d                    	SEC			SET ERROR FLAG
+1555 b5c6 39                    	RTS			RETURN
+1556 b5c7 ca 80                 PRANB1	ORAB	#$80		SET RANDOM ACCESS ACTIVITY STATUS
+1557 b5c9 e7 02                 	STAB	2,X		STORE STATUS IN FCB
+1558 b5cb e6 0f                 	LDAB	15,X		GET FILE ATTRIBUTES
+1559 b5cd c5 80                 	BITB	#$80		IS FILE WRITE PROTECTED?
+1560 b5cf 26 08                 	BNE	PRANB3		YES: REPORT IT SO
+1561 b5d1 e6 23                 	LDAB	35,X		GET RANDOM BYTE ADDRESS
+1562 b5d3 8d ae                 	BSR	FMS26		ADD IT TO X FOR OFFSET
+1563 b5d5 a7 40                 	STAA	64,X		STORE BYTE IN SECTOR BUFFER
+1564 b5d7 0c                    PRANB2	CLC			CLEAR CARRY FOR NO ERROR CONDITION
+1565 b5d8 39                    	RTS			RETURN
+1566                            *
+1567                            * REPORT FILE OR DISK WRITE PROTECTED
+1568                            *
+1569 b5d9 c6 0b                 PRANB3	LDAB	#11		DISK ERROR #11 (FILE OR DISK IS WRITE PROTECTED)
+1570 b5db 0d                    	SEC			SET ERROR FLAG IN 'CC'
+1571 b5dc 39                    	RTS			RETURN
+1572                            *
+1573                            * SPACE COMPRESSION
+1574                            *
+1575 b5dd a6 3b                 SPCOMP	LDAA	59,X		CK SPACE COMPRESSION FLAG
+1576 b5df 2b 39                 	BMI	DINDEX		NO SPACE COMPRESSION
+1577 b5e1 27 07                 	BEQ	SPCOM1		IF ZERO THEN DONE
+1578 b5e3 4a                    	DECA			DO SPACE COMPRESSION
+1579 b5e4 a7 3b                 	STAA	59,X		SAVE NEW SPACE COUNT
+1580 b5e6 86 20                 	LDAA	#32		DECIMAL CODE FOR SPACE
+1581 b5e8 20 1c                 	BRA	SPCOM3		RETURN WITH SPACE IN A
+1582 b5ea 8d 2e                 SPCOM1	BSR	DINDEX		GET BYTE
+1583 b5ec 25 19                 	BCS	SPCOM4		ERROR RETURN
+1584 b5ee 81 18                 	CMPA	#24		IS IT A CONTROL/X?
+1585 b5f0 22 14                 	BHI	SPCOM3		IF GREATER THEN NO ERROR
+1586 b5f2 27 f6                 	BEQ	SPCOM1		YES: IGNORE IT
+1587 b5f4 81 09                 	CMPA	#9		IS IT A TAB CHARACTER?
+1588 b5f6 26 0b                 	BNE	SPCOM2		NO: CONTINUE CHECK
+1589 b5f8 8d 20                 	BSR	DINDEX		YES: IGNORE
+1590 b5fa 25 0b                 	BCS	SPCOM4		ERROR: RETURN
+1591 b5fc fe b4 0b              	LDX	CFCBAD		GET CURRENT FCB ADDRESS
+1592 b5ff a7 3b                 	STAA	59,X		SAVE COUNT
+1593 b601 20 da                 	BRA	SPCOMP		AND GET ANOTHER BYTE
+1594 b603 4d                    SPCOM2	TSTA			NULL?
+1595 b604 27 e4                 	BEQ	SPCOM1		YES: IGNORE
+1596 b606 0c                    SPCOM3	CLC			NO: NO ERROR RETURN
+1597 b607 39                    SPCOM4	RTS			RETURN
+1598                            *
+1599                            * REWIND FILE
+1600                            *
+1601 b608 bd ba d5              REWFIL	JSR	NXTSQ6		WRITE OUT CURRENT SECTOR
+1602 b60b 25 09                 	BCS	REWFI1		IF ERROR THEN REPORT IT
+1603 b60d 16                    	TAB			PUT FILE STATUS INTO B
+1604 b60e 54                    	LSRB			OPEN FOR READ?
+1605 b60f 24 05                 	BCC	REWFI1		NO: ERROR
+1606 b611 a7 00                 	STAA	0,X		YES: STORE IN COMMAND BYTE
+1607 b613 7e b9 cb              	JMP	OPENR2		RE-OPEN FILE
+1608 b616 c6 12                 REWFI1	LDAB	#$12		SYSTEM FILE STATUS ERROR
+1609 b618 0d                    	SEC			SEC CARRY FOR ERROR FLAG
+1610 b619 39                    	RTS			RETURN
+1611                            *
+1612                            * GET DATA INDEX ( BYTE 34 OF FCB )
+1613                            *
+1614 b61a fe b4 0b              DINDEX	LDX	CFCBAD		GET FCB ADDRESS
+1615 b61d e6 22                 	LDAB	34,X		GET DATA INDEX
+1616 b61f 27 09                 	BEQ	DINDX2		IF ZERO READ NEXT SECTOR
+1617 b621 6c 22                 	INC	34,X		INCREMENT DATA INDEX
+1618 b623 bd b5 83              DINDX1	JSR	FMS26		ADD B-REG TO X-REG
+1619 b626 a6 40                 	LDAA	64,X		GET BYTE FROM SEC BUFFER
+1620 b628 0c                    	CLC			SET 'CC' FOR NO ERROR
+1621 b629 39                    	RTS			RETURN
+1622 b62a 8d 03                 DINDX2	BSR	RNXTS		READ NEXT SECTOR
+1623 b62c 24 ec                 	BCC	DINDEX		NO ERROR: GET BYTE
+1624 b62e 39                    	RTS			RETURN WITH ERROR
+1625 b62f fe b4 0b              RNXTS	LDX	CFCBAD		GET FCB ADDRESS
+1626 b632 a6 40                 	LDAA	64,X		GET TRACK ADDRESS OF NEXT SECTOR
+1627 b634 e6 41                 	LDAB	65,X		GET SECTOR ADDRESS NEXT SECTOR
+1628 b636 6c 21                 	INC	33,X		INC CURRENT RECORD #
+1629 b638 26 02                 	BNE	RNXTS1		IF NOT ZERO THEN CONTINUE
+1630 b63a 6c 20                 	INC	32,X		INCREMENT MSB OF RECORD NUMBER
+1631 b63c 4d                    RNXTS1	TSTA			END OF FILE?
+1632 b63d 26 03                 	BNE	RNXTS2		NO:READ MORE
+1633 b63f 5d                    	TSTB			END OF FILE?
+1634 b640 27 1a                 	BEQ	RNXTS4		YES: RETURN
+1635 b642 a7 1e                 RNXTS2	STAA	30,X		SET TRACK ADDRESS OF NEXT SECTOR TO BE READ
+1636 b644 e7 1f                 	STAB	31,X		SET SECTOR ADDRESS OF NEXT SECTOR TO BE READ
+1637 b646 36                    	PSHA			SAVE TRACK
+1638 b647 86 04                 	LDAA	#4		SET DATA INDEX TO 1ST
+1639 b649 a7 22                 	STAA	34,X		DATA BYTE OF NEW SECTOR
+1640 b64b 32                    	PULA			RESTORE TRACK
+1641 b64c 8d 12                 	BSR	RDSSEC		READ NEW SECTOR OF FILE
+1642 b64e 24 0f                 	BCC	RNXTS6		NO ERRORS: RETURN
+1643 b650 c5 80                 	BITB	#$80		ERRORS: IS IT A NOT READY ERROR?
+1644 b652 27 04                 	BEQ	RNXTS3		NO: READ ERROR
+1645 b654 c6 10                 	LDAB	#16		DRIVES NOT READY
+1646 b656 20 06                 	BRA	RNXTS5		ERROR RETURN
+1647 b658 c6 09                 RNXTS3	LDAB	#9		DISK FILE READ ERROR
+1648 b65a 20 02                 	BRA	RNXTS5		ERROR RETURN
+1649 b65c c6 08                 RNXTS4	LDAB	#8		READ PAST END OF FILE
+1650 b65e 0d                    RNXTS5	SEC			SET ERROR FLAG
+1651 b65f 39                    RNXTS6	RTS			RETURN
+1652                            *
+1653                            * READ SINGLE SECTOR
+1654                            *
+1655 b660 8d 27                 RDSSEC	BSR	RDSEC5		CLEAR BYTES
+1656 b662 fe b4 0b              	LDX	CFCBAD		POINT TO FCB
+1657 b665 bd be 8c              	JSR	DRVSEL		SELECT DRIVE
+1658 b668 25 0f                 	BCS	RDSEC3		ERROR? YES,RTS
+1659 b66a 8d 0e                 RDSEC1	BSR	RDSEC4		SET CFCBAD TO SEC BUFFER
+1660 b66c bd be 80              	JSR	READ		READ SECTOR
+1661 b66f 26 02                 	BNE	RDSEC2		ERRORS: HANDLE THEM
+1662 b671 0c                    	CLC			CLEAR ERROR FLAG
+1663 b672 39                    	RTS			RETURN
+1664 b673 37                    RDSEC2	PSHB			SAVE STATUS
+1665 b674 8d 1b                 	BSR	RDSEC6		ERROR HANDLER
+1666 b676 33                    	PULB			RESTORE STATUS
+1667 b677 24 f1                 	BCC	RDSEC1		IF OKAY THEN TRY AGAIN
+1668 b679 39                    RDSEC3	RTS			RETURN
+1669                            *
+1670                            * SET CFCBAD TO BEGINING ADDRESS
+1671                            * OF SECTOR BUFFER OF FCB
+1672                            *
+1673 b67a fe b4 0b              RDSEC4	LDX	CFCBAD		GET ADDRESS OF FCB
+1674 b67d a6 1e                 	LDAA	30,X		GET CURRENT TRACK ADDRESS
+1675 b67f e6 1f                 	LDAB	31,X		GET CURRENT SECTOR ADDRESS
+1676 b681 37                    	PSHB			SAVE SECTOR
+1677 b682 c6 40                 	LDAB	#64		POINTER TO START OF SECTOR BUFFER FOR READ
+1678 b684 bd b5 83              	JSR	FMS26		ADD 64 TO X
+1679 b687 33                    	PULB			RESTORE SECTOR NUMBER
+1680 b688 39                    	RTS			RETURN
+1681 b689 4f                    RDSEC5	CLRA			CLEAR A FOR CLEARING NEXT 2 BYTES
+1682 b68a b7 b4 11              	STAA	FTMP3		CLEAR ATTEMPT COUNTER
+1683 b68d b7 b4 12              	STAA	FTMP4		CLEAR RESTORE COUNTER
+1684 b690 39                    	RTS			RETURN
+1685                            *
+1686                            *  INTERPRETS 1771 ERROR CODES FOR READ SINGLE SECTOR
+1687                            *
+1688 b691 c5 10                 RDSEC6	BITB	#$10		RECORD NOT FOUND ERROR?
+1689 b693 26 11                 	BNE	RDSEC7		YES: TAKE CARE OF ATTEMPT COUNTER
+1690 b695 c5 80                 	BITB	#$80		NOT READY?
+1691 b697 26 23                 	BNE	RDSEC8		YES: SET ERROR AND RETURN
+1692 b699 f6 b4 11              	LDAB	FTMP3		GET ATTEMPT COUNTER
+1693 b69c 5c                    	INCB			INCREMENT IT
+1694 b69d c1 07                 	CMPB	#7		SEVEN TRIES?
+1695 b69f 27 05                 	BEQ	RDSEC7		YES: ERROR
+1696 b6a1 f7 b4 11              	STAB	FTMP3		SAVE NEW ATTEMPT COUNTER VALUE
+1697 b6a4 20 14                 	BRA	RESER2		TRY AGAIN
+1698 b6a6 7f b4 11              RDSEC7	CLR	FTMP3		CLEAR ATTEMPT COUNTER
+1699 b6a9 f6 b4 12              	LDAB	FTMP4		RESTORE COUNTER
+1700 b6ac 5c                    	INCB			INCREMENT IT
+1701 b6ad c1 04                 	CMPB	#4		HAVE WE RESTORED 4 TIMES?
+1702 b6af 27 0b                 	BEQ	RDSEC8		YES: ERROR EXIT
+1703 b6b1 f7 b4 12              	STAB	FTMP4		SAVE NEW COUNTER VALUE
+1704 b6b4 fe b4 0b              	LDX	CFCBAD		POINT TO FCB
+1705 b6b7 bd be 89              	JSR	RESTOR		SEEK TRACK 00
+1706 b6ba 0c                    RESER2	CLC			SET NO ERROR FLAG
+1707 b6bb 39                    	RTS			RETURN
+1708 b6bc 0d                    RDSEC8	SEC			SET ERROR FLAG
+1709 b6bd 39                    	RTS			RETURN
+1710                            *
+1711                            * WRITE SINGLE SECTOR
+1712                            *
+1713 b6be 8d c9                 WRSSEC	BSR	RDSEC5		CLEAR ATTEMPT AND RESTORE COUNTERS
+1714 b6c0 fe b4 0b              	LDX	CFCBAD		POINT TO FCB
+1715 b6c3 bd be 8c              	JSR	DRVSEL		SELECT DRIVE
+1716 b6c6 25 20                 	BCS	WRSEC4		ERROR: ATTEND TO IT
+1717 b6c8 fe b4 0b              WRSEC1	LDX	CFCBAD		POINT TO FCB
+1718 b6cb 8d ad                 	BSR	RDSEC4		SET CFCBAD TO SEC BUFFER
+1719 b6cd bd be 83              	JSR	WRITE		WRITE SECTOR
+1720 b6d0 26 0c                 	BNE	WRSEC3		ERROR: HANDLE IT
+1721 b6d2 b6 b4 35              	LDAA	VERFLG		NO: VERIFY FLAG?
+1722 b6d5 27 05                 	BEQ	WRSEC2		NOT SET: RETURN
+1723 b6d7 bd be 86              	JSR	VERIFY		YES: VERIFY SEC WRITTEN
+1724 b6da 26 02                 	BNE	WRSEC3		ERROR: HANDLE
+1725 b6dc 0c                    WRSEC2	CLC			SET FLAG FOR NO ERROR
+1726 b6dd 39                    	RTS			RETURN
+1727 b6de c5 40                 WRSEC3	BITB	#$40		WRITE PROTECTED?
+1728 b6e0 26 09                 	BNE	WRSEC6		YES: SAY SO
+1729 b6e2 37                    	PSHB			SAVE ERROR CODE
+1730 b6e3 8d ac                 	BSR	RDSEC6		ERROR HANDLING ROUTINE
+1731 b6e5 33                    	PULB			RESTORE STATUS
+1732 b6e6 24 e0                 	BCC	WRSEC1		TRY AGAIN IF OKAY
+1733 b6e8 39                    WRSEC4	RTS			RETURN
+1734 b6e9 c6 20                 WRSEC5	LDAB	#$20		SET FOR WRITE FAULT
+1735 b6eb 0d                    WRSEC6	SEC			SET ERROR FLAG
+1736 b6ec 39                    	RTS			RETURN
+1737 b6ed fe b4 0b              WRBUF	LDX	CFCBAD		POINT TO  FCB
+1738 b6f0 e6 3b                 	LDAB	59,X		SPACE COMPRESSION?
+1739 b6f2 2b 35                 	BMI	WRBUF8		NO: WRITE
+1740 b6f4 81 20                 	CMPA	#$20		YES: IS IT A SPACE?
+1741 b6f6 26 0e                 	BNE	WRBUF2		NO: FINISH UP SPACE COMPRESSION
+1742 b6f8 5c                    	INCB			INCREMENT SPACE COUNTER
+1743 b6f9 e7 3b                 	STAB	59,X		SAVE IN FCB
+1744 b6fb c1 7f                 	CMPB	#127		=127?
+1745 b6fd 26 0c                 	BNE	WRBUF3		NO: OKAY RETURN
+1746 b6ff 20 0c                 	BRA	WRBUF4		YES: WRITE OUT CODE
+1747 b701 8d 0a                 WRBUF1	BSR	WRBUF4		WRITE OUT SPACE COMPRESSION
+1748 b703 24 e8                 	BCC	WRBUF		NO ERRORS CONTINUE
+1749 b705 39                    	RTS			RETURN
+1750 b706 5d                    WRBUF2	TSTB			SPACE COMPRESSION FLAG=0?
+1751 b707 27 20                 	BEQ	WRBUF8		YES: WRITE OUT SECTOR
+1752 b709 20 f6                 	BRA	WRBUF1		NO: MORE SPACE COMPRESSION
+1753 b70b 0c                    WRBUF3	CLC			CLEAR ERROR FLAG
+1754 b70c 39                    	RTS			RETURN
+1755 b70d 36                    WRBUF4	PSHA			SAVE CHARACTER
+1756 b70e c1 01                 	CMPB	#1		FIRST SPACE?
+1757 b710 26 04                 	BNE	WRBUF5		NO: WRITE
+1758 b712 86 20                 	LDAA	#$20		YES: SPACE CODE
+1759 b714 20 0d                 	BRA	WRBUF6		WRITE BUFFER
+1760 b716 86 09                 WRBUF5	LDAA	#9
+1761 b718 8d 0f                 	BSR	WRBUF8
+1762 b71a 32                    	PULA
+1763 b71b 25 0b                 	BCS	WRBUF7		ERROR: HANDLE IT
+1764 b71d 36                    	PSHA			SAVE A
+1765 b71e fe b4 0b              	LDX	CFCBAD		POINT TO FCB
+1766 b721 a6 3b                 	LDAA	59,X		GET SPACE COMPRESSION VALUE
+1767 b723 6f 3b                 WRBUF6	CLR	59,X		SET TO ZERO
+1768 b725 8d 02                 	BSR	WRBUF8		WRITE IT
+1769 b727 32                    	PULA			RESTORE A
+1770 b728 39                    WRBUF7	RTS			RETURN
+1771 b729 fe b4 0b              WRBUF8	LDX	CFCBAD		POINT TO FCB
+1772 b72c e6 02                 	LDAB	2,X		GET STATUS FROM FCB
+1773 b72e 54                    	LSRB			OPEN FOR READ?
+1774 b72f 25 1d                 	BCS	SFSERR		YES: SYSTEM FILE STATUS ERROR
+1775 b731 54                    	LSRB			NO: OPEN FOR WRITE?
+1776 b732 24 1a                 	BCC	SFSERR		NO: SYSTEM FILE STATUS ERROR
+1777 b734 e6 22                 	LDAB	34,X		YES: GET DATA INDEX
+1778 b736 c1 04                 	CMPB	#4		BEGINING OF SECTOR BUFFER?
+1779 b738 26 06                 	BNE	WRBUF9		NO: PUT BYTE IN BUFFER
+1780 b73a 36                    	PSHA			YES: SAVE A
+1781 b73b 8d 23                 	BSR	BASE+$1760	($B760)
+1782 b73d 32                    	PULA			RESTORE A
+1783 b73e 25 0d                 	BCS	WRBUFR		ERROR: RETURN
+1784 b740 bd b5 a6              WRBUF9	JSR	GRANB2		PUT BYTE IN  BUFFER
+1785 b743 24 08                 	BCC	WRBUFR		NO ERROR: CONTINUE
+1786 b745 c6 04                 	LDAB	#4		STARING DATA INDEX VALUE
+1787 b747 fe b4 0b              	LDX	CFCBAD		POINT TO FCB
+1788 b74a e7 22                 	STAB	34,X		AND SET DATA INDEX FOR START OF DATA
+1789 b74c 0c                    	CLC			SET FOR NO ERROR
+1790 b74d 39                    WRBUFR	RTS			RETURN
+1791 b74e c6 12                 SFSERR	LDAB	#$12		SYSTEM FILE STATUS ERROR
+1792 b750 0d                    	SEC			SET ERROR FLAG
+1793 b751 39                    	RTS			RETURN
+1794 b752 fe b4 0b              CRECNM	LDX	CFCBAD		POINT TO FCB
+1795 b755 4f                    	CLRA			CLEAR A SO TO CLEAR OTHER BYTES
+1796 b756 a7 20                 	STAA	32,X		CLEAR MSB OF CURRENT RECORD NUMBER
+1797 b758 a7 21                 	STAA	33,X		CLEAR LSB OF CURRENT RECORD NUMBER
+1798 b75a a7 42                 	STAA	66,X		CLEAR MSB OF LOGICAL RECORD NUMBER IN SECTOR BUFFER
+1799 b75c a7 43                 	STAA	67,X		CLEAR LSB OF LOGICAL RECORD NUMBER IN SECTOR BUFFER
+1800 b75e 20 24                 	BRA	BASE+$1784	($B784)
+1801 b760 e6 12                 	LDAB	18,X		GET STARTING SEC
+1802 b762 26 20                 	BNE	BASE+$1784	NOT ZERO:
+1803 b764 e6 17                 	LDAB	23,X		RANDOM FILE?
+1804 b766 27 4b                 	BEQ	BASE+$17B3	NO
+1805 b768 6f 17                 	CLR	23,X		YES: SET FOR SEQUENTIAL
+1806 b76a 8d 47                 	BSR	BASE+$17B3
+1807 b76c 25 2d                 	BCS	BASE+$179B
+1808 b76e 8d e2                 	BSR	CRECNM		CLEAR RECORD NUMBER
+1809 b770 25 29                 	BCS	BASE+$179B
+1810 b772 8d de                 	BSR	CRECNM		CLEAR RECORD NUMBER
+1811 b774 25 25                 	BCS	BASE+$179B
+1812 b776 fe b4 0b              	LDX	CFCBAD		POINT TO FCB
+1813 b779 c6 02                 	LDAB	#2		CODE FOR RANDOM FILE
+1814 b77b e7 17                 	STAB	23,X		STORE IN FCB
+1815 b77d a6 11                 	LDAA	17,X		GET STARTING TRACK ADDRESS
+1816 b77f e6 12                 	LDAB	18,X		GET STARTING SECTOR ADDRESS
+1817 b781 7e bc aa              	JMP	BASE+$1CAA	SAVE IN SCRATCH BYTES AND RETURN
+1818 b784 8d 0f                 	BSR	BASE+$1795
+1819 b786 fe b4 0b              	LDX	CFCBAD		POINT TO FCB
+1820 b789 a7 40                 	STAA	64,X		SET TRACK LINKAGE BYTE
+1821 b78b e7 41                 	STAB	65,X		SET SECTOR LINKAGE BYTE
+1822 b78d bd b6 be              	JSR	WRSSEC		WRITE OUT SECTOR
+1823 b790 24 21                 	BCC	BASE+$17B3	NO ERROR: GO ON
+1824 b792 7e bb da              	JMP	WNXTS2		ERROR HANDLER
+1825 b795 8d 05                 	BSR	DRVX6		ADD 6*DRIVE NUMBER TO STATUS BUFFER START
+1826 b797 a6 00                 	LDAA	0,X		GET TRACK ADDRESS FOR THIS DRIVE FROM REGISTER
+1827 b799 e6 01                 	LDAB	1,X		GET SECTOR FOR THIS DRIVE FROM REGISTER
+1828 b79b 39                    	RTS			RETURN
+1829 b79c fe b4 0b              DRVX6	LDX	CFCBAD		POINT TO FCB
+1830 b79f e6 03                 	LDAB	3,X		GET DRIVE NUMBER FROM FCB
+1831 b7a1 17                    	TBA			PUTB IN A ALSO
+1832 b7a2 48                    	ASLA			A=A*2
+1833 b7a3 48                    	ASLA			A=A*2
+1834 b7a4 58                    	ASLB			B=B*2
+1835 b7a5 1b                    	ABA			A=6*A TOTAL
+1836 b7a6 17                    	TBA			INTO B
+1837 b7a7 ce b4 1d              	LDX	#FTMP11		START OF DISK TEMPORARY SPACE
+1838 b7aa bd b5 83              	JSR	FMS26		ADD B-REG TO X-REG
+1839 b7ad ff b4 1b              	STX	FTMP10		SAVE IN TEMPORARY
+1840 b7b0 6d 00                 	TST	0,X		TEST FIRST BYTE OF STATUS
+1841 b7b2 39                    	RTS			RETURN
+1842 b7b3 8d e0                 	BSR	BASE+$1795	ADD 6*DRIVE TO STATUS BUFFER AND GET FIRST TWO BYTES
+1843 b7b5 26 04                 	BNE	BASE+$17BB	IF SECTORS LEFT THEN CONTINUE
+1844 b7b7 c6 07                 	LDAB	#7		ALL DISK SPACE USED UP
+1845 b7b9 0d                    	SEC			SET ERROR FLAG
+1846 b7ba 39                    	RTS			RETURN
+1847 b7bb fe b4 0b              	LDX	CFCBAD		POINT TO FCB
+1848 b7be a7 13                 	STAA	19,X		SAVE ENDING TRACK ADDRESS
+1849 b7c0 e7 14                 	STAB	20,X		SAVE ENDING SECTOR ADDRESS
+1850 b7c2 6d 12                 	TST	18,X		STARTING SECTOR 0?
+1851 b7c4 26 04                 	BNE	BASE+$17CA	NO: CONTINUE
+1852 b7c6 a7 11                 	STAA	17,X		YES: ONE SECTOR FILE, SAVE TRACK ADDRESS
+1853 b7c8 e7 12                 	STAB	18,X		SAVE SECTOR ADDRESS
+1854 b7ca 6c 16                 	INC	22,X		BUMP FILE SIZE LSB
+1855 b7cc 26 02                 	BNE	BASE+$17D0	NO OVERFLOW: GO AROUND
+1856 b7ce 6c 15                 	INC	21,X		INCREMENT CARRY INTO MSB
+1857 b7d0 6d 17                 	TST	23,X		RANDOM FILE?
+1858 b7d2 27 0c                 	BEQ	BASE+$17E0	NO: GO ON
+1859 b7d4 bd bc 69              	JSR	BASE+$1C69	YES: UPDATE TRACK AND SECTOR LINKAGES
+1860 b7d7 25 e0                 	BCS	BASE+$17B9	ERROR: SET FLAG AND RETURN
+1861 b7d9 fe b4 0b              	LDX	CFCBAD		POINT TO FCB
+1862 b7dc a6 13                 	LDAA	19,X		GET ENDING TRACK ADDRESS
+1863 b7de e6 14                 	LDAB	20,X		GET ENDING SECTOR ADDRESS
+1864 b7e0 bd b6 42              	JSR	RNXTS2		POSITION TO NEXT SEQUENTIAL SECTOR
+1865 b7e3 25 d4                 	BCS	BASE+$17B9	ERROR: RETURN
+1866 b7e5 fe b4 0b              	LDX	CFCBAD		POINT TO FCB
+1867 b7e8 a6 40                 	LDAA	64,X		GET NEXT TRACK ADDRESS
+1868 b7ea e6 41                 	LDAB	65,X		GET NEXT SECTOR ADDRESS
+1869 b7ec 36                    	PSHA			SAVE TRACK
+1870 b7ed 37                    	PSHB			SAVE SECTOR
+1871 b7ee 8d ac                 	BSR	DRVX6		MULTIPLY DRIVE # BY 6 AND ADD TO STATUS BUFFER START
+1872 b7f0 33                    	PULB			RESTORE SECTOR
+1873 b7f1 32                    	PULA			RESTORE TRACK ADDRESS
+1874 b7f2 a7 00                 	STAA	0,X		SAVE TRACK IN STATUS BUFFER
+1875 b7f4 e7 01                 	STAB	1,X		SAVE SECTOR IN STATUS BUFFER
+1876 b7f6 26 0a                 	BNE	BASE+$1802	IF NOT SECTOR ZERO: GO ON
+1877 b7f8 6f 02                 	CLR	2,X		CLEAR
+1878 b7fa 6f 03                 	CLR	3,X		THE
+1879 b7fc 6f 04                 	CLR	4,X		REST OF
+1880 b7fe 6f 05                 	CLR	5,X		THE STATUS BYTES
+1881 b800 20 0a                 	BRA	BASE+$180C	CONTINUE
+1882 b802 a6 05                 	LDAA	5,X		GET SECTOR COUNT
+1883 b804 80 01                 	SUBA	#1		DECRIMENT IT BY ONE
+1884 b806 a7 05                 	STAA	5,X		SAVE IT BACK
+1885 b808 24 02                 	BCC	BASE+$180C	IF NO BORROW THEN GO AROUND
+1886 b80a 6a 04                 	DEC	4,X		BORROW FROM MOST SIGNIFICANT BYTE OF LENGTH
+1887 b80c 4f                    	CLRA			CLEAR A
+1888 b80d fe b4 0b              	LDX	CFCBAD		POINT TO FCB
+1889 b810 6c 21                 	INC	33,X		INCREMENT RECORD NUMBER LSB
+1890 b812 26 02                 	BNE	BASE+$1816	NO OVERFLOW: CONTINUE
+1891 b814 6c 20                 	INC	32,X		INCREMENT MSB OF RECORD NUMBER
+1892 b816 c6 00                 	LDAB	#0		CLEAR B
+1893 b818 a7 40                 	STAA	64,X		SAVE IN SECTOR BUFFER
+1894 b81a 08                    	INX			INCREMENT POINTER
+1895 b81b 5a                    	DECB			DECRIMENT POINTER
+1896 b81c 26 fa                 	BNE	BASE+$1818	NOT DONE: LOOP
+1897 b81e fe b4 0b              	LDX	CFCBAD		POINT TO FCB
+1898 b821 a6 20                 	LDAA	32,X		GET MSB OF RECORD NUMBER
+1899 b823 e6 21                 	LDAB	33,X		GET LSB OF RECORD NUMBER
+1900 b825 a7 42                 	STAA	66,X		SAVE IN SECTOR BUFFER RECORD BYTE
+1901 b827 e7 43                 	STAB	67,X		SAVE IN SECTOR BUFFER RECORD BYTE
+1902 b829 0c                    	CLC			SET FOR NOERROR EXIT
+1903 b82a 39                    	RTS			RETURN
+1904                            *
+1905                            * OPEN SYSTEM INFORMATION RECORD
+1906                            *
+1907 b82b 5f                    OPNINF	CLRB			SET FOR TRACK ZERO
+1908 b82c 37                    	PSHB			SAVE IT
+1909 b82d c6 03                 	LDAB	#3		SECTOR NUMBER OF SYSTEM INFORMATION RECORD
+1910 b82f 20 0d                 	BRA	OPNDI1		AND READ DIRECTORY
+1911 b831 fe b4 15              	LDX	FTMP6
+1912 b834 ff b4 13              	STX	FTMP5
+1913                            *
+1914                            * OPEN DIRECTORY
+1915                            *
+1916 b837 f6 b4 13              OPENDI	LDAB	FTMP5		GET TRACK
+1917 b83a 37                    	PSHB			SAVE IT
+1918 b83b f6 b4 14              	LDAB	FTMP5+1		GET SECTOR
+1919 b83e fe b4 0b              OPNDI1	LDX	CFCBAD		POINT TO FCB
+1920 b841 e7 41                 	STAB	65,X		SAVE SECTOR
+1921 b843 33                    	PULB			GET TRACK
+1922 b844 e7 40                 	STAB	64,X		SAVE IT IN FCB
+1923 b846 7f b4 18              	CLR	FTMP8
+1924 b849 c6 00                 	LDAB	#0		ZERO OUT DATA INDEX IN FCB
+1925 b84b e7 22                 	STAB	34,X		AND CLEAR IT
+1926 b84d 39                    	RTS			RETURN
+1927                            *
+1928                            * GET INFORMATION RECORD
+1929                            *
+1930 b84e fe b4 0b              GETINF	LDX	CFCBAD		POINT TO FCB
+1931 b851 e6 22                 	LDAB	34,X		GET CURRENT DATA INDEX
+1932 b853 26 23                 	BNE	GINF2		IF NO FIRST TIME THRU  THEN CONTINUE
+1933 b855 bd b6 2f              	JSR	RNXTS		READ NEXT SECTOR (ADDRESS IN LINKAGE BYTES)
+1934 b858 25 36                 	BCS	GINF4		ERROR
+1935 b85a fe b4 0b              	LDX	CFCBAD		POINT TO FCB
+1936 b85d 7d b4 18              	TST	FTMP8
+1937 b860 26 0a                 	BNE	GINF1
+1938 b862 96 44                 	LDAA	$44
+1939 b864 b7 b4 18              	STAA	FTMP8
+1940 b867 96 45                 	LDAA	$45
+1941 b869 b7 b4 19              	STAA	FTMP8+1
+1942 b86c 86 10                 GINF1	LDAA	#$10		NUMBER OF BYTES TO SKIP IN DIRECTORY
+1943 b86e a7 22                 	STAA	34,X		SAVE IN DATA INDEX FOR FIRST TIME THROUGH
+1944 b870 a6 1e                 	LDAA	30,X		GET CURRENT TRACK
+1945 b872 e6 1f                 	LDAB	31,X		GET CURRENT SECTOR
+1946 b874 a7 2f                 	STAA	47,X		STORE AT CURRENT DIRECTORY TRACK ADDRESS
+1947 b876 e7 30                 	STAB	48,X		STORE AT CURRENT DIRECTORY SECTOR ADDRESS
+1948 b878 a6 22                 GINF2	LDAA	34,X		GET DATA INDEX
+1949 b87a a7 31                 	STAA	49,X		STORE AT CURRENT DIRECTORY DATA INDEX
+1950 b87c c6 18                 	LDAB	#$18		NUMBER OF BYTES IN DIRECTORY ENTRY
+1951 b87e ff b4 0f              GINF3	STX	FTMP2		SAVE INDEX REGISTER
+1952 b881 37                    	PSHB			SAVE COUNT
+1953 b882 bd b6 1a              	JSR	DINDEX		READ BYTE
+1954 b885 33                    	PULB			RESTORE COUNT
+1955 b886 fe b4 0f              	LDX	FTMP2		RESTORE X
+1956 b889 a7 04                 	STAA	4,X		SAVE IN DIRECTORY PORTION OF FCB
+1957 b88b 08                    	INX			BUMP POINTER
+1958 b88c 5a                    	DECB			DECRIMENT COUNTER
+1959 b88d 26 ef                 	BNE	GINF3		NOT DONE
+1960 b88f 0c                    	CLC			SET NO ERROR FLAG
+1961 b890 39                    GINF4	RTS			AND RETURN
+1962                            *
+1963                            * PUT INFORMATION RECORD
+1964                            *
+1965 b891 fe b4 0b              PUTINF	LDX	CFCBAD		POINT TO FCB
+1966 b894 a6 31                 	LDAA	49,X		GET STARTING DATA INDEX
+1967 b896 a7 22                 	STAA	34,X		STORE IN DATA INDEX
+1968 b898 c6 18                 	LDAB	#$18		NUMBER OF BYTES TO TRANSFER TO SECTOR BUFFER
+1969 b89a ff b4 0f              PINF1	STX	FTMP2		SAVE X
+1970 b89d a6 04                 	LDAA	4,X		GET BYTE TO  TRANSFER
+1971 b89f 37                    	PSHB			SAVE COUNT
+1972 b8a0 bd b7 29              	JSR	WRBUF8		WRITE BYTE INTO BUFFER
+1973 b8a3 33                    	PULB			RESTORE COUNT
+1974 b8a4 fe b4 0f              	LDX	FTMP2		RESTORE X
+1975 b8a7 08                    	INX			BUMP POINTER
+1976 b8a8 5a                    	DECB			DECRIMENT COUNTER
+1977 b8a9 26 ef                 	BNE	PINF1		NOT DONE: LOOP
+1978 b8ab 7e b6 be              	JMP	WRSSEC		WRITE OUT ENTIRE SECTOR
+1979 b8ae fe b4 0b              	LDX	CFCBAD		POINT TO FCB
+1980 b8b1 a6 03                 	LDAA	3,X		GET DRIVE NUMBER
+1981 b8b3 a7 23                 	STAA	35,X		STORE IN RANDOM INDEX
+1982 b8b5 b6 b4 17              	LDAA	FTMP7
+1983 b8b8 7d b4 1a              	TST	FTMP9
+1984 b8bb 26 30                 	BNE	BASE+$18ED
+1985 b8bd a7 03                 	STAA	3,X		STORE IN DRIVE NUMBER
+1986 b8bf fe b4 15              	LDX	FTMP6
+1987 b8c2 ff b4 13              	STX	FTMP5		SAVE ADDRESS IN DRIVE STATUS BUFFER
+1988 b8c5 8c 00 05              	CPX	#5		TRACK ZERO, SECTOR 5?
+1989 b8c8 27 0c                 	BEQ	BASE+$18D6
+1990 b8ca 8d 21                 	BSR	BASE+$18ED
+1991 b8cc 23 35                 	BLS	BASE+$1903
+1992 b8ce fe b4 18              	LDX	FTMP8
+1993 b8d1 ff b4 13              	STX	FTMP5		SAVE ADDRESS IN DRIVE STATUS BUFFER
+1994 b8d4 20 ef                 	BRA	BASE+$18C5
+1995 b8d6 fe b4 0b              	LDX	CFCBAD		POINT TO FCB
+1996 b8d9 a6 23                 	LDAA	35,X		GET RANDOM INDEX (DRIVE NUMBER)
+1997 b8db a7 03                 	STAA	3,X		AND RESTORE DRIVE NUMBER
+1998 b8dd 2a 0e                 	BPL	BASE+$18ED	NOT ALL DRIVES
+1999 b8df bd bd f2              	JSR	FNXTDR		IF ALL DRIVES: FIND NEXT DRIVE
+2000 b8e2 25 34                 	BCS	BASE+$1918	NO READY DRIVE THEN ERROR
+2001 b8e4 8d 07                 	BSR	BASE+$18ED
+2002 b8e6 23 1b                 	BLS	BASE+$1903
+2003 b8e8 bd bd e4              	JSR	BKUP19		TRANSFER NAME WORK BUFFER TO REGULAR FILE NAME
+2004 b8eb 20 f2                 	BRA	BASE+$18DF
+2005 b8ed fe b4 0b              	LDX	CFCBAD		POINT TO FCB
+2006 b8f0 7f b4 1a              	CLR	FTMP9
+2007 b8f3 bd b5 65              	JSR	FMS21		SET UP FOR RENAME
+2008 b8f6 bd b8 37              	JSR	OPENDI		OPEN DIRECTORY
+2009 b8f9 bd b8 4e              	JSR	GETINF		GET DATA FROM DIRECTORY
+2010 b8fc 24 06                 	BCC	BASE+$1904	NO ERROR: GO ON
+2011 b8fe c1 08                 	CMPB	#8		ERROR 8? (END OF FILE ERROR)
+2012 b900 27 16                 	BEQ	BASE+$1918	YES: ERROR OUT
+2013 b902 0d                    	SEC			SET ERROR FLAG
+2014 b903 39                    	RTS			RETURN
+2015 b904 fe b4 0b              	LDX	CFCBAD		POINT TO FCB
+2016 b907 a6 04                 	LDAA	4,X		GET FIRST BYTE OF NAME
+2017 b909 27 0b                 	BEQ	BASE+$1916	IF ZERO THEN FIND A DELETED ENTRY
+2018 b90b 2a 02                 	BPL	BASE+$190F	IF DELETED: CONTINUE
+2019 b90d 8d 0e                 	BSR	CURDEL		FIND NEXT DELETED ENTRY
+2020 b90f bd b5 73              	JSR	FMS23		COMPARE FILE NAME AND EXTENSION TO THE ONE IN THE NAME WORK BUFFER
+2021 b912 26 e5                 	BNE	BASE+$18F9	NOT EQAUL: TRY AGAIN
+2022 b914 0c                    	CLC			NO ERROR
+2023 b915 39                    	RTS			RETURN
+2024 b916 8d 05                 	BSR	CURDEL		FIND NEXT DELETED ENTRY
+2025 b918 8c ff ff              	CPX	#$FFFF		COMPARE FOR RETURN
+2026 b91b 0c                    	CLC			SET FOR NO ERROR
+2027 b91c 39                    	RTS			RETURN
+2028                            *
+2029                            * MOVE CURRENT DIRECTORY ADDRESS TO
+2030                            * FIRST DELETED DIRECTORY POINTER
+2031                            *
+2032 b91d a6 33                 CURDEL	LDAA	51,X		GET SECTOR ADDRESS OF DELETED DIRECTORY SECTOR IN BUFFER
+2033 b91f 26 0c                 	BNE	CURDE1		IF NOT ZERO THEN CONTINUE
+2034 b921 a6 2f                 	LDAA	47,X		GAT CURRENT DIRECTORY TRACK
+2035 b923 e6 30                 	LDAB	48,X		GET CURRENT DIRECTORY SECTOR
+2036 b925 a7 32                 	STAA	50,X		SAVE IN FIRST DELETED DIRECTORY TRACK
+2037 b927 e7 33                 	STAB	51,X		SAVE IN FIRST DELETED DIRECTORY SECTOR
+2038 b929 a6 31                 	LDAA	49,X		GET STATING DATA INDEX
+2039 b92b a7 34                 	STAA	52,X		SAVE IN FIRST DELETED DIRECTORY DATA INDEX
+2040 b92d 39                    CURDE1	RTS			RETURN
+2041 b92e bd b7 9c              	JSR	DRVX6		MULTIPLY DRIVE # BY SIX
+2042 b931 26 21                 	BNE	BASE+$1954	IF FIRST BYTE OFF OF INDEX REGISTER IS NO ZERO THEN RETURN
+2043 b933 8d 21                 	BSR	BASE+$1956
+2044 b935 25 1e                 	BCS	BASE+$1955
+2045 b937 c6 06                 	LDAB	#6		COUNT OF NUMBER OF BYTES TO MOVE
+2046 b939 fe b4 0b              	LDX	CFCBAD		POINT TO FCB
+2047 b93c ff b4 0f              	STX	FTMP2		SAVE X
+2048 b93f fe b4 0f              	LDX	FTMP2		RESTORE X
+2049 b942 a6 5d                 	LDAA	93,X		GET BYTE
+2050 b944 08                    	INX			BUMP POINTER
+2051 b945 ff b4 0f              	STX	FTMP2		SAVE POINTER
+2052 b948 fe b4 1b              	LDX	FTMP10		GET ADDRESS OF DESTINATION
+2053 b94b a7 00                 	STAA	0,X		SAVE BYTE
+2054 b94d 08                    	INX			BUMP POINTER
+2055 b94e ff b4 1b              	STX	FTMP10		SAVE POINTER
+2056 b951 5a                    	DECB			DECRIMENT COUNTER
+2057 b952 26 eb                 	BNE	BASE+$193F	NOT DONE: LOOP
+2058 b954 0c                    	CLC			CLEAR ERROR FLAG
+2059 b955 39                    	RTS			RETURN
+2060 b956 bd b8 2b              	JSR	OPNINF		OPEN INFORMATIN RECORD
+2061 b959 bd b6 2f              	JSR	RNXTS		READ SECTOR
+2062 b95c 25 07                 	BCS	BASE+$1965	IF ERROR: TAKE CARE OF IT
+2063 b95e fe b4 0b              	LDX	CFCBAD		POINT TO FCB
+2064 b961 c6 10                 	LDAB	#$10		OFFSET TO UNUSD BYTES
+2065 b963 e7 22                 	STAB	34,X		SAVE IN DATA INDEX
+2066 b965 39                    	RTS			RETURN
+2067 b966 bd b7 9c              	JSR	DRVX6		GET STATUS BUFFER ADDRESS (DRIVE NUMBER TIMES 6)
+2068 b969 8d eb                 	BSR	BASE+$1956
+2069 b96b 25 f8                 	BCS	BASE+$1965	ERROR: ATTEND TO IT
+2070 b96d c6 06                 	LDAB	#6		COUNTER FOR NUMBER OF BYTES TO MOVE
+2071 b96f fe b4 0b              	LDX	CFCBAD		POINT TO FCB
+2072 b972 ff b4 0f              	STX	FTMP2		SAVE POINTER
+2073 b975 fe b4 1b              	LDX	FTMP10		GET SURCE POINTER
+2074 b978 a6 00                 	LDAA	0,X		GET BYTE
+2075 b97a 08                    	INX			BUMP POINTER
+2076 b97b ff b4 1b              	STX	FTMP10		SAVE POINTER
+2077 b97e fe b4 0f              	LDX	FTMP2		GET DESTINATION ADDRESS
+2078 b981 a7 5d                 	STAA	93,X		SAVE BYTE
+2079 b983 08                    	INX			BUMP POINTER
+2080 b984 ff b4 0f              	STX	FTMP2		SAVE IT
+2081 b987 5a                    	DECB			DECRIMENT COUNTER
+2082 b988 26 eb                 	BNE	BASE+$1975	LOOP UNTILL DONE
+2083 b98a bd b6 be              	JSR	WRSSEC		WRITE OUT SECTOR
+2084 b98d 24 d6                 	BCC	BASE+$1965	NO ERROR: RETURN
+2085 b98f 7e bb da              	JMP	WNXTS2		ERROR HANDLER
+2086                            *
+2087                            *  CHANGE DIRECTORY INFORAMTION
+2088                            *
+2089 b992 fe b4 0b              RESER1	LDX	CFCBAD		POINT TO FCB
+2090 b995 86 02                 	LDAA	#2		OPEN FOR WRITE STATUS
+2091 b997 a7 02                 	STAA	2,X		MAKE FILE SUCH
+2092 b999 a6 2f                 	LDAA	47,X		GET TRACK ADDRESS OF CURRENT FILE IN DIRECTORY
+2093 b99b e6 30                 	LDAB	48,X		GET SECTOR ADDRESS OF CURRENT FILE IN DIRECTORY
+2094 b99d a7 1e                 	STAA	30,X		SAVE TRACK IN CURRENT TRACK BYTE
+2095 b99f e7 1f                 	STAB	31,X		SAVE SECTOR IN CURRENT SECTOR
+2096 b9a1 bd b6 60              	JSR	RDSSEC		READ SECTOR TO GET DIRECTORY IN BUFFER
+2097 b9a4 25 08                 	BCS	BASE+$19AE	ERROR: WRITE ERROR
+2098 b9a6 bd b8 91              	JSR	PUTINF		PUT INFORMATION IN DIRECTORY
+2099 b9a9 24 05                 	BCC	BASE+$19B0	NO ERROR: RETURN
+2100 b9ab 7e bb da              	JMP	WNXTS2		ERROR HANDLER
+2101 b9ae c6 0a                 	LDAB	#10		WRITE ERROR
+2102 b9b0 39                    	RTS			RETURN
+2103                            *
+2104                            * OPEN FOR READ
+2105                            *
+2106 b9b1 bd b5 00              OPENRD	JSR	FMS11
+2107 b9b4 25 3b                 	BCS	OPENR5		ERROR: RETURN
+2108 b9b6 bd b8 ae              	JSR	BASE+$18AE
+2109 b9b9 25 36                 OPENR1	BCS	OPENR5		ERROR: RETURN
+2110 b9bb 26 39                 	BNE	OPENR7
+2111 b9bd fe b4 0b              	LDX	CFCBAD		POINT TO FCB
+2112 b9c0 7d b4 1a              	TST	FTMP9
+2113 b9c3 27 06                 	BEQ	OPENR2
+2114 b9c5 a6 0f                 	LDAA	15,X		GET FILE ATTRIBUTES
+2115 b9c7 85 20                 	BITA	#$20		READ PROTECT?
+2116 b9c9 26 27                 	BNE	OPENR6		YES: ERROR
+2117 b9cb bd bc f6              OPENR2	JSR	BASE+$1CF6	NO: FIND FILE IN DIRECTORY
+2118 b9ce 25 28                 	BCS	OPENR8		NOT FOUND: ERROR
+2119 b9d0 a6 11                 	LDAA	17,X		GET STARTING TRACK ADDRESS
+2120 b9d2 e6 12                 	LDAB	18,X		GET STARTING SECTOR ADDRESS
+2121 b9d4 a7 40                 	STAA	64,X		STORE IN FOWARD
+2122 b9d6 e7 41                 	STAB	65,X		LINKAGE BYTES
+2123 b9d8 bd ba 9c              	JSR	OPENW7		SET UP PROPER VALUES FOR OPEN FILE IN FCB
+2124 b9db e6 17                 	LDAB	23,X		GET FILE SECTOR MAP INDICATOR
+2125 b9dd 27 11                 	BEQ	OPENR4		SEQUENTIAL FILE: RETURN
+2126 b9df 37                    OPENR3	PSHB			SAVE B
+2127 b9e0 bd b6 2f              	JSR	RNXTS		READ NEXT SECTOR
+2128 b9e3 33                    	PULB			RESTORE B
+2129 b9e4 25 0b                 	BCS	OPENR5		ERROR: RETURN
+2130 b9e6 5a                    	DECB			DECRIMENT FILE SECTOR MAP INDICATOR
+2131 b9e7 26 f6                 	BNE	OPENR3		LOOP TILL DONE
+2132 b9e9 fe b4 0b              	LDX	CFCBAD		POINT TO FCB
+2133 b9ec c6 00                 	LDAB	#0		CLEAR B
+2134 b9ee e7 22                 	STAB	34,X		CLEAR DATA INDEX
+2135 b9f0 0c                    OPENR4	CLC			SET FOR NO ERROR
+2136 b9f1 39                    OPENR5	RTS			RETURN
+2137 b9f2 c6 11                 OPENR6	LDAB	#$11		FILE OR DISK IS WRITE PROTECTED
+2138 b9f4 20 02                 	BRA	OPENR8		ERROR RETURN
+2139 b9f6 c6 04                 OPENR7	LDAB	#4		FILE ALREADY EXISTS
+2140 b9f8 37                    OPENR8	PSHB			SAVE B
+2141 b9f9 bd b5 14              	JSR	FMS13		SET RESET FCB BASE POINTER AND ERROR CODE
+2142 b9fc 33                    	PULB			RESTORE ERROR CODE
+2143 b9fd 0d                    	SEC			SET ERROR FLAG
+2144 b9fe 39                    	RTS			RETURN
+2145                            *
+2146                            * OPEN FOR WRITE
+2147                            *
+2148 b9ff fe b4 0b              OPENWR	LDX	CFCBAD		POINT TO CURRENT FCB
+2149 ba02 6d 03                 	TST	3,X		WHAT DRIVE?
+2150 ba04 2a 08                 	BPL	OPENW1		DRIVES NOT ALL: OPEN ASSIGNED DRIVE
+2151 ba06 bd bd f2              	JSR	FNXTDR		FIND FIRST AVAILABLE DRIVE
+2152 ba09 24 03                 	BCC	OPENW1		NO ERROR: CONTINUE OPEN
+2153 ba0b c6 10                 	LDAB	#$10		DRIVES NOT READY CODE
+2154 ba0d 39                    	RTS			RETURN
+2155 ba0e bd b5 00              OPENW1	JSR	FMS11		SET UP FMS AND CHECK FOR IN USE
+2156 ba11 25 e5                 	BCS	OPENR8		IN USE: ERROR
+2157 ba13 bd b5 54              	JSR	FMS19		INITIALIZE FCB
+2158 ba16 bd b9 2e              	JSR	BASE+$192E
+2159 ba19 25 dd                 	BCS	OPENR8		ERROR: RETURN
+2160 ba1b bd b8 ae              	JSR	BASE+$18AE
+2161 ba1e 25 d8                 	BCS	OPENR8		ERROR: RETURN
+2162 ba20 26 04                 	BNE	OPENW2
+2163 ba22 c6 03                 	LDAB	#3		FILE ALREADY EXITS CODE
+2164 ba24 20 d2                 	BRA	OPENR8		ERROR OUT
+2165 ba26 bd bc f6              OPENW2	JSR	BASE+$1CF6
+2166 ba29 25 cd                 	BCS	OPENR8		ERROR RETURN
+2167 ba2b fe b4 0b              	LDX	CFCBAD		POINT TO FCB
+2168 ba2e c6 0a                 	LDAB	#10		DIVES NOT READY
+2169 ba30 6f 0f                 OPENW3	CLR	15,X		CLEAR FCB INFO
+2170 ba32 08                    	INX			BUMP POINTER
+2171 ba33 5a                    	DECB			DECRIMENT COUNTER
+2172 ba34 26 fa                 	BNE	OPENW3		AND LOOP
+2173 ba36 fe b4 0b              	LDX	CFCBAD		POINT TO FCB
+2174 ba39 a6 32                 	LDAA	50,X		GET TRACK OF FIRST DELETED DIRECTORY POINTER
+2175 ba3b e6 33                 	LDAB	51,X		AND SECTOR OF ABOVE
+2176 ba3d 27 27                 	BEQ	OPENW4		NONE: THEN ADD TO END OF DIRECTORY
+2177 ba3f a7 2f                 	STAA	47,X		SAVE IN CURRENT DIRECTORY ADDRESS
+2178 ba41 e7 30                 	STAB	48,X		AND SAVE SECTOR
+2179 ba43 a6 34                 	LDAA	52,X		GET STARTING DATA INDEX
+2180 ba45 a7 31                 	STAA	49,X		SAVE SAVE IT
+2181 ba47 b6 ac 0e              	LDAA	DATE		GET MONTH OF DATE
+2182 ba4a f6 ac 0f              	LDAB	DATE+1		GET DAY OF DATE
+2183 ba4d a7 19                 	STAA	25,X		SAVE IN CURRENT MONTH
+2184 ba4f e7 1a                 	STAB	26,X		SAVE IN CURRENT DAT
+2185 ba51 b6 ac 10              	LDAA	DATE+2		GET YEAR
+2186 ba54 a7 1b                 	STAA	27,X		SAVE IN CURRENT YEAR
+2187 ba56 bd bd e4              	JSR	BKUP19		MOVE FILENAME FROM NAME WORK BUFFER NAME AREA
+2188 ba59 bd b9 92              	JSR	RESER1		WRITE OUT NEW DATE
+2189 ba5c 25 9a                 	BCS	OPENR8		ERROR: RETURN
+2190 ba5e 8d 3c                 	BSR	OPENW7		INITIALIZE FLAGS
+2191 ba60 86 04                 	LDAA	#4		NUMBER OF BYTES PAST SART OF BUFFER
+2192 ba62 a7 22                 	STAA	34,X		PUT IN DATA INDEX TO SKIP LINKAGE BYTES
+2193 ba64 0c                    	CLC			SET FOR NO ERROR
+2194 ba65 39                    	RTS			RETURN
+2195 ba66 fe b4 0b              OPENW4	LDX	CFCBAD		POINT TO FCB
+2196 ba69 6f 17                 	CLR	23,X		CLEAR RANDOM FILE INDICATOR (FILE SECTOR MAP)
+2197 ba6b 6c 12                 	INC	18,X		BUMP START OF FILE POINTER
+2198 ba6d a6 2f                 	LDAA	47,X		GET CURRENT DIRECTORY TRACK ADDRESS
+2199 ba6f e6 30                 	LDAB	48,X		GET CURRENT DIRECTORY SECTOR ADDRESS
+2200 ba71 bd b6 42              	JSR	RNXTS2		READ THAT SECTOR
+2201 ba74 25 0d                 	BCS	OPENW5		ERROR: OUTPUT ERROR AND RETURN
+2202 ba76 bd b7 84              	JSR	BASE+$1784	SET UP FOR WRITE
+2203 ba79 25 08                 	BCS	OPENW5		ERROR: PRINT IT
+2204 ba7b bd b6 be              	JSR	WRSSEC		WRITE OUT SECTOR
+2205 ba7e 24 06                 	BCC	OPENW6		NO ERROR: CONTINUE
+2206 ba80 bd bb da              	JSR	WNXTS2		ERROR: INTERPRET IT
+2207 ba83 7e b9 f8              OPENW5	JMP	OPENR8		AND PRINT ERROR
+2208 ba86 fe b4 0b              OPENW6	LDX	CFCBAD		POINT TO FCB
+2209 ba89 a6 1e                 	LDAA	30,X		GET CURRENT TRACK
+2210 ba8b e6 1f                 	LDAB	31,X		GET CURRENT SECTOR
+2211 ba8d a7 32                 	STAA	50,X		SAVE IN FIRST DELETED
+2212 ba8f e7 33                 	STAB	51,X		DIRECTORY POINT
+2213 ba91 86 10                 	LDAA	#$10		SDI FOR FIRST DELETED DIRECTORY POINTER
+2214 ba93 a7 34                 	STAA	52,X		SAVE IN SDI
+2215 ba95 bd b9 66              	JSR	BASE+$1966
+2216 ba98 25 e9                 	BCS	OPENW5		ERROR: ATTEND TO IT
+2217 ba9a 20 8a                 	BRA	OPENW2		AND DO IT AGAIN
+2218 ba9c fe b4 0b              OPENW7	LDX	CFCBAD		POINT TO FCB
+2219 ba9f a6 00                 	LDAA	0,X		GET CURRENT COMMAND CODE
+2220 baa1 a7 02                 	STAA	2,X		SAVE IN STATUS
+2221 baa3 6f 00                 	CLR	0,X		CLEAR COMMAND BYTE
+2222 baa5 6f 3b                 	CLR	59,X		CLEAR SPACE COMPRESSION FLAG (BINARY)
+2223 baa7 86 00                 	LDAA	#0		CLEAR A
+2224 baa9 a7 22                 	STAA	34,X		CLEAR CLEAR DATA INDEX
+2225 baab 39                    	RTS			RETURN
+2226                            *
+2227                            * NEXT SEQUENTIAL SECTOR
+2228                            *
+2229 baac 8d 27                 NXTSEQ	BSR	NXTSQ6		CHECK FOR LEGAL STATUS
+2230 baae 25 0d                 	BCS	NXTSQ2		ERROR: RETURN WITH IT
+2231 bab0 6f 00                 	CLR	0,X		CLEAR COMMAND BYTE
+2232 bab2 44                    	LSRA			CHECK FOR READ
+2233 bab3 24 03                 	BCC	NXTSQ1		WRITE: CONTINUE
+2234 bab5 7e b6 2f              	JMP	RNXTS		OTHERWISE READ
+2235 bab8 c6 04                 NXTSQ1	LDAB	#4		SET FOR AFTER LINKAGE BYTES
+2236 baba e7 22                 	STAB	34,X		SAVE IN DATA INDEX
+2237 babc 0c                    	CLC			CLEAR CARRY FOR NO ERROR OUT
+2238 babd 39                    NXTSQ2	RTS			RETURN
+2239 babe fe b4 0b              NXTSQ3	LDX	CFCBAD		POINT TO FCB
+2240 bac1 a6 02                 	LDAA	2,X		GET STATUS
+2241 bac3 81 83                 	CMPA	#$83		OPEN FOR RANDOM READ & WRITE?
+2242 bac5 26 0c                 	BNE	NXTSQ5		NO: RETURN
+2243 bac7 86 03                 	LDAA	#3		CODE FOR READ/WRITE
+2244 bac9 a7 02                 	STAA	2,X		STORE IN STATUS BYTE OF FCB
+2245 bacb bd b6 be              NXTSQ4	JSR	WRSSEC		WRITE OUT SECTOR
+2246 bace 24 03                 	BCC	NXTSQ5		NO ERROR RETURN
+2247 bad0 7e bb da              	JMP	WNXTS2		ERROR INTERPRETER
+2248 bad3 0c                    NXTSQ5	CLC			SET FOR NO ERROR
+2249 bad4 39                    	RTS			RETURN
+2250 bad5 8d e7                 NXTSQ6	BSR	NXTSQ3		CHECK STATUS
+2251 bad7 25 0e                 	BCS	NXTSQ8		ERROR RETURN
+2252 bad9 fe b4 0b              	LDX	CFCBAD		POINT TO FCB
+2253 badc a6 02                 	LDAA	2,X		GET STATUS
+2254 bade 81 03                 	CMPA	#3		OPEN FOR READ/WRITE?
+2255 bae0 22 02                 	BHI	NXTSQ7		NO SET SYSTEM FILE STATUS ERROR
+2256 bae2 0c                    	CLC			SET FOR NO ERROR
+2257 bae3 39                    	RTS			RETURN
+2258 bae4 c6 12                 NXTSQ7	LDAB	#$12		CODE FOR STATUS ERROR (18)
+2259 bae6 0d                    	SEC			SET ERROR FLAG
+2260 bae7 39                    NXTSQ8	RTS			AND RETURN
+2261                            *
+2262                            * CLOSE FILE
+2263                            *
+2264 bae8 8d eb                 CLSFIL	BSR	NXTSQ6		CHECK FOR PROPER STATUS & WRITE IF WRITING
+2265 baea 25 2f                 	BCS	CLSFI6		ERROR TRAP
+2266 baec 81 02                 	CMPA	#2		OPEN FOR WRITE?
+2267 baee 27 08                 	BEQ	CLSFI2		YES: MORE TO DO
+2268 baf0 fe b4 0b              CLSFI1	LDX	CFCBAD		NO: POINT TO FCB
+2269 baf3 6f 02                 	CLR	2,X		CLR ACTIVITY FLAG IN FDB
+2270 baf5 7e b5 14              	JMP	FMS13		REMOVE FROM CHAIN AND RETURN
+2271 baf8 a6 12                 CLSFI2	LDAA	18,X		GET SECTOR ADDRESS
+2272 bafa 26 05                 	BNE	CLSFI3		SOME WRITING DONE THEN CLOSE
+2273 bafc bd bb bf              	JSR	RENAMD		DELETE FILE OTHERWISE
+2274 baff 20 18                 	BRA	CLSFI5		AND FINISH UP
+2275 bb01 8d c8                 CLSFI3	BSR	NXTSQ4		WRITE OUT CURRENT SECTOR
+2276 bb03 25 16                 	BCS	CLSFI6		ERROR TRAP
+2277 bb05 fe b4 0b              	LDX	CFCBAD		POINT TO FCB
+2278 bb08 6d 17                 	TST	23,X		RANDOM FILE?
+2279 bb0a 27 05                 	BEQ	CLSFI4		NO CONTINUE
+2280 bb0c bd bc c0              	JSR	BASE+$1CC0
+2281 bb0f 25 0a                 	BCS	CLSFI6		ERROR TRAP
+2282 bb11 bd b9 92              CLSFI4	JSR	RESER1		FIX UP DIRECTORY
+2283 bb14 25 05                 	BCS	CLSFI6		ERROR TRAP
+2284 bb16 bd b9 66              	JSR	BASE+$1966
+2285 bb19 24 d5                 CLSFI5	BCC	CLSFI1		NO ERROR: FINISH UP CLOSE
+2286 bb1b 39                    CLSFI6	RTS			RETURN
+2287                            *
+2288                            * OPEN FOR UPDATE
+2289                            *
+2290 bb1c bd b9 b1              OPENUP	JSR	OPENRD		OPEN FILE FOR READ
+2291 bb1f 25 28                 	BCS	OPNUP2		ERROR TRAP
+2292 bb21 bd b6 2f              	JSR	RNXTS		READ NEXT SECTOR
+2293 bb24 25 23                 	BCS	OPNUP2		ERROR TRAP
+2294 bb26 86 03                 	LDAA	#3		OPEN FOR RANDOM READ/WRITE CODE
+2295 bb28 20 19                 	BRA	OPNUP1		AND OPEN FILE
+2296                            *
+2297                            *  OPEN FOR UPDATE FMS CODE $13
+2298                            *
+2299 bb2a bd b9 b1              RESER3	JSR	OPENRD		OPEN FOR READ
+2300 bb2d 25 1a                 	BCS	OPNUP2		ERROR TRAP
+2301 bb2f fe b4 0b              	LDX	CFCBAD		POINT TO FCB
+2302 bb32 a6 0f                 	LDAA	15,X		GET FILE ATTRIBUTES
+2303 bb34 85 80                 	BITA	#$80		WRITE PROTECTED?
+2304 bb36 26 12                 	BNE	OPNUP3		YES: ERROR
+2305 bb38 a6 13                 	LDAA	19,X		GET TRACK ADDRESS OF LAST SECTOR OF FILE
+2306 bb3a e6 14                 	LDAB	20,X		GET SECTOR ADDRESS OF LAST SECTOR OF FILE
+2307 bb3c bd b6 42              	JSR	RNXTS2		POSITION TO THAT SECTOR
+2308 bb3f 25 08                 	BCS	OPNUP2		ERROR TRAP
+2309 bb41 86 02                 	LDAA	#2		OPEN FOR WRITE
+2310 bb43 fe b4 0b              OPNUP1	LDX	CFCBAD		POINT TO FCB
+2311 bb46 a7 02                 	STAA	2,X		STORE IN STATUS BYTE
+2312 bb48 0c                    	CLC			SET FOR NO ERROR
+2313 bb49 39                    OPNUP2	RTS			AND RETURN
+2314 bb4a c6 0b                 OPNUP3	LDAB	#$B		FILE IS WRITE PROTECTED CODE
+2315 bb4c 0d                    	SEC			SET ERROR FLAG
+2316 bb4d 39                    	RTS			RETURN
+2317                            *
+2318                            * RENAME FILE
+2319                            *
+2320 bb4e 8d 32                 RENAME	BSR	RENAM5		SWAP OLD AND NEW FILE NAMES
+2321 bb50 bd b8 ae              	JSR	BASE+$18AE
+2322 bb53 25 28                 	BCS	RENAM3		ERROR TRAP
+2323 bb55 27 23                 	BEQ	RENAM2		FILE EXISTS ERROR
+2324 bb57 fe b4 0b              	LDX	CFCBAD		POINT TO FCB
+2325 bb5a c6 0b                 	LDAB	#$B		NUMBER OF CHARACTERS IN FILE NAME
+2326 bb5c a6 24                 RENAM1	LDAA	36,X		GET CHARACTER OF OLD FILE NAME
+2327 bb5e a7 04                 	STAA	4,X		AND STORE IN CURRENT NAME BYTES
+2328 bb60 08                    	INX			BUMP POINTER
+2329 bb61 5a                    	DECB			DECRIMENT COUNTER
+2330 bb62 26 f8                 	BNE	RENAM1		LOOP TILL DONE
+2331 bb64 8d 47                 	BSR	RENAM9		SWAP NAMES AGAIN
+2332 bb66 25 15                 	BCS	RENAM3		ERROR TRAP
+2333 bb68 fe b4 0b              	LDX	CFCBAD		POINT TO FCB
+2334 bb6b a6 0f                 	LDAA	15,X		GET ATTRIBUTES
+2335 bb6d 85 80                 	BITA	#$80		WRITE PROTECTED?
+2336 bb6f 26 d9                 	BNE	OPNUP3		YES: WRITE PROTECT ERROR
+2337 bb71 85 60                 	BITA	#$60		DELETE OR READ PROTECT?
+2338 bb73 26 09                 	BNE	RENAM4		YES: FILE IS PROTECTED
+2339 bb75 8d 0b                 	BSR	RENAM5		SWAP NAMES AGAIN
+2340 bb77 7e bb c6              	JMP	RENAMF		CONTINUE
+2341 bb7a c6 03                 RENAM2	LDAB	#3		FILE EXISTS CODE
+2342 bb7c 0d                    	SEC			SET ERROR FLAG
+2343 bb7d 39                    RENAM3	RTS			RETURN
+2344 bb7e c6 0c                 RENAM4	LDAB	#$C		FILE IS PROTECTED CODE
+2345 bb80 0d                    	SEC			SET ERROR FLAG
+2346 bb81 39                    	RTS			RETURN
+2347                            *
+2348                            * CHANGE NAME
+2349                            *
+2350 bb82 fe b4 0b              RENAM5	LDX	CFCBAD		POINT TO FCB
+2351 bb85 86 0b                 	LDAA	#$B		NUMBER OF CHARACTERS IN FILE NAME
+2352 bb87 b7 b4 11              	STAA	FTMP3		SAVE IN TEMPORARY
+2353 bb8a a6 04                 RENAM6	LDAA	4,X		GET NAME BYTE
+2354 bb8c e6 35                 	LDAB	53,X		GET NEW NAME BYTE
+2355 bb8e a7 35                 	STAA	53,X		SWAP BOTH
+2356 bb90 e7 04                 	STAB	4,X		BYTES
+2357 bb92 08                    	INX			BUMP POINTER
+2358 bb93 7a b4 11              	DEC	FTMP3		DECRIMENT COUNTER
+2359 bb96 26 f2                 	BNE	RENAM6		LOOP TILL DONE
+2360                            *
+2361                            * CHANGE EXT
+2362                            *
+2363 bb98 fe b4 0b              	LDX	CFCBAD		POINT TO FCB
+2364 bb9b a6 0c                 	LDAA	12,X		GET BYTE OF EXTENSION
+2365 bb9d 26 0a                 	BNE	RENAM8		IF NULL GO ON
+2366 bb9f c6 03                 	LDAB	#3		NUMBER OF BYTES IN EXTENSION
+2367 bba1 a6 3d                 RENAM7	LDAA	61,X		GET NEW EXTENSION
+2368 bba3 a7 0c                 	STAA	12,X		STORE IN EXTENSION
+2369 bba5 08                    	INX			BUMP POINTER
+2370 bba6 5a                    	DECB			DECRIMENT COUNTER
+2371 bba7 26 f8                 	BNE	RENAM7		LOOP TILL DONE
+2372 bba9 fe b4 0b              RENAM8	LDX	CFCBAD		POINT TO FCB
+2373 bbac 39                    	RTS			RETURN
+2374 bbad 8d d3                 RENAM9	BSR	RENAM5		SWAP NAMES
+2375 bbaf bd b8 ae              RENAMA	JSR	BASE+$18AE
+2376 bbb2 25 06                 	BCS	RENAMB		ERROR TRAP
+2377 bbb4 26 05                 	BNE	RENAMC		NO SUCH FILE ERROR
+2378 bbb6 fe b4 0b              	LDX	CFCBAD		POINT TO FCB
+2379 bbb9 0c                    	CLC			SET FOR NO ERROR
+2380 bbba 39                    RENAMB	RTS			RETURN
+2381 bbbb c6 04                 RENAMC	LDAB	#4		FILE NOT FOUND ERROR CODE
+2382 bbbd 0d                    	SEC			SET ERROR FLAG
+2383 bbbe 39                    	RTS			RETURN
+2384 bbbf fe b4 0b              RENAMD	LDX	CFCBAD		POINT TO FCB
+2385 bbc2 86 ff                 	LDAA	#$FF		CODE FOR DELETED FILE
+2386 bbc4 a7 04                 	STAA	4,X		SAVE IN FIRST CHARACTER OF FILE NAME
+2387 bbc6 bd b9 92              RENAMF	JSR	RESER1		CHANGE DIRECTORY INFORMATION
+2388 bbc9 fe b4 0b              	LDX	CFCBAD		POINT TO FCB
+2389 bbcc 86 00                 	LDAA	#0		SET ACTIVITY CODE TO ZERO
+2390 bbce a7 02                 	STAA	2,X		CLR ACTIVITY FLAG IN FCB
+2391 bbd0 39                    	RTS			RETURN
+2392 bbd1 a7 40                 WNXTS1	STAA	64,X		STORE TRACK ADDRESS IN BUFFER
+2393 bbd3 e7 41                 	STAB	65,X		STORE ADDRESS OF NEXT SECTOR IN BUFFER
+2394 bbd5 bd b6 be              	JSR	WRSSEC		WRITE OUT SECTOR
+2395 bbd8 24 13                 	BCC	WNXTSR		NO ERROR RETURN
+2396 bbda c5 40                 WNXTS2	BITB	#$40		WRITE PROTECTED FROM 1771?
+2397 bbdc 26 08                 	BNE	WNXTS3		YES: ERROR
+2398 bbde c5 80                 	BITB	#$80		DRIVES NOT READY FROM 1771?
+2399 bbe0 27 0a                 	BEQ	WNXTS4		NO JUST RETURN
+2400 bbe2 c6 10                 	LDAB	#16		DRIVES NOT READY
+2401 bbe4 20 06                 	BRA	WNXTS4		RETURN
+2402 bbe6 c6 0b                 WNXTS3	LDAB	#11		FILE/DISK IS WR PROTECTED
+2403 bbe8 20 02                 	BRA	WNXTS4		RETURN
+2404 bbea c6 0a                 	LDAB	#10		DISK FILE WRITE ERROR
+2405 bbec 0d                    WNXTS4	SEC			SET ERROR FLAG
+2406 bbed 39                    WNXTSR	RTS			RETURN
+2407                            *
+2408                            * DELETE FILE
+2409                            *
+2410 bbee bd b9 2e              DELFIL	JSR	BASE+$192E
+2411 bbf1 25 6d                 	BCS	DELFI4		ERROR TRAP
+2412 bbf3 bd bb af              	JSR	RENAMA
+2413 bbf6 25 68                 	BCS	DELFI4		ERROR TRAP
+2414 bbf8 fe b4 0b              	LDX	CFCBAD		POINT TO FCB
+2415 bbfb a6 0f                 	LDAA	15,X		GET FILE ATTRIBUTES
+2416 bbfd 85 80                 	BITA	#$80		WRITE PROTECTED?
+2417 bbff 26 60                 	BNE	DELFI5		YES, RETURN ERROR # 11
+2418 bc01 85 60                 	BITA	#$60		WRITE & DELETE PROTECTED?
+2419 bc03 26 60                 	BNE	DELFI6		YES, RETURN ERROR # 12
+2420 bc05 bd b7 9c              	JSR	DRVX6
+2421 bc08 fe b4 1b              	LDX	FTMP10
+2422 bc0b a6 02                 	LDAA	2,X
+2423 bc0d e6 03                 	LDAB	3,X
+2424 bc0f 26 12                 	BNE	DELFI1
+2425 bc11 fe b4 0b              	LDX	CFCBAD		POINT TO FCB
+2426 bc14 a6 11                 	LDAA	17,X		STARTING TRACK ADDRESS OF FILE
+2427 bc16 e6 12                 	LDAB	18,X		STARTING SECTOR ADDRESS OF FILE
+2428 bc18 27 3e                 	BEQ	DELFI3		IF ZERO THEN DON'T WORRY
+2429 bc1a fe b4 1b              	LDX	FTMP10
+2430 bc1d a7 00                 	STAA	0,X
+2431 bc1f e7 01                 	STAB	1,X
+2432 bc21 20 15                 	BRA	DELFI2
+2433 bc23 fe b4 0b              DELFI1	LDX	CFCBAD		POINT TO FCB
+2434 bc26 bd b6 42              	JSR	RNXTS2		POSITION TO SECTOR
+2435 bc29 25 35                 	BCS	DELFI4		ERROR TRAP
+2436 bc2b fe b4 0b              	LDX	CFCBAD		POINT TO FCB
+2437 bc2e a6 11                 	LDAA	17,X		GET STARTING TRACK ADDRESS
+2438 bc30 e6 12                 	LDAB	18,X		GET STARTING SECTOR ADDRESS
+2439 bc32 27 24                 	BEQ	DELFI3
+2440 bc34 8d 9b                 	BSR	WNXTS1		WRITE OUT SECTOR
+2441 bc36 25 28                 	BCS	DELFI4		ERROR TRAP
+2442 bc38 fe b4 0b              DELFI2	LDX	CFCBAD		POINT TO FCB
+2443 bc3b a6 13                 	LDAA	19,X		GET ENDING TRACK ADDRESS
+2444 bc3d e6 14                 	LDAB	20,X		GET ENDING SECTOR ADDRESS
+2445 bc3f fe b4 1b              	LDX	FTMP10
+2446 bc42 a7 02                 	STAA	2,X
+2447 bc44 e7 03                 	STAB	3,X
+2448 bc46 fe b4 0b              	LDX	CFCBAD		POINT TO FCB
+2449 bc49 a6 15                 	LDAA	21,X		GET MSB OF FILE SIZE
+2450 bc4b e6 16                 	LDAB	22,X		GET LSB OF FILE SIZE
+2451 bc4d fe b4 1b              	LDX	FTMP10
+2452 bc50 eb 05                 	ADDB	5,X
+2453 bc52 a9 04                 	ADCA	4,X
+2454 bc54 a7 04                 	STAA	4,X
+2455 bc56 e7 05                 	STAB	5,X
+2456 bc58 bd bb bf              DELFI3	JSR	RENAMD
+2457 bc5b 25 03                 	BCS	DELFI4
+2458 bc5d bd b9 66              	JSR	BASE+$1966
+2459 bc60 39                    DELFI4	RTS			RETURN
+2460                            *
+2461                            * RETURN ERROR NUMBER 11
+2462                            *
+2463 bc61 c6 0b                 DELFI5	LDAB	#$B		ERROR 11 CODE
+2464 bc63 20 02                 	BRA	DELFI7		ERROR RETURN
+2465                            *
+2466                            * RETURN ERROR NUMBER 12
+2467                            *
+2468 bc65 c6 0c                 DELFI6	LDAB	#$C		FILE PROTECTED
+2469 bc67 0d                    DELFI7	SEC			SET ERROR FLAG
+2470 bc68 39                    	RTS			RETURN
+2471 bc69 a6 1e                 	LDAA	30,X		GET CURRENT TRACK
+2472 bc6b e6 1f                 	LDAB	31,X		GET CURRENT SECTOR
+2473 bc6d 5c                    	INCB			BUMP SECTOR BY ONE
+2474 bc6e e1 3c                 	CMPB	60,X
+2475 bc70 23 03                 	BLS	BASE+$1C75
+2476 bc72 c6 01                 	LDAB	#1		SET FOR 1ST SECTOR OF
+2477 bc74 4c                    	INCA			NEXT TRACK
+2478 bc75 a1 13                 	CMPA	19,X
+2479 bc77 26 0f                 	BNE	BASE+$1C88
+2480 bc79 e1 14                 	CMPB	20,X
+2481 bc7b 26 0b                 	BNE	BASE+$1C88
+2482 bc7d a6 37                 	LDAA	55,X
+2483 bc7f 81 ff                 	CMPA	#$FF
+2484 bc81 27 05                 	BEQ	BASE+$1C88
+2485 bc83 4c                    	INCA
+2486 bc84 a7 37                 	STAA	55,X
+2487 bc86 0c                    	CLC			CLEAR ERROR FLAG
+2488 bc87 39                    	RTS			RETURN
+2489 bc88 bd bc c0              	JSR	BASE+$1CC0
+2490 bc8b 25 32                 	BCS	BASE+$1CBF
+2491 bc8d fe b4 0b              	LDX	CFCBAD		POINT TO FCB
+2492 bc90 a6 3a                 	LDAA	58,X
+2493 bc92 8b 03                 	ADDA	#3
+2494 bc94 26 1a                 	BNE	BASE+$1CB0
+2495 bc96 a6 1e                 	LDAA	30,X		GET CURRENT TRACK
+2496 bc98 e6 1f                 	LDAB	31,X		GET CURRENT SECTOR
+2497 bc9a a1 11                 	CMPA	17,X		DISK STARTING ADDRESS?
+2498 bc9c 26 04                 	BNE	BASE+$1CA2
+2499 bc9e e1 12                 	CMPB	18,X		COMPARE SECTOR
+2500 bca0 27 04                 	BEQ	BASE+$1CA6
+2501 bca2 c6 17                 	LDAB	#$17		FILE IS PROTECTED ACCESS DENIED ERROR
+2502 bca4 0d                    	SEC			SET ERROR FLAG
+2503 bca5 39                    	RTS			RETURN
+2504 bca6 a6 40                 	LDAA	64,X		GET NEXT TRACK
+2505 bca8 e6 41                 	LDAB	65,X		GET NEXT SECTOR
+2506 bcaa a7 38                 	STAA	56,X		SAVE NEXT TRACK
+2507 bcac e7 39                 	STAB	57,X		SAVE NEXT SECTOR
+2508 bcae 86 04                 	LDAA	#4
+2509 bcb0 a7 3a                 	STAA	58,X
+2510 bcb2 a6 13                 	LDAA	19,X		GET ENDING TRACK ADDRESS
+2511 bcb4 e6 14                 	LDAB	20,X		GET ENDING SECTOR ADDRESS
+2512 bcb6 a7 35                 	STAA	53,X		AND SAVE TRACK
+2513 bcb8 e7 36                 	STAB	54,X		SAVE SECTOR
+2514 bcba 86 01                 	LDAA	#1
+2515 bcbc a7 37                 	STAA	55,X
+2516 bcbe 0c                    	CLC			CLEAR ERROR FLAG
+2517 bcbf 39                    	RTS			RETURN
+2518 bcc0 a6 38                 	LDAA	56,X		GET TRACK/SEC FROM RENAME
+2519 bcc2 e6 39                 	LDAB	57,X		SCRATCH AREA OF FCB
+2520 bcc4 bd b6 42              	JSR	RNXTS2		POSITION TO THAT SECTOR
+2521 bcc7 25 f6                 	BCS	BASE+$1CBF	ERROR TRAP
+2522 bcc9 fe b4 0b              	LDX	CFCBAD		POINT TO FCB
+2523 bccc e6 3a                 	LDAB	58,X
+2524 bcce ff b4 0f              	STX	FTMP2
+2525 bcd1 bd b5 83              	JSR	FMS26		ADDB TO X
+2526 bcd4 ff b4 0d              	STX	FTMP1
+2527 bcd7 c6 03                 	LDAB	#3
+2528 bcd9 fe b4 0f              	LDX	FTMP2
+2529 bcdc a6 35                 	LDAA	53,X
+2530 bcde 08                    	INX
+2531 bcdf ff b4 0f              	STX	FTMP2
+2532 bce2 fe b4 0d              	LDX	FTMP1
+2533 bce5 a7 40                 	STAA	64,X
+2534 bce7 08                    	INX
+2535 bce8 ff b4 0d              	STX	FTMP1
+2536 bceb 5a                    	DECB
+2537 bcec 26 eb                 	BNE	BASE+$1CD9	LOOP TILL DONE
+2538 bcee bd b6 be              	JSR	WRSSEC		WRITE SECTOR OUT
+2539 bcf1 24 cc                 	BCC	BASE+$1CBF	NO ERROR RETURN
+2540 bcf3 7e bb da              	JMP	WNXTS2		INTERPRET ERROR
+2541                            *
+2542 bcf6 bd b8 2b              	JSR	OPNINF		OPEN INFORMATION RECORD
+2543 bcf9 bd b6 2f              	JSR	RNXTS		POSITION TO END OF FILE
+2544 bcfc 25 41                 	BCS	BKUP3		ERROR TRAP
+2545 bcfe fe b4 0b              	LDX	CFCBAD		POINT TO FCB
+2546 bd01 6f 20                 	CLR	32,X		CLEAR CURRENT RECORD #
+2547 bd03 6f 21                 	CLR	33,X
+2548 bd05 a6 67                 	LDAA	103,X		GET NUMBER OF SECTORS PER TRACK
+2549 bd07 a7 3c                 	STAA	60,X		SAVE IN SCRATCH AREA
+2550 bd09 c6 00                 	LDAB	#0		CLEAR FCB BUFFER AREA
+2551 bd0b 6f 40                 	CLR	64,X		CLEAR BYTE
+2552 bd0d 08                    	INX			BUMP POINTER
+2553 bd0e 5a                    	DECB			DECRIMENT COUNTER
+2554 bd0f 26 fa                 	BNE	BASE+$1D0B	LOOP TILL DONE
+2555 bd11 fe b4 0b              	LDX	CFCBAD		POINT TO FCB
+2556 bd14 0c                    	CLC			CLEAR CARRY
+2557 bd15 39                    	RTS			RETURN
+2558                            *
+2559                            * BACKUP ONE RECORD
+2560                            *
+2561 bd16 fe b4 0b              BKUP1R	LDX	CFCBAD		POINT TO FCB
+2562 bd19 a6 17                 	LDAA	23,X		GET FILE SECTOR MAP INDICATOR
+2563 bd1b 27 1f                 	BEQ	BKUP2		NOT SET THEN ERROR
+2564 bd1d a6 20                 	LDAA	32,X		GET MSB OF RECORD #
+2565 bd1f e6 21                 	LDAB	33,X		GET LSG OF ABOVE
+2566 bd21 c0 01                 	SUBB	#1		SEBTRACT ONE FROM LSB
+2567 bd23 82 00                 	SBCA	#0		AND SUBTRACT BORROW FROM MSB
+2568 bd25 2a 03                 	BPL	BKUP1		STILL KOSHER CONTINUE
+2569 bd27 7e bd d1              	JMP	BKUP14		ERROR TRAP (18)
+2570 bd2a a7 20                 BKUP1	STAA	32,X		SAVE MSB OF RECORD #
+2571 bd2c e7 21                 	STAB	33,X		SAVE LSB OF RECORD NUMBER
+2572                            *
+2573                            * POSITION TO RECORD N
+2574                            *
+2575 bd2e bd ba d5              POSREC	JSR	NXTSQ6		CHECK FILE STATUS
+2576 bd31 25 0c                 	BCS	BKUP3		ERROR TRAP
+2577 bd33 46                    	RORA			OPEN FOR READ?
+2578 bd34 24 06                 	BCC	BKUP2		NO: ERROR TRAP
+2579 bd36 6f 00                 	CLR	0,X		CLEAR COMMAND BYTE
+2580 bd38 a6 17                 	LDAA	23,X		GET FILE SECTOR MAP INDICATOR
+2581 bd3a 26 04                 	BNE	BKUP4		IF SET DON'T ERROR
+2582                            *
+2583                            * BACKUP ONE RECORD CONTINUED
+2584                            *
+2585 bd3c c6 12                 BKUP2	LDAB	#$12		SYSTEM FILE STATUS ERROR
+2586 bd3e 0d                    	SEC			SET ERROR FLAG
+2587 bd3f 39                    BKUP3	RTS			RETURN
+2588 bd40 7f b4 11              BKUP4	CLR	FTMP3
+2589 bd43 a6 11                 	LDAA	17,X		GET STARTING TRACK ADDRESS OF FILE
+2590 bd45 e6 12                 	LDAB	18,X		GET STARTING SECTOR ADDRESSOF FILE
+2591 bd47 6d 20                 	TST	32,X		CURRENT RECORD #>255?
+2592 bd49 26 07                 	BNE	BKUP5		YES: ATTEND TO MSB
+2593 bd4b 6d 21                 	TST	33,X		RECORD NUMBER ZERO?
+2594 bd4d 26 03                 	BNE	BKUP5		NO: ATTEND TO IT
+2595 bd4f 7e bd b9              	JMP	BKUP12		ERROR TRAP
+2596 bd52 bd bd d5              BKUP5	JSR	BKUP16		MOVE TO PROPER SECTOR AND SET UP X REGISTER
+2597 bd55 25 e8                 	BCS	BKUP3		ERROR TRAP
+2598 bd57 4f                    	CLRA			CLEAR A
+2599 bd58 5f                    	CLRB			CLEAR B
+2600 bd59 6d 02                 BKUP6	TST	2,X		ZERO RECORDS IN FILE?
+2601 bd5b 27 74                 	BEQ	BKUP14		YES: ERROR
+2602 bd5d eb 02                 	ADDB	2,X		GET ADD NUMBER OF RECORDS TO B
+2603 bd5f 89 00                 	ADCA	#0		AND CARRY TO A
+2604 bd61 ff b4 0f              	STX	FTMP2		SAVE X IN SCRATCH
+2605 bd64 fe b4 0b              	LDX	CFCBAD		POINT TO FCB
+2606 bd67 a1 20                 	CMPA	32,X		SAME AS CURRENT RECORD NUMBER MSB?
+2607 bd69 22 30                 	BHI	BKUP9		GREATER THEN TRY AGAIN
+2608 bd6b 25 04                 	BCS	BKUP7		LOWER: TRY AGAIN
+2609 bd6d e1 21                 	CMPB	33,X		SAME AS CURRENT RECORD NUMBER LSB?
+2610 bd6f 24 2a                 	BCC	BKUP9		HIGHER OR SAME CONTINUE
+2611 bd71 fe b4 0f              BKUP7	LDX	FTMP2		POINT TO SECTOR MAP
+2612 bd74 08                    	INX			ADVANCE
+2613 bd75 08                    	INX			POINTER TO
+2614 bd76 08                    	INX			NEXT BLOCK
+2615 bd77 36                    	PSHA			SAVE A
+2616 bd78 b6 b4 11              	LDAA	FTMP3		GET NUMBER OF BLOCKS IN MAP
+2617 bd7b 4c                    	INCA			INCREMENT IT
+2618 bd7c b7 b4 11              	STAA	FTMP3		SAVE IT BACK
+2619 bd7f 81 54                 	CMPA	#$54		TOTAL NUMBER OF BLOCKS IN THIS SECTOR OF MAP
+2620 bd81 27 07                 	BEQ	BKUP8		GET NEXT SECTOR OF MAP
+2621 bd83 81 a8                 	CMPA	#$A8		END OF ENTIRE MAP?
+2622 bd85 32                    	PULA			RESTORE A
+2623 bd86 27 49                 	BEQ	BKUP14		YES: NON-EXISTANT RECORD NUMBER
+2624 bd88 20 cf                 	BRA	BKUP6		BACK TO MAIN LOOP
+2625 bd8a 37                    BKUP8	PSHB			SAVE B
+2626 bd8b fe b4 0b              	LDX	CFCBAD		POINT TO FCB
+2627 bd8e a6 40                 	LDAA	64,X		GET NEXT TRACK ADDRESS
+2628 bd90 e6 41                 	LDAB	65,X		GET NEXT SECTOR ADDRESS
+2629 bd92 bd bd d5              	JSR	BKUP16		POSITION TO SECTOR AND POINT TO BUFFER+4
+2630 bd95 25 3a                 	BCS	BKUP14		ERROR TRAP
+2631 bd97 33                    	PULB			RESTORE B
+2632 bd98 32                    	PULA			RESTORE A
+2633 bd99 20 be                 	BRA	BKUP6		BACK TO MAIN LOOP
+2634 bd9b e0 21                 BKUP9	SUBB	33,X
+2635 bd9d a2 20                 	SBCA	32,X
+2636 bd9f fe b4 0f              	LDX	FTMP2
+2637 bda2 a6 02                 	LDAA	2,X
+2638 bda4 10                    	SBA
+2639 bda5 4a                    	DECA
+2640 bda6 16                    	TAB
+2641 bda7 a6 00                 	LDAA	0,X
+2642 bda9 eb 01                 	ADDB	1,X
+2643 bdab fe b4 0b              	LDX	CFCBAD		POINT TO FCB
+2644 bdae 25 04                 	BCS	BKUP11
+2645 bdb0 e1 3c                 BKUP10	CMPB	60,X
+2646 bdb2 23 05                 	BLS	BKUP12
+2647 bdb4 e0 3c                 BKUP11	SUBB	60,X
+2648 bdb6 4c                    	INCA
+2649 bdb7 20 f7                 	BRA	BKUP10
+2650 bdb9 bd b6 42              BKUP12	JSR	RNXTS2		POSITION TO NEXT SECTOR
+2651 bdbc 25 16                 	BCS	BKUP15		ERROR TRAP
+2652 bdbe fe b4 0b              	LDX	CFCBAD		POINT TO FCB
+2653 bdc1 a6 42                 	LDAA	66,X		GET MSB OF RECORD NUMBER
+2654 bdc3 e6 43                 	LDAB	67,X		GET LSB OF RECOR NUMBER
+2655 bdc5 a1 20                 	CMPA	32,X		MSB SAME AS CURRENT RECORD NUMBER?
+2656 bdc7 26 04                 	BNE	BKUP13		NO: CONTINUE
+2657 bdc9 e1 21                 	CMPB	33,X		SAME AS LSB OF RECORD NUMBER
+2658 bdcb 27 15                 	BEQ	BKUP17		YES: DONE
+2659 bdcd c6 19                 BKUP13	LDAB	#$19		RECORD NUMBER MATCH ERROR CODE
+2660 bdcf 0d                    	SEC			SET ERROR FLAG
+2661 bdd0 39                    	RTS			RETURN
+2662 bdd1 c6 18                 BKUP14	LDAB	#$18		NON-EXISTANT RECORD NUMBER ERROR CODE
+2663 bdd3 0d                    	SEC			SET ERROR FLAG
+2664 bdd4 39                    BKUP15	RTS			RETURN
+2665 bdd5 bd b6 42              BKUP16	JSR	RNXTS2		POSITION TO NEXT SECTOR
+2666 bdd8 25 09                 	BCS	BKUP18		ERROR TRAP
+2667 bdda fe b4 0b              	LDX	CFCBAD		POINT TO FCB
+2668 bddd c6 44                 	LDAB	#$44		POINT TO RECORD NUMBER
+2669 bddf bd b5 83              	JSR	FMS26		ADDB TO X
+2670 bde2 0c                    BKUP17	CLC			SET FOR NO ERROR
+2671 bde3 39                    BKUP18	RTS			RETURN
+2672 bde4 fe b4 0b              BKUP19	LDX	CFCBAD		POINT TO FCB
+2673 bde7 c6 0b                 	LDAB	#$B		NUMBER OF CHARACTERS IN FILE NAME
+2674 bde9 a6 24                 BKUP20	LDAA	36,X		GET CHARACTER FROM NAME WORK BUFFER
+2675 bdeb a7 04                 	STAA	4,X		SAVE IN FILE NAME
+2676 bded 08                    	INX			BUMP POINTER
+2677 bdee 5a                    	DECB			DECRIMENT COUNTER
+2678 bdef 26 f8                 	BNE	BKUP20		LOOP TILL DONE
+2679 bdf1 39                    	RTS			RETURN
+2680                            *
+2681                            * FIND NEXT DRIVE
+2682                            *
+2683 bdf2 fe b4 0b              FNXTDR	LDX	CFCBAD		POINT TO FCB
+2684 bdf5 a6 03                 	LDAA	3,X		GET DRIVE NUMBER
+2685 bdf7 4c                    	INCA			INCREMENT IT
+2686 bdf8 81 04                 	CMPA	#4		LAST DRIVE ON SYSTEM?
+2687 bdfa 24 0f                 	BCC	FNXTD3		YES: DRIVES NOT READY
+2688 bdfc a7 03                 	STAA	3,X		SAVE BACK IN FCB
+2689 bdfe 26 05                 	BNE	FNXTD1		NO: CHECK FOR READY
+2690 be00 bd be 8f              	JSR	CDRRDY		CHECK READY
+2691 be03 20 03                 	BRA	FNXTD2		CHECK IF IT WAS READY
+2692 be05 bd be 92              FNXTD1	JSR	QDRRDY		CHECK FOR READY
+2693 be08 25 e8                 FNXTD2	BCS	FNXTDR		NO: LOOP
+2694 be0a 39                    	RTS			RETURN
+2695 be0b c6 10                 FNXTD3	LDAB	#$10		DRIVES NOT READY
+2696 be0d 0d                    	SEC			SET ERROR FLAG
+2697 be0e 39                    	RTS			RETURN
+2698                            *
+2699                            * DISK DRIVER JUMP TABLE
+2700                            *
+2701 be80                       	ORG	BASE+$1E80
+2702 be80 7e be b3              READ	JMP	READ1		READ SINGLE SECTOR
+2703 be83 7e bf 10              WRITE	JMP	WRIT1		WRITE SINGLE SECTOR
+2704 be86 7e bf 42              VERIFY	JMP	VER1		VERIFY SECTOR
+2705 be89 7e bf 59              RESTOR	JMP	REST1		RESTORE TO TRACK ZERO
+2706 be8c 7e bf 75              DRVSEL	JMP	DRVS1		SELECT DRIVE
+2707 be8f 7e bf a7              CDRRDY	JMP	CDRR1		CHECK DRIVE READY
+2708 be92 7e bf a7              QDRRDY	JMP	CDRR1		QUICK CHECK READY
+2709 be95 00                    TCRDR	FCB	0		CURRENT DRIVE REGISTER
+2710 be96 00                    	FCB	0
+2711 be97 00                    	FCB	0
+2712 be98 00                    	FCB	0
+2713 be99 00                    TTRKRG	FCB	0		CURRENT TRACK REGISTER
+2714 be9a 00                    	FCB	0
+2715 be9b 00                    	FCB	0
+2716                            
+2717                            * READ DISK DRIVER
+2718                            
+2719 beb3                       	ORG	BASE+$1EB3
+2720 beb3 8d 3e                 READ1	BSR	READ8		CHECK IF SEEK NEEDED
+2721 beb5 86 8c                 	LDAA	#$8C		RD 1 REC IBM, HLD, 10MSEC
+2722 beb7 7d ac 34              	TST	MODE		PRINT SPOOLING?
+2723 beba 27 01                 	BEQ	READ2		NO: CONTINUE
+2724 bebc 3f                    	SWI			YES: TURN OF SPOOLER
+2725 bebd 01                    READ2	NOP			NECESSARY FOR NEXT INSTRUCTION
+2726 bebe 0f                    	SEI			TURN OF INTERRUPTS
+2727 bebf b7 80 18              	STAA	COMREG		GIVE COMMAND TO DISK
+2728 bec2 bd bf a0              	JSR	DRVS6		DELAY
+2729 bec5 c6 00                 	LDAB	#0		SET FOR 256 BYTES TO READ
+2730 bec7 b6 80 18              READ3	LDAA	COMREG		READ STATUS
+2731 beca 85 02                 	BITA	#2		DRQ?
+2732 becc 26 07                 	BNE	READ4		YES: READ BYTE
+2733 bece 85 01                 	BITA	#1		NO, BUSY?
+2734 bed0 26 f5                 	BNE	READ3		YES: READ MORE
+2735 bed2 16                    	TAB			SAVE STATUS IN "B"
+2736 bed3 20 0b                 	BRA	READ5		FINISH UP AND RETURN
+2737 bed5 b6 80 1b              READ4	LDAA	DATREG		READ BYTE
+2738 bed8 a7 00                 	STAA	0,X		STORE IT IN BUFFER
+2739 beda 08                    	INX			POINT TO NEXT BUFFER ADDR
+2740 bedb 5a                    	DECB			DECREMENT BYTE COUNT
+2741 bedc 26 e9                 	BNE	READ3		END OF SECTOR? NO, RD NXT
+2742 bede 8d 05                 	BSR	READ6		YES: WAIT FOR DISK TO STOP
+2743 bee0 c5 1c                 READ5	BITB	#$1C		ERROR CODE CHECK FOR CALLING ROUTINE
+2744 bee2 01                    	NOP			NECESSARY FOR NEXT INSTRUCTION
+2745 bee3 0e                    	CLI			CLEAR INTERRUPT MASK
+2746 bee4 39                    	RTS			RETURN
+2747 bee5 7d ac 34              READ6	TST	MODE		PRINT SPOOLING?
+2748 bee8 27 01                 	BEQ	READ7		NO: NO NEED TO STOP
+2749 beea 3f                    	SWI			TURN OFF SPOOLER
+2750 beeb f6 80 18              READ7	LDAB	COMREG		READ STATUS
+2751 beee c5 01                 	BITB	#1		DISK BUSY?
+2752 bef0 26 f3                 	BNE	READ6		YES: LOOP TILL DONE
+2753 bef2 39                    	RTS			NO: RETURN
+2754 bef3 b1 80 19              READ8	CMPA	TRKREG		COMPARE TRACK
+2755 bef6 27 12                 	BEQ	READ9		IF SAME DON'T SEEK
+2756 bef8 b7 80 1b              	STAA	DATREG		SET UP TRACK TO SEEK TO
+2757 befb bd bf a0              	JSR	DRVS6		DELAY
+2758 befe 86 18                 	LDAA	#$18		DO SEEK (CHANGED FROM 1B TO 18)
+2759 bf00 b7 80 18              	STAA	COMREG		GIVE COMMAND TO DISK
+2760 bf03 bd bf a0              	JSR	DRVS6		DELAY
+2761 bf06 37                    	PSHB			SAVE B
+2762 bf07 8d dc                 	BSR	READ6		WAIT FOR DONE
+2763 bf09 33                    	PULB			RESTORE B
+2764 bf0a f7 80 1a              READ9	STAB	SECREG		SET SECTOR REG
+2765 bf0d 7e bf a0              	JMP	DRVS6		DELAY
+2766                            *
+2767                            * WRITE DISK DRIVER
+2768                            *
+2769 bf10 8d e1                 WRIT1	BSR	READ8		CHECK IF SEEK NEEDED
+2770 bf12 86 ac                 	LDAA	#$AC		WR 1 REC IBM,HLD, HLT,
+2771                            *                      10 MSEC
+2772 bf14 7d ac 34              	TST	MODE		PRINT SPOOLING?
+2773 bf17 27 01                 	BEQ	WRIT2		NO: DON'T TURN OFF
+2774 bf19 3f                    	SWI			YES: TURN OFF SPOOLER
+2775 bf1a 01                    WRIT2	NOP			NECESSARY FOR NEXT INSTRUCTION
+2776 bf1b 0f                    	SEI			SET INTERRUPT MASK
+2777 bf1c b7 80 18              	STAA	COMREG		GIVE COMMAND TO DISK
+2778 bf1f bd bf a0              	JSR	DRVS6		DELAY
+2779 bf22 c6 00                 	LDAB	#0		SET FOR 256 BYTES TO WRITE
+2780 bf24 b6 80 18              WRIT3	LDAA	COMREG		READ STATUS
+2781 bf27 85 02                 	BITA	#2		DRQ?
+2782 bf29 26 07                 	BNE	WRIT4		YES: WRITE A BYTE
+2783 bf2b 85 01                 	BITA	#1		NO, BUSY?
+2784 bf2d 26 f5                 	BNE	WRIT3		YES: WAIT FOR NEXT DRQ
+2785 bf2f 16                    	TAB			NO: SAVE STATUS IN B
+2786 bf30 20 0b                 	BRA	WRIT5		RETURN WILL PROPER CODES FOR FLEX
+2787 bf32 a6 00                 WRIT4	LDAA	0,X		GET BYTE OF DATA FROM BUF
+2788 bf34 b7 80 1b              	STAA	DATREG		WRITE DATA TO DISK
+2789 bf37 08                    	INX			POINT TO NEXT BUFFER ADDR
+2790 bf38 5a                    	DECB			DECREMENT BYTE COUNT
+2791 bf39 26 e9                 	BNE	WRIT3		END OF SEC? NO, WRITE NXT
+2792 bf3b 8d a8                 	BSR	READ6		YES: WAIT FOR DISK TO FINISH
+2793 bf3d c5 5c                 WRIT5	BITB	#$5C		SET PROPER CODES FOR FMS
+2794 bf3f 01                    	NOP			NECESSARY FOR NEXT INSTRUCTION
+2795 bf40 0e                    	CLI			ENABLE INTERRUPTS
+2796 bf41 39                    	RTS			RETURN
+2797                            *
+2798                            * VERIFY DISK DRIVER
+2799                            *
+2800 bf42 86 8c                 VER1	LDAA	#$8C		RD MULTI REC IBM,HL
+2801 bf44 7d ac 34              	TST	MODE		PRINT SPOOLING?
+2802 bf47 27 01                 	BEQ	VER2		NO: DON'T TURN IT OFF
+2803 bf49 3f                    	SWI			YES: TURN IF OFF
+2804 bf4a 01                    VER2	NOP			NECESSARY FOR NEXT INSTRUCTION
+2805 bf4b 0f                    	SEI			SET INTERRUPT MASK
+2806 bf4c b7 80 18              	STAA	COMREG		SET READ CMD
+2807 bf4f bd bf a0              	JSR	DRVS6		DELAY
+2808 bf52 8d 91                 	BSR	READ6		WAIT UNTIL ALL DONE READING
+2809 bf54 01                    	NOP			NECESSARY FOR NEXT INSTRUCTION
+2810 bf55 0e                    	CLI			ENABLE INTERRUPTS
+2811 bf56 c5 18                 	BITB	#$18		SET PROPER CODES FOR FMS
+2812 bf58 39                    	RTS			RETURN
+2813                            *
+2814                            * RESTORE DISK DRIVER
+2815                            *
+2816 bf59 ff be 97              REST1	STX	BASE+$1E97	SAVE FCB ADDRESS IN TEMPS
+2817 bf5c 8d 17                 	BSR	DRVS1		SELECT DRIVE
+2818 bf5e 86 08                 	LDAA	#8		RESTORE, LHD,CHANGED FROM $B TO 8
+2819 bf60 b7 80 18              	STAA	COMREG		GIVE COMMAND TO DISK
+2820 bf63 8d 3b                 	BSR	DRVS6		DELAY
+2821 bf65 bd be e5              	JSR	READ6		WAIT UNTIL DONE
+2822 bf68 fe be 97              	LDX	BASE+$1E97	RESTORE INDEX REGISTER
+2823 bf6b c5 40                 	BITB	#$40		WRITE PROTECTED?
+2824 bf6d 26 02                 	BNE	REST2		YES: GIVE ERROR
+2825 bf6f 0c                    	CLC			SET FOR NO ERROR
+2826 bf70 39                    	RTS			RETURN
+2827 bf71 c6 0b                 REST2	LDAB	#$B		WRITE PROTECTED ERROR CODE
+2828 bf73 0c                    REST3	CLC			SET FOR NO ERROR
+2829 bf74 39                    	RTS			RETURN
+2830                            *
+2831                            * DRIVE SLECT DISK DRIVER
+2832                            *
+2833 bf75 a6 03                 DRVS1	LDAA	3,X		GET DRIVE # FROM FCB
+2834 bf77 81 03                 	CMPA	#3		GREATER THEN 3?
+2835 bf79 23 01                 	BLS	DRVS2		IF LESS THEN 4 OKAY
+2836 bf7b 4f                    	CLRA			SET FOR ZERO
+2837 bf7c 8d 15                 DRVS2	BSR	DRVS3		SET INDEX REGISTER TO PROPER BUFFER FOR DRIVE
+2838 bf7e f6 80 19              	LDAB	TRKREG		GET TRACK
+2839 bf81 e7 00                 	STAB	0,X		SAVE IN TEMPORARIES
+2840 bf83 b7 80 14              	STAA	DRVREG		SELECT DRIVE
+2841 bf86 b7 be 95              	STAA	TCRDR		SAVE NEW DIRVE IN CURRENT DRIVE NUMBER BYTE
+2842 bf89 8d 08                 	BSR	DRVS3		SET INDEX REGISTER TO PROPER BUFFER FOR DRIVE
+2843 bf8b a6 00                 	LDAA	0,X		GET LAST TRACK AT
+2844 bf8d b7 80 19              	STAA	TRKREG		RESET TRACK REG. FOR 1771
+2845 bf90 0c                    	CLC			CLEAR ERROR FLAG
+2846 bf91 20 0d                 	BRA	DRVS6		DELAY AND RETURN
+2847 bf93 ce be 99              DRVS3	LDX	#TTRKRG		ADDRESS OF LAST DISK ADDRESS FOR DRIVE
+2848 bf96 f6 be 95              	LDAB	TCRDR		GET LAST USED DRIVE NUMBER
+2849 bf99 27 04                 	BEQ	DRVS5		IF DRIVE ZERO RETURN
+2850 bf9b 08                    DRVS4	INX			BUMP POINTER
+2851 bf9c 5a                    	DECB			DECRIMENT COUNTER
+2852 bf9d 26 fc                 	BNE	DRVS4		LOOP UNTIL DONE
+2853 bf9f 39                    DRVS5	RTS			RETURN
+2854 bfa0 bd bf a3              DRVS6	JSR	DRVS7		DELAY
+2855 bfa3 bd bf a6              DRVS7	JSR	DRVS8		DELAY
+2856 bfa6 39                    DRVS8	RTS			RETURN
+2857                            *
+2858                            * CHECK DRIVE READY DISK DRIVER
+2859                            *
+2860 bfa7 a6 03                 CDRR1	LDAA	3,X		GET DRIVE NUMBER
+2861 bfa9 81 01                 	CMPA	#1		GREATER THEN ONE (1)?
+2862 bfab 23 c6                 	BLS	REST3		NO: RETURN
+2863 bfad c6 80                 	LDAB	#$80		OTHERWISE RETURN DRIVES NOT READY ERROR
+2864 bfaf 0d                    	SEC			SET ERROR FLAG
+2865 bfb0 39                    	RTS			RETURN
+2866                            *
+2867                            * AUTOBLOCK
+2868                            *
+2869 bea3                       	ORG	BASE+$1EA3
+2870 bea3 e1 ac                 INVEC	FDB	INCH1		INPUT CHAR ROUNTINE
+2871 bea5 e1 d1                 OUTVEC	FDB	OUTCH1		OUTPUT CHAR ROUNTINE
+2872 bea7 80 04                 ACIA	FDB	CTLPOR		BASE OF ACIA
+2873 bea9 80 12                 TIMER	FDB	TIMERA+2	TIMER BOARD BASE
+2874 beab a0 00                 IRQADD	FDB	IRQVEC		IRQ VECTOR LOCATION
+2875 bead a0 12                 SWIADD	FDB	SWIVEC		SWI VECTOR LOCATION
+2876 beaf e0 d0                 MON	FDB	MONITR		MONITOR ENTRY ADDRESS
+2877 beb1 a0 48                 PCV	FDB	PCVEC		MONITOR PC LOCATION
+2878                            	END	XFR

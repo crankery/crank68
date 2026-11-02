@@ -79,10 +79,10 @@ bool Cpu::op_sec(uint8_t opcode, op_names op, addr_mode mode)
     }
 }
 
-// not implemented
 bool Cpu::op_sev(uint8_t opcode, op_names op, addr_mode mode)
 {
-    return false;
+    set_flag(V, true);
+    return true;
 }
 
 bool Cpu::op_sei(uint8_t opcode, op_names op, addr_mode mode)
@@ -98,10 +98,16 @@ bool Cpu::op_sei(uint8_t opcode, op_names op, addr_mode mode)
     }
 }
 
-// not implemented
 bool Cpu::op_swi(uint8_t opcode, op_names op, addr_mode mode)
 {
-    return false;
+    push16(s_.pc);
+    push16(s_.x);
+    push8(s_.a);
+    push8(s_.b);
+    push8(s_.cc);
+    set_flag(I, true);
+    s_.pc = read16(0xfffa);
+    return true;
 }
 
 bool Cpu::op_tab(uint8_t opcode, op_names op, addr_mode mode)
@@ -160,7 +166,6 @@ bool Cpu::op_tpa(uint8_t opcode, op_names op, addr_mode mode)
     {
     case addr_mode::inh:
         s_.a = s_.cc;
-        set_nz8(s_.a);
 
         return true;
     default:
@@ -170,12 +175,6 @@ bool Cpu::op_tpa(uint8_t opcode, op_names op, addr_mode mode)
 
 // not implemented
 bool Cpu::op_wai(uint8_t opcode, op_names op, addr_mode mode)
-{
-    return false;
-}
-
-// not implemented
-bool Cpu::op_com(uint8_t opcode, op_names op, addr_mode mode)
 {
     return false;
 }

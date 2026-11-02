@@ -69,7 +69,8 @@ uint8_t Cpu::adc8(uint8_t a, uint8_t b)
 
 bool Cpu::op_cba(uint8_t opcode, op_names op, addr_mode mode)
 {
-    return false;
+    sub8(s_.a, s_.b);
+    return true;
 }
 
 bool Cpu::op_cmpa(uint8_t opcode, op_names op, addr_mode mode)
@@ -163,6 +164,12 @@ bool Cpu::op_cpx(uint8_t opcode, op_names op, addr_mode mode)
         v = read16(zp);
         break;
     }
+    case addr_mode::idx:
+    {
+        const uint8_t off = fetch8();
+        v = read16(static_cast<uint16_t>(s_.x + off));
+        break;
+    }
     case addr_mode::ext:
     {
         uint16_t addr = fetch16();
@@ -173,13 +180,32 @@ bool Cpu::op_cpx(uint8_t opcode, op_names op, addr_mode mode)
         return false;
     }
 
-    sub16(s_.x, v);
+    // The original 6800 compares high bytes for N/V and the full word for Z.
+    // Unlike the 6801/6803, CPX leaves carry unchanged.
+    const uint8_t lhs = s_.x >> 8;
+    const uint8_t rhs = v >> 8;
+    const uint8_t result = static_cast<uint8_t>(lhs - rhs);
+    set_flag(N, (result & 0x80) != 0);
+    set_flag(V, ((lhs ^ rhs) & (lhs ^ result) & 0x80) != 0);
+    set_flag(Z, s_.x == v);
     return true;
 }
 
 bool Cpu::op_daa(uint8_t opcode, op_names op, addr_mode mode)
 {
-    return false;
+    const uint8_t value = s_.a;
+    uint8_t correction = 0;
+    if ((value & 0x0f) > 9 || get_flag(H))
+        correction |= 0x06;
+    if (value > 0x99 || get_flag(C))
+        correction |= 0x60;
+
+    const uint16_t result = value + correction;
+    s_.a = static_cast<uint8_t>(result);
+    set_nz8(s_.a);
+    set_flag(V, false);
+    set_flag(C, get_flag(C) || result > 0xff);
+    return true;
 }
 
 bool Cpu::op_sba(uint8_t opcode, op_names op, addr_mode mode)

@@ -26,10 +26,10 @@ uint8_t Machine::read8(uint16_t addr)
     {
         return memory_io_->read(addr);
     }
-    // else if (addr >= banked_memory_.getStartAddress() && addr <= banked_memory_.getEndAddress())
-    // {
-    //     return banked_memory_.read(addr);
-    // }
+    else if (addr >= banked_memory_->getStartAddress() && addr <= banked_memory_->getEndAddress())
+    {
+        return banked_memory_->read(addr);
+    }
 
     return 0xff;
 }
@@ -62,8 +62,8 @@ void Machine::write8(uint16_t addr, uint8_t value)
             memory_io_->write(addr, value);
         }
     }
-    // else if (addr >= banked_memory_.getStartAddress() && addr <= banked_memory_.getEndAddress())
-    // {
-    //     banked_memory_.write(addr, value);
-    // }
+    else if (addr >= banked_memory_->getStartAddress() && addr <= banked_memory_->getEndAddress())
+    {
+        banked_memory_->write(addr, value);
+    }
 }

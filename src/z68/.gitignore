@@ -1,0 +1,10 @@
+# output files
+*.lst
+*.rom
+*.bin
+
+# generated files
+basic680.asm
+basic680.diff
+c68basic.asm
+c68basic.diff

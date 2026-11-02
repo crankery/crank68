@@ -1,0 +1,70 @@
+; Four drives, each 64 tracks of 16 sectors. Page = drive * 64 + track.
+; $E002 selects the page visible at $C000. $D000 window is untouched.
+; FLEX READ/WRITE: A=track, B=sector (1..16), X=256-byte buffer.
+; Return B=0/Z=1/C=0 on success; B=$10/Z=0/C=1 on invalid sector/drive.
+; The C000 window is owned by this driver; its latch is write-only.
+C68READ CLR C68WRITEFLAG
+ BRA C68IO
+C68WRITE PSHA
+ LDAA #1
+ STAA C68WRITEFLAG
+ PULA
+C68IO STX C68BUFFER
+ CMPA #64
+ BCC C68ERROR
+ CMPB #1
+ BCS C68ERROR
+ CMPB #16
+ BHI C68ERROR
+ ORAA C68BASE
+ STAA $E002
+ DECB
+ ADDB #$C0
+ STAB C68PTR
+ CLR C68PTR+1
+ CLR C68COUNT
+C68LOOP TST C68WRITEFLAG
+ BNE C68STORE
+ LDX C68PTR
+ LDAA 0,X
+ LDX C68BUFFER
+ STAA 0,X
+ BRA C68ADV
+C68STORE LDX C68BUFFER
+ LDAA 0,X
+ LDX C68PTR
+ STAA 0,X
+C68ADV LDX C68BUFFER
+ INX
+ STX C68BUFFER
+ LDX C68PTR
+ INX
+ STX C68PTR
+ DEC C68COUNT
+ BNE C68LOOP
+C68OK CLRB
+ CLC
+ RTS
+C68ERROR LDAB #$10
+ SEC
+ RTS
+; Read/write use the selection made by DRVSEL (X points to an FCB).
+C68DRIVE BSR C68READY
+ BCS C68ERROR
+ LDAA 3,X
+ RORA
+ RORA
+ RORA
+ ANDA #$C0
+ STAA C68BASE
+ BRA C68OK
+; A ready check must not change the currently selected drive.
+C68READY LDAA 3,X
+ CMPA #4
+ BCC C68ERROR
+ BRA C68OK
+C68BASE FCB 0
+C68BUFFER FDB 0
+C68PTR FDB 0
+C68COUNT FCB 0
+C68WRITEFLAG FCB 0

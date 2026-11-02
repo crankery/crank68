@@ -1,9 +1,9 @@
 #include "cpu.h"
 
-// not implemented
 bool Cpu::op_des(uint8_t opcode, op_names op, addr_mode mode)
 {
-    return false;
+    s_.sp = static_cast<uint16_t>(s_.sp - 1);
+    return true;
 }
 
 bool Cpu::op_ins(uint8_t opcode, op_names op, addr_mode mode)
@@ -54,8 +54,6 @@ bool Cpu::op_pula(uint8_t opcode, op_names op, addr_mode mode)
     {
         uint8_t a = pop8();
         s_.a = a;
-        set_nz8(s_.a);
-        set_flag(V, false);
         return true;
     }
     default:
@@ -71,8 +69,6 @@ bool Cpu::op_pulb(uint8_t opcode, op_names op, addr_mode mode)
     {
         uint8_t b = pop8();
         s_.b = b;
-        set_nz8(s_.b);
-        set_flag(V, false);
         return true;
     }
     default:

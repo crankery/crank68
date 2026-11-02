@@ -70,8 +70,9 @@ $(TARGET): $(APP_OBJS)
 
 
 # test runner
-test: $(TEST_BIN)
+test: $(TEST_BIN) $(TARGET)
 	./$(TEST_BIN)
+	$(PYTHON) tests/tcp_console_smoke.py $(TARGET)
 
 $(TEST_BIN): $(CORE_OBJS) $(TEST_OBJS) $(GTEST_LIBS)
 	@mkdir -p $(dir $@)

@@ -3,9 +3,8 @@
 
 ; monitor routines - C68 mikbug2 addresses
 
-INCH    EQU     $E8F9
-OUTCH   EQU     $E8ED
-POLCAT  EQU     $E903
+acias   equ     $e010
+aciad   equ     $e011
 
 ; Missing referenced labels:
 
@@ -3489,6 +3488,32 @@ Z19D9   STX     M0082
         LDX     #READY
         STX     RDYJSR+1
         JMP     Z033C
+
+
+; mits used B rather than A
+; don't use the stack for temporary store, just wipe out A.
+OUTCH           tba
+OUTCHW          ldab acias
+                asrb
+                asrb
+                bcc OUTCHW                  ; xmit not ready
+                tab
+                stab aciad                  ; output char
+                rts
+
+; apparently MITS 680b mikbug returned the character in B for some reason
+; trying out switching this to not affect A.
+INCH            ldab acias
+                asrb
+                bcc INCH                    ; receiver not ready
+                ldab aciad                  ; input char
+                rts                         ; else,return to caller
+
+; Altair-compatible console poll
+; C set if char available, B clobbered
+POLCAT  ldab    acias
+        asrb
+        rts
 
 ; Strings used by INIT routine
 ; XXX Both high-byte and \000 terminated?

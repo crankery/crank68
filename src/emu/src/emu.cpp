@@ -7,9 +7,13 @@
 #include <stdio.h>
 
 #include <optional>
+#include <memory>
+#include <csignal>
+#include <filesystem>
 #include <sstream>
 
 #include "machine/machine.h"
+#include "terminal/tcpConsole.h"
 
 Machine machine_ = Machine::create_default();
 
@@ -24,6 +28,12 @@ std::vector<uint16_t> breakpoints_;
 std::vector<uint16_t> spwatches_;
 struct termios orig_termios_;
 
+std::optional<std::string> sram_image_;
+std::optional<uint16_t> tcp_console_port_;
+std::unique_ptr<TcpConsole> tcp_console_;
+bool terminal_mode_set_ = false;
+volatile std::sig_atomic_t stop_requested_ = 0;
+void request_stop(int) { stop_requested_ = 1; }
 bool show_control_ = false;
 const uint64_t sleep_threshold_cycles = 1000; // sleep/check every 1000 cycles
 uint64_t total_cycles_ = 0;
@@ -63,7 +73,7 @@ std::optional<uint16_t> parse_hex16(std::string_view text)
 
 void reset_terminal_mode()
 {
-    tcsetattr(0, TCSANOW, &orig_termios_);
+    if (terminal_mode_set_) tcsetattr(0, TCSANOW, &orig_termios_);
 }
 
 void set_conio_terminal_mode()
@@ -71,13 +81,13 @@ void set_conio_terminal_mode()
     struct termios new_termios;
 
     // take two copies - one for now, one for later
-    tcgetattr(0, &orig_termios_);
+    if (!isatty(0) || tcgetattr(0, &orig_termios_) != 0) return;
     memcpy(&new_termios, &orig_termios_, sizeof(new_termios));
 
     // register cleanup handler, and set the new terminal mode
     atexit(reset_terminal_mode);
     cfmakeraw(&new_termios);
-    tcsetattr(0, TCSANOW, &new_termios);
+    terminal_mode_set_ = tcsetattr(0, TCSANOW, &new_termios) == 0;
 }
 
 bool kbhit()
@@ -93,9 +103,9 @@ int getch()
 {
     int r;
     unsigned char c;
-    if ((r = read(0, &c, sizeof(c))) < 0)
+    if ((r = read(0, &c, sizeof(c))) <= 0)
     {
-        return r;
+        return -1;
     }
     else
     {
@@ -125,6 +135,33 @@ int parse_args(int argc, char **argv)
     for (int i = 1; i < argc; ++i)
     {
         std::string arg = argv[i];
+
+        if (arg == "--tcp-console")
+        {
+            if (i+1>=argc) {
+                std::fprintf(stderr,"--tcp-console requires a decimal port (1-65535)\n");
+                return 1;
+            }
+            std::string port=argv[++i];
+            if (port.empty() || port.find_first_not_of("0123456789")!=std::string::npos ||
+                port.size()>5 || std::stoul(port)==0 || std::stoul(port)>65535) {
+                std::fprintf(stderr,"invalid TCP console port: %s\n",port.c_str());
+                return 1;
+            }
+            tcp_console_port_=static_cast<uint16_t>(std::stoul(port));
+            continue;
+        }
+
+        if (arg == "--sram-image")
+        {
+            if (i + 1 >= argc)
+            {
+                std::fprintf(stderr, "--sram-image requires a filename\n");
+                return 1;
+            }
+            sram_image_ = argv[++i];
+            continue;
+        }
 
         if (arg == "--show-control")
         {
@@ -273,6 +310,8 @@ bool term_out_acia_in()
     {
         int c = getch();
 
+        if (c<0) return false;
+
         // treat ctrl-] as a command to exit the emulator
         if (c == (']' & 0x1f))
         {
@@ -381,13 +420,34 @@ void run()
     uint16_t lastpc = 0xFFFF;
 
     char message[256];
+    uint64_t last_tcp_poll=0;
 
     while (1)
     {
-        term_in_acia_out();
-        if (term_out_acia_in())
-        {
-            return;
+        if (stop_requested_) return;
+        if (tcp_console_) {
+            // The launching terminal remains a local shutdown/debug console.
+            if (isatty(0) && kbhit() && getch()==(']' & 0x1f)) return;
+            const auto cycles=machine_.cpu_->cycles_;
+            if (!tcp_console_->connected() || !tcp_console_->writable() ||
+                cycles-last_tcp_poll>=1000) {
+                tcp_console_->poll();
+                last_tcp_poll=cycles;
+            }
+            if (!tcp_console_->connected() || !tcp_console_->writable()) {
+                usleep(1000);
+                // Waiting for a client must not create a CPU catch-up burst.
+                start_us_=now_us()-cycles;
+                continue;
+            }
+            auto &acia=machine_.memory_io_->acia_1_0_;
+            if (!acia.terminalOutAciaInReady()) {
+                if (auto value=tcp_console_->read()) acia.terminalOutAciaIn(*value);
+            }
+            if (auto value=acia.terminalInAciaOut()) tcp_console_->write(*value);
+        } else {
+            term_in_acia_out();
+            if (term_out_acia_in()) return;
         }
 
         throttle();
@@ -414,6 +474,7 @@ void run()
 
             while (!(kbhit()))
             {
+                if (stop_requested_) return;
                 usleep(5000);
             }
 
@@ -461,6 +522,20 @@ int main(int argc, char **argv)
         return -1;
     }
 
+    if (sram_image_)
+    {
+        try
+        {
+            if (std::filesystem::exists(*sram_image_))
+                machine_.banked_memory_->loadImage(*sram_image_);
+        }
+        catch (const std::exception &e)
+        {
+            std::fprintf(stderr, "%s\n", e.what());
+            return 1;
+        }
+    }
+
     // load all the binaries
     for (const auto &req : loads_)
     {
@@ -471,6 +546,19 @@ int main(int argc, char **argv)
     uint8_t acia0switches = 0b00010101;
     machine_.memory_io_->config_switches_.setValue(acia0switches);
 
+    if (tcp_console_port_) {
+        try {
+            tcp_console_=std::make_unique<TcpConsole>(*tcp_console_port_);
+        } catch (const std::exception &e) {
+            std::fprintf(stderr,"%s\n",e.what());
+            return 1;
+        }
+        std::fprintf(stderr,"Raw TCP console listening on 127.0.0.1:%u; waiting for a client.\n",
+                     tcp_console_->port());
+        std::fprintf(stderr,"CPU pauses on disconnect; reconnect to continue. Stop locally with Ctrl-] or a signal.\n");
+    }
+    std::signal(SIGINT,request_stop);
+    std::signal(SIGTERM,request_stop);
     set_conio_terminal_mode();
     setvbuf(stdout, NULL, _IONBF, 0);
 
@@ -507,6 +595,19 @@ int main(int argc, char **argv)
              state.cc & I ? 'I' : '-',
              state.cc & H ? 'H' : '-');
     Logging::log(message);
+
+    if (sram_image_)
+    {
+        try
+        {
+            machine_.banked_memory_->saveImage(*sram_image_);
+        }
+        catch (const std::exception &e)
+        {
+            std::fprintf(stderr, "%s\n", e.what());
+            result = 1;
+        }
+    }
 
     // write out the traceback
     dump_traceback();

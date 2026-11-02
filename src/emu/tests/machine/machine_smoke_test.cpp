@@ -5,7 +5,7 @@
 
 TEST(MachineSmokeTest, CanConstructSystemUnderTest)
 {
-    Machine sut;
+    auto sut = Machine::create_default();
 
     EXPECT_TRUE(true);
 }

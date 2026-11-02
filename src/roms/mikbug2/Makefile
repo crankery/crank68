@@ -13,9 +13,12 @@ LST := $(NAME).lst
 
 TARGET := $(NAME).rom
 
-.PHONY: all clean
+.PHONY: all clean test
 
 all: $(TARGET)
+
+test: $(TARGET)
+	python3 tests/boot.py
 
 $(TARGET): $(SRC) | 
 	$(VASM_BIN) -Fbin -L $(LST) -o $@ $<

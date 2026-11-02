@@ -15,7 +15,8 @@ class MemoryIO : public Mem
 public:
     MemoryIO()
         : Mem(StartAddress, EndAddress),
-          banked_memory_latch_(0x0, 0x0),
+          banked_memory_latch_(0x0, 0x2),
+          banked_memory_high_latch_(0x0, 0x3),
           config_switches_(0x0, 0x1),
           acia_1_0_(0x1, 0x0),
           pia_2_0_(0x2, 0x0),
@@ -24,6 +25,7 @@ public:
           acia_2_1_(0x2, 0xA)
     {
         devices_.push_back(&banked_memory_latch_);
+        devices_.push_back(&banked_memory_high_latch_);
         devices_.push_back(&config_switches_);
         devices_.push_back(&acia_1_0_);
         devices_.push_back(&pia_2_0_);
@@ -63,6 +65,7 @@ public:
 
     // slot 0, latches and such
     Latch banked_memory_latch_;
+    Latch banked_memory_high_latch_;
     Switches config_switches_;
 
     // slot 1, terminal card

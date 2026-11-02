@@ -31,9 +31,10 @@ public:
           rom_(std::move(rom)),
           memory_io_(std::move(memory_io)),
           banked_memory_(std::make_unique<BankedMemory>(
-              [this]()
+              [this](unsigned window)
               {
-                  return memory_io_->bankedMemoryLatch().getValue();
+                  return window == 0 ? memory_io_->banked_memory_latch_.getValue()
+                                     : memory_io_->banked_memory_high_latch_.getValue();
               }))
     {
         cpu_ = std::make_unique<Cpu>(*this);

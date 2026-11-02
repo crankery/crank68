@@ -73,10 +73,18 @@ bool Cpu::op_clv(uint8_t opcode, op_names op, addr_mode mode)
     }
 }
 
-// not implemented
-bool op_com(uint8_t opcode, op_names op, addr_mode mode)
+bool Cpu::op_com(uint8_t opcode, op_names op, addr_mode mode)
 {
-    return false;
+    auto addr = resolve_operand_addr(mode);
+    if (!addr)
+        return false;
+
+    const uint8_t result = static_cast<uint8_t>(~read8(*addr));
+    write8(*addr, result);
+    set_nz8(result);
+    set_flag(V, false);
+    set_flag(C, true);
+    return true;
 }
 
 bool Cpu::op_coma(uint8_t opcode, op_names op, addr_mode mode)
@@ -152,7 +160,7 @@ uint8_t Cpu::dec8(uint8_t value)
 
     set_flag(Z, result == 0);
     set_flag(N, (result & 0x80) != 0);
-    set_flag(V, value == 0x7F);
+    set_flag(V, value == 0x80);
 
     // C unchanged
     // H unchanged
@@ -245,24 +253,6 @@ bool Cpu::op_inx(uint8_t opcode, op_names op, addr_mode mode)
     return true;
 }
 
-// not implemented
-bool op_neg(uint8_t opcode, op_names op, addr_mode mode)
-{
-    return false;
-}
-
-// not implemented
-bool op_nega(uint8_t opcode, op_names op, addr_mode mode)
-{
-    return false;
-}
-
-// not implemented
-bool op_negb(uint8_t opcode, op_names op, addr_mode mode)
-{
-    return false;
-}
-
 bool Cpu::op_tst(uint8_t opcode, op_names op, addr_mode mode)
 {
     uint16_t addr;
@@ -300,7 +290,7 @@ bool Cpu::op_tstb(uint8_t opcode, op_names op, addr_mode mode)
 {
     if (mode == addr_mode::inh)
     {
-        do_test(s_.a);
+        do_test(s_.b);
         return true;
     }
 
