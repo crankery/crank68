@@ -1,12 +1,21 @@
 ; Decode, resolve operands left to right, then dispatch.
-; Input is an explicit milestone boundary; unsupported operations still trap.
+; Input resumes execution after tokenization; unsupported operations still trap.
 vm_run:
         ldaa app_end+1
         anda #0x9f
         oraa #0x10
         staa app_end+1
+        tst terminal_enabled
+        beq vm_terminal_ready
+        anda #0xef
+        staa app_end+1
+vm_terminal_ready:
+        jsr terminal_begin
+        jsr wrap_begin
         jsr vars_init
         jsr calls_init
+        clr vm_input_complete
+        clr input_skip_lf
         clr vm_input_requested
         clr vm_finished
         clr op_halted
@@ -30,23 +39,26 @@ vm_run_loop:
         stab vm_budget+1
         oraa vm_budget+1
         bne vm_run_loop
+        jsr wrap_finish
         ldx #vm_budget_message
         jsr pstrng
         bra vm_run_halt
 vm_run_error:
+        jsr wrap_finish
         ldx #vm_decode_message
         jsr pstrng
 vm_run_halt:
         ldaa #1
         staa op_halted
 vm_run_done:
+        jsr wrap_finish
         sec
         rts
 vm_do_nop:
         clc
         rts
 vm_do_new_line:
-        jsr pcrlf
+        jsr story_newline
         clc
         rts
 vm_do_print:

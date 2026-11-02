@@ -74,7 +74,7 @@ static void z68_test() {
     const uint16_t fcb=0x8000;
     auto write_file=[&](const std::string &name,const std::vector<uint8_t> &data) {
         std::fill_n(bus.ram.begin()+fcb,320,0);
-        bus.ram[fcb+3]=3;
+        bus.ram[fcb+3]=0; // Scratch files use spare system-drive space in this private Bus.
         std::copy(name.begin(),name.end(),bus.ram.begin()+fcb+4);
         bus.ram[fcb+12]='D'; bus.ram[fcb+13]='A'; bus.ram[fcb+14]='T';
         auto invoke=[&](uint8_t command,uint8_t value=0) {
@@ -121,7 +121,7 @@ static void z68_test() {
     bus.ram[0xac2b]=0x5f; bus.ram[0xac2c]=0xff;
     std::fill(bus.ram.begin()+0x5de0,bus.ram.begin()+0x5e00,0x5a);
     std::fill(bus.ram.begin()+0x6000,bus.ram.begin()+0x8000,0xa5);
-    auto output=run("Z68 3.PROBE.DAT\r");
+    auto output=run("Z68 0.PROBE.DAT\r");
     auto has=[&](const std::string &needle) {
         require(output.find(needle)!=std::string::npos,"Missing Z68 report: "+needle+"\n"+output);
     };
@@ -133,38 +133,38 @@ static void z68_test() {
     const auto budget=symbol("build/z68.lst","ram_budget");
     require(unsigned(bus.ram[budget])*256+bus.ram[budget+1]==expected_budget,
             "Z68 ignored FLEX's memory limit: "+output);
-    output=run("Z68 3.PROBE\r"); has("Z68: V3 story header"); // default DAT
+    output=run("Z68 0.PROBE\r"); has("Z68: V3 story header"); // default DAT
     output=run("Z68\r"); has("Usage: Z68");
-    output=run("Z68 3.ABSENT.DAT\r"); has("cannot open story");
-    output=run("Z68 3.V5.DAT\r"); has("only V3 is supported");
-    output=run("Z68 3.BAD.DAT\r"); has("invalid V3 memory layout");
-    output=run("Z68 3.BADHIGH.DAT\r"); has("invalid V3 memory layout");
-    output=run("Z68 3.BADPC.DAT\r"); has("invalid V3 memory layout");
-    output=run("Z68 3.SHORT.DAT\r"); has("cannot load dynamic memory");
+    output=run("Z68 0.ABSENT.DAT\r"); has("cannot open story");
+    output=run("Z68 0.V5.DAT\r"); has("only V3 is supported");
+    output=run("Z68 0.BAD.DAT\r"); has("invalid V3 memory layout");
+    output=run("Z68 0.BADHIGH.DAT\r"); has("invalid V3 memory layout");
+    output=run("Z68 0.BADPC.DAT\r"); has("invalid V3 memory layout");
+    output=run("Z68 0.SHORT.DAT\r"); has("cannot load dynamic memory");
     require(bus.ram[symbol("build/z68.lst","dynamic_loaded")]==0 &&
             bus.ram[symbol("build/z68.lst","story_opened")]==0,"Failed load leaked state");
-    output=run("Z68 3.MINIMAL.DAT\r"); has("Loaded writable story bytes: $0040");
+    output=run("Z68 0.MINIMAL.DAT\r"); has("Loaded writable story bytes: $0040");
     check_layout(minimal,0x5fff);
-    output=run("Z68 3.TOOBIG.DAT\r"); has("dynamic memory exceeds");
+    output=run("Z68 0.TOOBIG.DAT\r"); has("dynamic memory exceeds");
     // Exact fit succeeds; one byte less fails before touching dynamic RAM.
     const auto exact_top=app_end+reservations+512+probe.size()-1;
     bus.ram[0xac2b]=exact_top>>8; bus.ram[0xac2c]=exact_top&255;
-    output=run("Z68 3.PROBE\r"); has("Loaded writable story bytes");
+    output=run("Z68 0.PROBE\r"); has("Loaded writable story bytes");
     check_layout(probe,exact_top);
     bus.ram[0xac2b]=(exact_top-1)>>8; bus.ram[0xac2c]=(exact_top-1)&255;
     std::fill(bus.ram.begin()+app_end,bus.ram.begin()+app_end+probe.size(),0xa7);
-    output=run("Z68 3.PROBE\r"); has("dynamic memory exceeds");
+    output=run("Z68 0.PROBE\r"); has("dynamic memory exceeds");
     require(std::all_of(bus.ram.begin()+app_end,bus.ram.begin()+app_end+probe.size(),
                        [](uint8_t value){return value==0xa7;}),"Rejected layout wrote dynamic RAM");
     // Insufficient runtime RAM must be detected before switching stacks.
     bus.ram[0xac2b]=(app_end+255)>>8; bus.ram[0xac2c]=(app_end+255)&255;
-    output=run("Z68 3.PROBE\r"); has("insufficient FLEX application RAM");
+    output=run("Z68 0.PROBE\r"); has("insufficient FLEX application RAM");
     require(std::all_of(bus.ram.begin()+0x6000,bus.ram.begin()+0x8000,
                        [](uint8_t value){return value==0xa5;}),"Z68 wrote above FLEX MEMEND");
     require(std::all_of(bus.ram.begin()+0x5de0,bus.ram.begin()+0x5e00,
                        [](uint8_t value){return value==0x5a;}),"Z68 stack exceeded its reservation");
     bus.ram[0xac2b]=0xff; bus.ram[0xac2c]=0xff;
-    output=run("Z68 3.PROBE\r"); has("Z68: V3 story header");
+    output=run("Z68 0.PROBE\r"); has("Z68: V3 story header");
     const auto top=symbol("build/z68.lst","ram_top");
     require(bus.ram[top]==0x7f && bus.ram[top+1]==0xff,"Z68 exceeded the $7FFF cap");
     require(bus.ram[symbol("build/z68.lst","story_opened")]==0,"Z68 leaked an open story");
@@ -201,7 +201,7 @@ static void z68_test() {
     put_text(0xfffe,{6,7,8,9,10,11,12,13,14}); // crosses $FFFF/$10000
     write_file("TEXT",text_story);
     auto preview=[&](const std::string &argument,const std::string &expected,unsigned end) {
-        const auto out=run("Z68 3.TEXT.DAT "+argument+"\r");
+        const auto out=run("Z68 0.TEXT.DAT "+argument+"\r");
         require(out.find("Decoded text (not story execution):\r\n"+expected+"\r\n")!=std::string::npos,
                 "Packed-text mismatch: "+argument+"\n"+out);
         const auto cursor=symbol("build/z68.lst","text_cursor");
@@ -215,9 +215,9 @@ static void z68_test() {
     preview("2f2","abcdefghi",0x2f8); // lowercase hex argument
     preview("0FFFE","abcdefghi",0x10004);
     preview("P 8000","defghi",0x10004);
-    output=run("Z68 3.TEXT.DAT 340\r"); has("invalid or inaccessible packed text");
-    output=run("Z68 3.TEXT.DAT 10004\r"); has("invalid or inaccessible packed text");
-    output=run("Z68 3.TEXT.DAT 20000\r"); has("Usage:");
+    output=run("Z68 0.TEXT.DAT 340\r"); has("invalid or inaccessible packed text");
+    output=run("Z68 0.TEXT.DAT 10004\r"); has("invalid or inaccessible packed text");
+    output=run("Z68 0.TEXT.DAT 20000\r"); has("Usage:");
     // Check every slot and version without enabling an execution loop.
     const std::vector<std::vector<std::string>> names={
         {"rtrue","rfalse","print","print_ret","nop","save","restore","restart",
@@ -253,7 +253,7 @@ static void z68_test() {
                               "Opcode dispatched to wrong handler");
             if(v==3 && valid) {
                 ++handlers;
-                const std::vector<std::string> remaining={"save","restore","restart","show_status",
+                const std::vector<std::string> remaining={"save","restore","restart",
                     "split_window","set_window","output_stream","input_stream","sound_effect"};
                 if(std::find(remaining.begin(),remaining.end(),names[group][number])==remaining.end()) continue;
                 bus.output.clear();

@@ -84,7 +84,7 @@ image: build/flex2.dsk
 verify-image: image tools/verify-image.py
 	$(PYTHON) tools/verify-image.py
 
-build/smoke: tests/smoke.cpp tests/flex_harness.h tests/z68.h tests/random.h tests/vars.h $(EMU_SRCS) $(EMU_HEADERS)
+build/smoke: tests/smoke.cpp tests/flex_harness.h tests/z68.h tests/random.h tests/vars.h tests/input.h tests/status.h tests/dict.h tests/wrap.h $(EMU_SRCS) $(EMU_HEADERS)
 	@mkdir -p build
 	$(CXX) -std=c++17 -O2 -I$(EMU_DIR)/src tests/smoke.cpp $(EMU_SRCS) -o $@
 

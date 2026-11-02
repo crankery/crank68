@@ -45,7 +45,7 @@ the emulator still takes a single `--sram-image` argument.
 
 | Drive | Label | Contents | Files | Free sectors |
 | --- | --- | --- | --- | --- |
-| 0 | C68SYS | FLEX, Z68, and utilities | 62 | 785 |
+| 0 | C68SYS | FLEX, Z68, and utilities | 62 | 773 |
 | 1 | C68BASIC | BASIC interpreters, renumbering tools, CONVERT.BAS | 6 | 827 |
 | 2 | C68GAMES | BASIC games | 34 | 507 |
 | 3 | C68FILES | Your files and local stories | varies | varies |
@@ -162,15 +162,22 @@ boot sector, excluding the stamp itself.
 The build assembles `../z68` and installs `Z68.CMD` on drive 0. Run
 `Z68 3.ZORK1.DAT` to inspect and load the writable region of a raw Version 3 story through
 FLEX file I/O. The `.DAT` extension is the default. `Z68 3.ZORK1.DAT RUN` executes its title, opening room description and first
-`>` prompt. At the first input request it closes the file and returns to FLEX
-with an explicit milestone message. Line input/tokenization and save/restore
-are not implemented yet.
+`>` prompt, where it reads one console line with echo and backspace. It then
+fills the story text/parse buffers, and resumes the game. `OPEN MAILBOX` and
+`READ LEAFLET` work in Zork; Deadline accepts `LOOK`. Use the game’s `QUIT`
+command to return to FLEX. Save/restore remains future work.
 The builder imports local `.DAT`/`.z3` files from `../z68/stories` to drive 3
 as uppercase `NAME.DAT` files, preserving raw bytes and adding only FLEX sector
 padding. Only V3 files with valid FLEX names are accepted. The folder can be
 absent or empty. No stories are downloaded. Adding, removing, or editing files
 in that folder updates the build dependencies. With the current local
-`ZORK1.DAT`, drive 3 has five files and 477 free sectors, including acceptance fixtures.
+`ZORK1.DAT` and `deadline.z3`, drive 3 has six files and 46 free sectors, including acceptance fixtures.
+
+For an 80×24 VT100-compatible terminal, `Z68 3.ZORK1.DAT RUN VT100` adds a
+reverse-video status bar on row 1, with the room and score/moves or game clock.
+Story output scrolls in rows 2–24. Z68 restores full-screen scrolling on return
+to FLEX. Plain `RUN` keeps the escape-free console output. Both modes wrap story
+text at word boundaries to 80 columns, preserving explicit paragraph breaks.
 
 Z68 loads at `$0300`, uses its own FCB and header buffer, reserves a 512-byte
 6800 stack below the lower of FLEX `MEMEND` and `$7FFF`, plus 2,048 bytes for

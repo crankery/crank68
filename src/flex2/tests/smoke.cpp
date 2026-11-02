@@ -93,15 +93,27 @@ static void xbasic_test() {
 #include "z68.h"
 #include "random.h"
 #include "vars.h"
+#include "input.h"
+#include "status.h"
+#include "dict.h"
+#include "wrap.h"
 
-int main() {
+int main(int argc,char **argv) {
     Bus bus;
     Cpu cpu(bus);
     try {
+        if(argc>1 && std::string(argv[1])=="--status-only") {status_test();return 0;}
+        if(argc>1 && std::string(argv[1])=="--wrap-only") {wrap_test();status_test();return 0;}
+        if(argc>1 && std::string(argv[1])=="--input-only") {input_test();input_story_test();dict_test();return 0;}
         xbasic_test();
         z68_test();
         random_test();
         vars_test();
+        input_test();
+        input_story_test();
+        status_test();
+        dict_test();
+        wrap_test();
         auto inwait=symbol("build/c68flex.lst","C68INW");
         auto basicin=symbol("build/msbasic.lst","INCH");
         std::copy_n(bus.disk.begin(),256,bus.ram.begin()+0x100);

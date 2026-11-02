@@ -19,7 +19,7 @@ output_done:
 vm_do_print_ret:
         jsr vm_do_print
         bcs output_done
-        jsr pcrlf
+        jsr story_newline
         jmp vm_do_rtrue
 vm_do_print_char:
         tst vm_resolved

@@ -1,4 +1,4 @@
-; Z68 -- V3 story memory loader, loaded as a FLEX command.
+; Z68 -- V3 story interpreter, loaded as a FLEX command.
 ; Everything owned by this command is below min(FLEX MEMEND, $7FFF).
 ; The 512-byte hardware stack is reserved at the top of that range.
 ; No bank latch or direct hardware access is used.
@@ -44,6 +44,7 @@ app_stack_ready:
         tst vm_requested
         beq inspect_text
         jsr vm_run
+        jsr terminal_end
         bra close_story
 inspect_text:
         jsr text_run
@@ -73,10 +74,12 @@ finish:
         .include "output.s"
         .include "input.s"
         .include "verify.s"
+        .include "status.s"
+        .include "dict.s"
+        .include "wrap.s"
 
 ; Local writable storage is included in the binary so its full extent can be
-; verified when packaging it. The original conceptual Z-machine modules are
-; intentionally not linked until they have implementations.
+; verified when packaging it.
 flex_sp:        .word 0
 ram_top:        .word 0
 ram_budget:     .word 0

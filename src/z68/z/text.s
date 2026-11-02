@@ -296,7 +296,9 @@ text_emit_unknown:
         ldaa #'?'
         jmp putc
 text_newline:
-        jmp pcrlf
+        tst status_capture
+        bne text_emit_done
+        jmp story_newline
 text_emit_done:
         rts
 
@@ -389,6 +391,7 @@ text_error_message:
 ; Optional command argument: hexadecimal byte address, or P packed-address.
 ; Parse the remaining FLEX line directly; accept both cases and up to 17 bits.
 text_parse:
+        clr terminal_enabled
         clr vm_requested
         clr text_requested
         clr text_packed
@@ -523,7 +526,7 @@ text_digits: .byte 0
 text_nibble: .byte 0
 text_request: .byte 0,0,0
 text_usage:
-        .ascii "Usage: Z68 story [hex-byte-address | P hex-packed-address]"
+        .ascii "Usage: Z68 story [RUN [VT100] | hex-byte-address | P hex-packed-address]"
         .byte 4
 text_preview_message:
         .ascii "Decoded text (not story execution):"
@@ -542,6 +545,14 @@ text_parse_run:
         inx
         inx
         inx
+        ldaa 0,x
+        cmpa #32
+        beq text_parse_run_end
+        cmpa #13
+        beq text_parse_run_ok
+        cmpa 0xac02
+        beq text_parse_run_ok
+        jmp text_parse_bad
 text_parse_run_end:
         ldaa 0,x
         cmpa #32
@@ -549,6 +560,10 @@ text_parse_run_end:
         inx
         bra text_parse_run_end
 text_parse_run_terminator:
+        anda #0xdf
+        cmpa #'V'
+        beq text_parse_vt100
+        ldaa 0,x
         cmpa #13
         beq text_parse_run_ok
         cmpa 0xac02
@@ -560,3 +575,37 @@ text_parse_run_ok:
 text_parse_run_bad:
         jmp text_parse_bad
 vm_requested: .byte 0
+
+text_parse_vt100:
+        ldaa 1,x
+        anda #0xdf
+        cmpa #'T'
+        bne text_parse_run_bad
+        ldaa 2,x
+        cmpa #'1'
+        bne text_parse_run_bad
+        ldaa 3,x
+        cmpa #'0'
+        bne text_parse_run_bad
+        ldaa 4,x
+        cmpa #'0'
+        bne text_parse_run_bad
+        ldab #5
+text_parse_vt100_skip:
+        inx
+        decb
+        bne text_parse_vt100_skip
+text_parse_vt100_end:
+        ldaa 0,x
+        cmpa #32
+        bne text_parse_vt100_term
+        inx
+        bra text_parse_vt100_end
+text_parse_vt100_term:
+        cmpa #13
+        beq text_parse_vt100_ok
+        cmpa 0xac02
+        bne text_parse_run_bad
+text_parse_vt100_ok:
+        inc terminal_enabled
+        jmp text_parse_run_ok

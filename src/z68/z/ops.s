@@ -57,12 +57,14 @@ op_dispatch:
         jmp 0,x
 op_unimplemented:
         stx op_name_pointer
+        jsr wrap_finish
         ldx #op_unimplemented_message
         jsr pstrng
         ldx op_name_pointer
         jsr op_print_string
         bra op_report_location
 op_invalid:
+        jsr wrap_finish
         ldx #op_invalid_message
         jsr pstrng
 op_report_location:

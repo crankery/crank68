@@ -5,7 +5,8 @@ int main() {
     try {
         Bus bus; Cpu cpu(bus);
         const auto wait=symbol("build/c68flex.lst","C68INW");
-        auto run=[&](const std::string &keys) {
+        const auto waiting=symbol("build/z68.lst","vm_input_requested");
+        auto run=[&](const std::string &keys,bool story_prompt=false) {
             bus.output.clear(); size_t next=0;
             for(unsigned n=0;n<500000000;++n) {
                 if(cpu.s_.pc==wait && bus.input<0) {
@@ -13,7 +14,7 @@ int main() {
                     else {
                         auto out=bus.output;
                         out.erase(std::remove(out.begin(),out.end(),char(0)),out.end());
-                        if(out.size()>=3 && out.substr(out.size()-3)=="+++") return out;
+                        if((story_prompt && bus.ram[waiting]) || (out.size()>=3 && out.substr(out.size()-3)=="+++")) return out;
                     }
                 }
                 cpu.step();
@@ -39,6 +40,11 @@ int main() {
             start=end+1;
         }
         std::ofstream("build/build-info-list.txt")<<build_output;
+        for(const auto &mode:{"RUNVT100","RUN VT100X"}) {
+            const auto rejected=run(std::string("Z68 3.VMBOOT.DAT ")+mode+"\r");
+            require(rejected.find("Usage: Z68")!=std::string::npos && rejected.find(char(27))==std::string::npos,
+                    "Invalid terminal mode accepted or altered terminal");
+        }
         const auto czech=file("build/CZECH.DAT");
         require(czech[0]==3,"Acceptance story is not V3");
         auto output=run("Z68 3.CZECH.DAT\r");
@@ -115,21 +121,56 @@ int main() {
         // The copyrighted story is optional and supplied locally by its owner.
         std::ifstream local("../z68/stories/ZORK1.DAT",std::ios::binary);
         if(local.good()) {
-            output=run("Z68 3.ZORK1.DAT RUN\r");
+            output=run("Z68 3.ZORK1.DAT RUN\rOPEN MAILBOX\r",true);
             std::ofstream("build/zork-startup.txt")<<output;
-            const auto title=output.find("ZORK I: The Great Underground Empire");
-            const auto room=output.find("West of House",title);
-            const auto description=output.find("You are standing in an open field west of a white house",room);
-            const auto mailbox=output.find("There is a small mailbox here.",description);
-            const auto prompt=output.find(">",mailbox);
-            const auto boundary=output.find("first input request reached",prompt);
-            require(title!=std::string::npos && room!=std::string::npos && description!=std::string::npos &&
-                    mailbox!=std::string::npos && prompt!=std::string::npos && boundary!=std::string::npos &&
-                    byte("vm_input_requested")==1 && byte("vm_finished")==0 && byte("op_halted")==0,
-                    "Zork failed to reach the first prompt normally: "+output);
-            require(byte("story_opened")==0,"Zork input boundary leaked its story file");
-            require((bus.ram[word("dynamic_start")+1]&0x70)==0x10,"Serial terminal capabilities incorrect");
+            require(output.find("West of House")!=std::string::npos &&
+                    output.find("Opening the small mailbox reveals a leaflet.")!=std::string::npos &&
+                    byte("vm_input_requested")==1 && byte("vm_input_complete")==0 &&
+                    byte("vm_finished")==0 && byte("op_halted")==0 && byte("story_opened")==1,
+                    "Zork did not execute open mailbox and resume input: "+output);
+            output=run("READ LEAFLET\r",true);
+            std::ofstream("build/zork-leaflet.txt")<<output;
+            require(output.find("WELCOME TO ZORK!")!=std::string::npos && byte("op_halted")==0,"Zork second command failed: "+output);
+            output=run("QUIT\rYES\r");
+            require(byte("story_opened")==0 && byte("vm_finished")==1,"Zork quit leaked story file");
+            output=run("Z68 3.ZORK1.DAT RUN VT100\rOPEN MAILBOX\r",true);
+            std::ofstream("build/zork-vt100.txt")<<output;
+            const auto status=symbol("build/z68.lst","status_line");
+            const auto bar=std::string(bus.ram.begin()+status,bus.ram.begin()+status+80);
+            require(bar.find("West of House")!=std::string::npos && bar.find("Score:")!=std::string::npos &&
+                    bar.find("Moves: 1")!=std::string::npos && output.find("reveals a leaflet")!=std::string::npos &&
+                    byte("terminal_active")==1 && byte("op_halted")==0 &&
+                    (bus.ram[word("dynamic_start")+1]&0x70)==0,"Zork VT100 turn/status failed: "+output);
+            output=run("QUIT\rYES\r");
+            require(output.find("\x1b[r")!=std::string::npos && byte("terminal_active")==0 && byte("story_opened")==0,
+                    "Zork VT100 cleanup failed");
             zork=true;
+        }
+        if(std::ifstream("../z68/stories/deadline.z3").good()) {
+            output=run("Z68 3.DEADLINE.DAT RUN VT100\rLOOK\r",true);
+            std::ofstream("build/deadline-vt100.txt")<<output;
+            const auto description=output.find("You are on a wide lawn");
+            require(description!=std::string::npos,"Missing Deadline room description");
+            const auto end=output.find("\r\n\r\n",description);
+            require(end!=std::string::npos,"Unterminated Deadline paragraph");
+            const auto paragraph=output.substr(description,end-description);
+            std::string joined;size_t from=0;
+            while(from<paragraph.size()) {
+                auto until=paragraph.find("\r\n",from);if(until==std::string::npos)until=paragraph.size();
+                require(until-from<=80,"Deadline narrative exceeds terminal width");
+                if(!joined.empty())joined+=' ';joined+=paragraph.substr(from,until-from);from=until+2;
+            }
+            require(joined=="You are on a wide lawn just north of the entrance to the Robner estate. Directly north at the end of a pebbled path is the Robner house, flanked to the northeast and northwest by a vast expanse of well-kept lawn. Beyond the house can be seen the lakefront.",
+                    "Deadline wrapping split, lost or altered narrative words");
+            const auto status=symbol("build/z68.lst","status_line");
+            const auto bar=std::string(bus.ram.begin()+status,bus.ram.begin()+status+80);
+            require(bar.find("South Lawn")!=std::string::npos && bar.find("Time:")!=std::string::npos &&
+                    output.find("South Lawn",output.find("LOOK"))!=std::string::npos &&
+                    byte("vm_input_requested")==1 && byte("op_halted")==0 && byte("terminal_active")==1,
+                    "Deadline did not process LOOK: "+output);
+            output=run("QUIT\rYES\r");
+            require(byte("terminal_active")==0 && byte("story_opened")==0 && byte("vm_finished")==1,
+                    "Deadline quit/cleanup failed: "+output);
         }
         std::ofstream("build/acceptance.json")
             <<"{\n  \"bootstrap_gates_passed\": 6,\n  \"czech_status\": \"passed\",\n"
@@ -137,7 +178,8 @@ int main() {
             <<"  \"czech_expected_automatic\": 349,\n  \"czech_visual_checks\": "<<visual<<",\n"
             <<"  \"zork_first_prompt\": "<<(zork?"true":"null")<<"\n}\n";
         std::cout<<"Acceptance: 6 bootstrap gates; CZECH 349 automatic checks passed (19 visual checks require review).\n";
-        std::cout<<(zork?"Zork opening, West of House, mailbox and first input prompt passed.\n":
+        std::cout<<"VT100 score/time startup checks passed for available local stories.\n";
+        std::cout<<(zork?"Zork opening, West of House, mailbox, mailbox command, second command and quit passed.\n":
                          "Zork startup skipped: no local ZORK1.DAT.\n");
         return 0;
     } catch(const std::exception &error) {

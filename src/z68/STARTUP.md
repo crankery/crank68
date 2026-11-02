@@ -6,14 +6,15 @@ First output, the title/banner, and the initial room description are separate
 checkpoints. Printing a string extracted from the story is a useful earlier
 test, but does not count as executing the story.
 
-**Reached:** local Zork I release 88 prints its banner, West of House, the
-opening description, mailbox and first `>` through normal story execution.
-`sread` sets `vm_input_requested`, emits an explicit milestone diagnostic and
-returns to FLEX. No command is consumed. `make -C ../flex2 acceptance` checks
-this startup when the local story exists and runs the full CZECH V3 suite:
-349 automatic passes, zero failures, plus 19 visual print checks.
-The sections below retain the original implementation plan and acceptance
-criteria; input/tokenization and interactive play are the next milestone.
+**Reached and extended:** local Zork I prints its opening, processes OPEN
+MAILBOX and READ LEAFLET, and returns to another story prompt. Deadline
+processes LOOK. `sread` fills V3 text and parse buffers using the dictionary
+encoder/lookup and resumes execution. Optional VT100 mode supplies status and
+scrolling regions. Tests cover interactive commands, QUIT confirmation and
+cleanup, plus CZECH V3's 349 automatic passes (zero failures) and 19 visual
+print checks. The sections below retain the original startup implementation
+plan; save/restore, restart and stream/window control remain. Story output now
+wraps words at 80 columns in both plain and VT100 modes.
 
 Implement V3 first. V1/V2 can follow with their different text and opcode
 semantics; no V4+ instructions, screen model, or addressing are in scope.
@@ -93,7 +94,7 @@ the same memory reader. This tests text before depending on a VM dispatcher.
 
 ## 3. Decoder and execution state
 
-Files: `z/decode.s`, `z/vars.s`, `z/branch.s`, `z/calls.s`, `z/debug.s`.
+Files: `z/decode.s`, `z/vars.s`, `z/branch.s`, `z/calls.s`.
 
 - Decode V3 long, short, and variable forms; preserve operand types as well as
   values. Fetch store/branch suffixes only where the opcode defines them.

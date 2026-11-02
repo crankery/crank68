@@ -1,11 +1,12 @@
 # Z68 for C68 FLEX
 
 Z68 is a FLEX-loadable **Version 3 Z-machine interpreter in development**.
-It executes the local Zork I through its title, initial room description, mailbox,
-and first `>` prompt. At `sread` it reports that the first input request was
-reached, closes the story and returns to FLEX. Line input, tokenization and
-interactive play are not implemented yet. CZECH V3 completes with 349 automatic
-passes, zero failures, and 19 print checks requiring visual review.
+It executes local V3 stories with interactive console input. Zork I accepts
+`open mailbox` and `read leaflet`; Deadline accepts `look` and advances to its
+next prompt. Input is lowercased, encoded for the story dictionary, split into
+parse entries and handed back to the game's own parser. CZECH V3 completes
+with 349 automatic passes, zero failures, and 19 print checks requiring visual
+review. Save/restore, restart, window splitting and stream control remain stubs.
 
 From this directory, `make` delegates to `../flex2` to assemble Z68 and package
 `Z68.CMD` on drive 0. Outputs are `../flex2/build/z68.bin`, `z68.lst`,
@@ -73,8 +74,8 @@ Code, strings, the private 320-byte FCB, and the 64-byte header are loaded from
 `header[$0E]` bytes, mapping story address zero to that RAM base. It copies the
 already-read 64-byte header, then continues sequential binary reads from offset
 64 without reopening or skipping bytes. The loaded copy remains writable;
-RUN adjusts Flags 1 to advertise no status line, no split window and fixed-pitch
-output. Inspection mode preserves the story bytes.
+RUN adjusts Flags 1 to advertise no split window and fixed-pitch output;
+status-line support is advertised only with the optional VT100 terminal mode. Inspection mode preserves the story bytes.
 
 Above dynamic memory is free growth space. Fixed reservations are placed
 below the runtime RAM ceiling:
@@ -98,9 +99,9 @@ With the current build and Zork I release 88, the layout is:
 
 | Region | Address range (end excluded) |
 | --- | --- |
-| Code and fixed data | `$0300–$2C3B` |
-| Writable story | `$2C3B–$5A8E` |
-| Free growth space (5,480 bytes) | `$5A8E–$6FF6` |
+| Code and fixed data | `$0300–$3776` |
+| Writable story | `$3776–$65C9` |
+| Free growth space (2,605 bytes) | `$65C9–$6FF6` |
 | Sector index reservation | `$6FF6–$7408` |
 | Cache reservation | `$7408–$7600` |
 | Z-stack/frame reservation | `$7600–$7E00` |
@@ -114,8 +115,8 @@ checks the 64-byte minimum, recovers from truncated files, and guards memory
 above a reduced `MEMEND` and below the reserved CPU stack.
 
 Console output and files use FLEX calls. There are no direct ACIA, SRAM-window,
-or bank-latch accesses. Dictionary input, save/restore and debug modules remain
-conceptual placeholders and are not linked.
+or bank-latch accesses. Save/restore remains future work; unused conceptual
+source placeholders have been removed.
 
 ## Packed text and story reads
 
@@ -188,15 +189,15 @@ malformed frames and initial-context returns. Return behavior follows
 ## Opcode scaffold and next implementation steps
 
 All **68 V1–V3 opcode names** have separate labels in `z/handlers.s`.
-58 execute their V3 operations; `sread` is a deliberate input boundary.
-The remaining nine handlers trap with their name, normalized class/number and
-17-bit PC: `save`, `restore`, `restart`, `show_status`, `split_window`,
+60 execute their V3 operations, including interactive V3 `sread`.
+The remaining eight handlers trap with their name, normalized class/number and
+17-bit PC: `save`, `restore`, `restart`, `split_window`,
 `set_window`, `output_stream`, `input_stream`, and `sound_effect`.
 Reserved and V4+ slots report an invalid-opcode error. V1/V2 table entries
 are retained, but the loader and text decoder currently accept V3 stories only.
 
 The implementations live in their owning modules: `calls.s`, `branch.s`,
-`math.s`, `arrays.s`, `objects.s`, `props.s`, `output.s`, and `verify.s`.
+`math.s`, `arrays.s`, `objects.s`, `props.s`, `output.s`, `status.s`, `dict.s`, and `verify.s`.
 Branching supports both suffix lengths, signed offsets and return branches;
 arithmetic uses wrapping 16-bit values and signed division/remainder.
 Array writes are confined to dynamic RAM. Object/property support uses the
@@ -229,8 +230,107 @@ flags, diagnostic PCs, halt state and unchanged story memory.
 
 The decoder preserves raw operand types and values. The execution loop resolves
 variables from left to right, dispatches the operation and enforces a
-30,000-instruction budget. `vm_input_requested`, `vm_finished` and `op_halted`
-distinguish the input milestone, normal termination and errors.
+30,000-instruction budget. `vm_input_requested`, `vm_input_complete`, `vm_finished` and `op_halted`
+distinguish waiting for a line, completed input, normal termination and errors.
+The instruction budget is refreshed after each completed input line.
+
+## VT100 status line
+
+Use an 80-column, 24-row VT100-compatible terminal and run:
+
+```text
+Z68 3.ZORK1.DAT RUN VT100
+Z68 3.DEADLINE.DAT RUN VT100
+```
+
+VT100 mode clears the screen and reserves row 1 for an inverse-video status
+bar; rows 2–24 form the scrolling story area. The room's short name appears
+on the left, with score/moves on the right for score games, or a 24-hour HH:MM
+clock for time games. Long room names are clipped with an ellipsis. The line
+is updated by `show_status` and immediately before reading console input.
+The story cursor and attributes are saved/restored around each redraw. On
+normal exit or VM error, Z68 restores normal attributes and
+full-screen scrolling before returning to FLEX. The terminal dimensions are
+fixed; window resizing and the separate Z-machine upper window are not supported.
+Plain `RUN` emits no terminal escapes and advertises no status line.
+
+`z/status.s` formats into an 80-byte private buffer. The `putc` capture hook
+reuses the existing room-name decoder and signed number printer; story operands
+and the VM value are restored afterward. Tests use a small terminal model to
+check cursor restoration, row-1 protection during scrolling, clipping, score/time
+formatting and cleanup, plus real Zork and optional local Deadline startup.
+The behavior follows the [V3 status-line rules](https://inform-fiction.org/zmachine/standards/z1point1/sect08.html#status).
+
+## Story word wrapping
+
+Plain and VT100 RUN modes both wrap story text to 80 columns. `z/wrap.s`
+buffers one word across string, character and number print operations, deferring
+inter-word spaces until the next word is known to fit. Explicit newlines and
+paragraph breaks are preserved, as are spaces that fit on the line. Separating
+spaces are dropped at a wrap boundary; only words longer than 80 characters
+are split across lines. The wrapper owns an 80-byte word buffer.
+
+Prompts and trailing spaces are flushed before console input; pending text is
+also flushed on normal exit and before VM error diagnostics. Status capture,
+terminal escapes, the fixed status row and console echo/editing bypass wrapping.
+Inspection-mode output and FLEX itself keep their existing output behavior.
+Tests cover exact-width lines, split print operations, long words, indentation,
+paragraphs, prompt visibility, error ordering and terminal cursor behavior.
+A real Deadline room paragraph is checked for line lengths and intact words.
+
+## Console line capture
+
+`Z68 3.ZORK1.DAT RUN` now waits for a line at the first prompt. Type a command
+and press Enter: Z68 fills the text and parse buffers and resumes the story.
+Use the game’s `quit` command to return to FLEX (confirm when the game asks).
+
+`input_read_line` in `z/input.s` takes A=maximum accepted characters (0–255).
+It returns a NUL-terminated lowercase ASCII string in the private 256-byte
+`input_buffer`; B and `input_length` hold its length, carry is clear.
+Echo preserves typed case. Backspace and DEL erase one character; other controls
+are ignored. Printable characters beyond capacity ring BEL and are discarded;
+backspace still makes room. CR or LF ends the line, and CRLF is handled across
+successive reads. Empty lines and a zero-character capacity are supported.
+`sread` takes the first resolved operand as the story text-buffer byte address.
+Its length byte n permits n-1 typed characters and a NUL terminator at byte n;
+characters begin at byte 1. The full n+1-byte buffer must fit in dynamic RAM,
+start beyond the 64-byte header and have at least three bytes. Invalid extents
+or operand counts halt before input is consumed or story RAM is changed.
+Only the text and its terminator are written; the length byte, unused tail and
+parse buffer remain untouched. Tests cover empty input, truncated lines, the
+maximum V3 capacity (254), exact-fit allocation and rejected invalid buffers.
+The layout follows the [V3 read specification](https://inform-fiction.org/zmachine/standards/z1point1/sect15.html#read).
+
+`getc` in the hardware adapter uses the C68 FLEX raw input entry at `$BF00`.
+The normal FLEX INCH entry echoes at its monitor adapter, so it cannot provide
+controlled line editing. No ACIA registers are accessed by Z68. Emulator tests
+check this driver entry, buffer guards, exact echo/editing, capacity boundaries,
+case conversion and successive CRLF reads.
+
+## V3 dictionary and parse buffer
+
+`z/dict.s` validates the parse-buffer extent, text/parse separation and dictionary
+metadata before console input. Spaces separate words and are discarded;
+dictionary separators (usually comma, full stop and double quote) become tokens
+of their own. Each token is encoded into six Z-characters, padded with 5s or
+truncated to four packed bytes. Alphabet shifts and ten-bit escapes are handled.
+Binary search uses the dictionary's entry stride and sorted encoded keys.
+
+Each parse entry stores the dictionary byte address (zero for an unknown word),
+the original word length and its position starting at 1 in the V3 text buffer.
+The count goes in parse byte 1; parsing stops at capacity without overwriting
+unused entries or the text. Empty input produces a zero-word parse table.
+The local Infocom stories declare legacy capacity 120; historical 240 is also
+accepted. Both are capped at 59 records (238 bytes) and their length byte is
+preserved, avoiding writes into adjacent buffers. Other capacities use their
+normal word-count interpretation.
+
+Tests cover all key encodings, separators, unknown words, token lengths versus
+key truncation, first/last dictionary entries, parse capacities, malformed
+metadata and RAM guards. Interactive checks open the mailbox, read the leaflet,
+process Deadline's LOOK, refresh VT100 status, and quit cleanly through each
+story's confirmation. See the [dictionary/lexical rules](https://inform-fiction.org/zmachine/standards/z1point1/sect13.html)
+and [V3 read/parse format](https://inform-fiction.org/zmachine/standards/z1point1/sect15.html#read).
 
 ## Random-number service
 
@@ -304,16 +404,31 @@ execution and must report **349 automatic passes, zero failures and 19 visual
 print checks**, followed by `quit`. Visual checks are recorded separately from
 automatic conformance; interpreter-specific header output may differ.
 
-If the local `stories/ZORK1.DAT` is present, acceptance also asserts the title,
-West of House, its description, the mailbox, `>` and the deliberate first-read
-boundary, then verifies that the story file was closed and no error was raised.
-No copyrighted story is downloaded by the build.
+If local stories are present, acceptance executes commands and waits for the
+next input prompt: Zork opens its mailbox and reads the leaflet; Deadline
+processes LOOK. It checks VT100 score/moves and time displays, then exercises
+each game's QUIT confirmation and verifies file/terminal cleanup. No copyrighted
+story is downloaded by the build.
 
 `../flex2/build/acceptance.json` records results. Transcripts are
 `czech-load.txt`, `czech-actual.txt`, `vmboot.txt` and `zork-startup.txt` in that
 build directory. `make -C ../flex2 zork` runs a diagnostic startup with the
 last 24 decoded operations and opcode counts; output is `ZORK1-run.txt`.
 
-The next milestone is real V3 line input, buffer writes and dictionary
-encoding/tokenization. Save/restore, screen/window and stream control remain
-separate work.
+Save/restore, restart, window splitting and stream control remain separate work.
+Story text now wraps at word boundaries in an 80-column output area.
+
+The diagnostic runner also supports another locally supplied story, for example:
+
+```sh
+cd ../flex2
+make image build/story-runner
+./build/story-runner DEADLINE --expect-prompt
+```
+
+It supplies a test line when the console line reader is entered, then stops
+the harness when the story reaches its next input prompt. It checks the prompt,
+VM flags and command bytes in the story text buffer.
+Zork uses `OPEN MAILBOX`; other stories use `LOOK`. Local Deadline release 27,
+serial 831005, reaches South Lawn, accepts `LOOK`, and fills its text buffer.
+Both stories execute their command and remain running at the next prompt.

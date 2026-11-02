@@ -29,8 +29,7 @@ op_quit:
 op_new_line:
         jmp vm_do_new_line
 op_show_status:
-        ldx #op_name_show_status
-        jmp op_unimplemented
+        jmp vm_do_show_status
 op_verify:
         jmp vm_do_verify
 

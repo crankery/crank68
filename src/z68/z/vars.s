@@ -418,6 +418,7 @@ vm_do_random:
 vars_op_done:
         rts
 vars_fault:
+        jsr wrap_finish
         ldaa #1
         staa op_halted
         ldx #vars_error_message
