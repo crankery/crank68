@@ -29,6 +29,7 @@ std::vector<uint16_t> spwatches_;
 struct termios orig_termios_;
 
 std::optional<std::string> sram_image_;
+std::optional<std::string> sd_image_;
 std::optional<uint16_t> tcp_console_port_;
 std::unique_ptr<TcpConsole> tcp_console_;
 bool terminal_mode_set_ = false;
@@ -160,6 +161,17 @@ int parse_args(int argc, char **argv)
                 return 1;
             }
             sram_image_ = argv[++i];
+            continue;
+        }
+
+        if (arg == "--sd-image")
+        {
+            if (i + 1 >= argc)
+            {
+                std::fprintf(stderr, "--sd-image requires a filename\n");
+                return 1;
+            }
+            sd_image_ = argv[++i];
             continue;
         }
 
@@ -528,6 +540,19 @@ int main(int argc, char **argv)
         {
             if (std::filesystem::exists(*sram_image_))
                 machine_.banked_memory_->loadImage(*sram_image_);
+        }
+        catch (const std::exception &e)
+        {
+            std::fprintf(stderr, "%s\n", e.what());
+            return 1;
+        }
+    }
+
+    if (sd_image_)
+    {
+        try
+        {
+            machine_.memory_io_->attachSdImage(*sd_image_);
         }
         catch (const std::exception &e)
         {

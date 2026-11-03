@@ -33,6 +33,20 @@ Without `--sram-image`, SRAM lasts only for the current process.
 Existing `--load file@address` loads through the CPU memory map; it does not
 load the full SRAM image or change I/O latches.
 
+## SD bridge
+
+Add `--sd-image FLEX.DSK` to connect the first PIA at `$E020–$E023` to a host
+image through the SD bridge's normal byte protocol. The image must already
+exist, be writable, and be exactly 1,048,576 bytes. Sector writes are flushed
+to the file immediately; the emulator does not create or resize it. It uses
+the AVR firmware's protocol parser, including INFO, STATUS, checksums and
+sector addresses, while completing the PIA handshakes immediately.
+
+From `src`, `make run` prepares separate writable SRAM and SD session images
+and passes both to the emulator. `make DRIVE_LAYOUT=sd-first run` puts SD at
+FLEX drive 0 and keeps the two SRAM volumes at drives 1 and 2. MIKBUG's `F`
+command still starts from physical SRAM; SD boot is a separate step.
+
 ## TCP console
 
 Add `--tcp-console 6800` to connect ACIA #1 to a raw TCP client instead of

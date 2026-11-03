@@ -6,10 +6,12 @@
 - [x] Implement the FLEX drive-2 backend and MIKBUG ROM transport, including
   protocol-v2 payload checksums. CPU/protocol and FMS tests pass; hardware
   bring-up is still required.
-- [ ] Emulate the PIA/AVR SD bridge in the C68 emulator: model the latch and
-  handshake behavior and protocol-v2 checksums, backed by a 1 MiB FLEX.DSK
-  host file, so the same FLEX removable-disk driver runs in the emulator.
-  Include absent-media, checksum-error and timeout cases for driver testing.
+- [x] Emulate the PIA/AVR SD bridge in the C68 emulator with PIA handshakes,
+  protocol-v2 checksums and a 1 MiB host image. FLEX can catalog it in both
+  drive layouts.
+- [ ] Add emulator fault injection and timeout recovery for removable-media
+  driver testing. The separate CPU fixture covers absent media, bad checksums
+  and a disconnected bridge.
 - [ ] Measure runtime stack usage on the ATmega328P under SD-error paths.
 - [ ] Add explicit eject/remount and media/write-protect handling.
 - [ ] Add removable-media boot support after ordinary sector I/O works.

@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cstdint>
+#include <memory>
+#include <string>
 #include <vector>
 
 #include "mem.h"
@@ -8,6 +10,7 @@
 #include "latch.h"
 #include "acia.h"
 #include "pia.h"
+#include "sdBridgePia.h"
 #include "switches.h"
 
 class MemoryIO : public Mem
@@ -37,13 +40,21 @@ public:
     auto &bankedMemoryLatch() { return banked_memory_latch_; }
     const auto &bankedMemoryLatch() const { return banked_memory_latch_; }
 
+    void attachSdImage(const std::string &path)
+    {
+        auto bridge = std::make_unique<SdBridgePia>(path);
+        devices_[4] = bridge.get();
+        sd_bridge_ = std::move(bridge);
+    }
+
     virtual uint8_t read(uint16_t addr) const override
     {
         for (auto dev : devices_)
         {
-            if (dev->handles(addr) >= 0)
+            int8_t port = dev->handles(addr);
+            if (port >= 0)
             {
-                return dev->in(addr);
+                return dev->in(port);
             }
         }
 
@@ -82,4 +93,5 @@ private:
     static const uint16_t EndAddress = 0xE0FF;
 
     std::vector<MemoryIODevice *> devices_;
+    std::unique_ptr<SdBridgePia> sd_bridge_;
 };

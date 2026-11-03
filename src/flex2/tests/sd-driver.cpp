@@ -2,8 +2,7 @@
 #include "../build/drive-config.h"
 #include "../../sd/firmware/sd_bridge/src/protocol.h"
 
-// Test fixture only: PIA flags/latches connected to the real AVR parser.
-// This does not implement an SD device in the interactive emulator.
+// Test fixture: PIA flags/latches connected to the real AVR parser.
 struct Storage
 {
     std::vector<uint8_t> disk = std::vector<uint8_t>(sdbridge::ImageBytes);

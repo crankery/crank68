@@ -17,7 +17,7 @@ With `DRIVE_LAYOUT=sd-first`, SD becomes drive 0 and SRAM units move to drives
 1 and 2. The selected layout is compiled into FLEX and tested by `make test-sd`.
 The SD volume is 1 MiB (128×32×256); SRAM volumes remain 512 KiB each.
 Install both the rebuilt FLEX image and updated `mikbug2.rom`. An old ROM or
-an absent bridge makes drive 2 unavailable, without aliasing an SRAM volume.
+an absent bridge makes the configured SD drive unavailable, without aliasing an SRAM volume.
 `make test-sd` runs the CPU/protocol and FMS integration tests.
 The original four-volume generated image was backed up in `build/` before
 conversion. This rebuild preserves the factory files, not arbitrary files
@@ -28,7 +28,7 @@ from an emulator session image; migrate any separate session image explicitly.
 FLEX's existing logical drive range is 0–3. Its per-drive FMS state already
 supports four logical devices, regardless of the kind of hardware behind them.
 Keep that range and the corrected DRVX6 per-drive indexing. The platform driver
-accepts the two SRAM devices and SD drive 2.
+accepts the two SRAM devices and the configured SD drive.
 
 The physical driver vectors in this build are:
 

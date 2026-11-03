@@ -23,17 +23,22 @@ The converter expands the selected source to 32 sectors per track. This rebuilds
 the packaged `FLEX.DSK` from the source image; keep any SD card with user files
 separate. The build does not flash chips or write a card.
 
-`make run` launches the emulator with the packaged ROM and a writable
-`build/session.dsk`. The session image is copied from the factory SRAM image
-only the first time; later runs preserve its files. The interactive emulator
-does not emulate the SD bridge yet, so `make run` requires the default layout.
-The `sd-first` layout is ready for the SD boot work; MIKBUG's current `F` command
-still starts from SRAM. Use `make DRIVE_LAYOUT=sd-first test` to run its driver
-and FMS tests without the SRAM boot smoke test.
+`make run` launches the emulator with the packaged ROM and writable SRAM and
+SD images. The default SRAM image is `build/session.dsk`; the SD-first layout
+uses `build/session-sram-sd-first.dsk`. The SD image is
+`build/session-sd-<layout>.dsk`. Each session
+image is copied from its factory image only the first time; later runs preserve
+its files. The emulator exposes the SD image through the PIA bridge protocol.
+`make DRIVE_LAYOUT=sd-first run` puts SD at FLEX drive 0. MIKBUG's current `F`
+command still starts from physical SRAM before FLEX selects its configured
+drives. Use `make DRIVE_LAYOUT=sd-first test` to run its driver and FMS tests
+without the SRAM boot smoke test.
 
 `make test` also runs the MIKBUG boot, FLEX and emulator suites. `make` already
 runs FLEX image verification, SD protocol tests, the SD board pin audit and AVR
-compilation. The AVR hex is for ISP programming of an internal-8-MHz target;
+compilation. The test suite boots the real emulator and catalogs the SD drive
+through FLEX in the selected layout. The AVR hex is for ISP programming of an
+internal-8-MHz target;
 the build does not set clock fuses. See [SD bring-up](sd/README.md) and
 [MIKBUG ROM API](roms/mikbug2/README.md#sd-bridge-rom-api).
 

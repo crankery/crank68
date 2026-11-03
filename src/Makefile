@@ -1,6 +1,7 @@
 PYTHON ?= python3
 DRIVE_LAYOUT ?= sram-first
 SD_VOLUME ?= $(if $(filter sd-first,$(DRIVE_LAYOUT)),0,1)
+SRAM_SESSION := $(if $(filter sd-first,$(DRIVE_LAYOUT)),build/session-sram-sd-first.dsk,build/session.dsk)
 
 .PHONY: all system test run session program-avr program-avr-dry-run program-avr-isp program-avr-isp-dry-run
 all: system
@@ -19,14 +20,14 @@ else
 	$(MAKE) -C roms/mikbug2 test
 	$(MAKE) -C flex2 test DRIVE_LAYOUT=$(DRIVE_LAYOUT)
 endif
+	$(PYTHON) tools/test-sd-emu.py --drive-layout $(DRIVE_LAYOUT)
 	$(MAKE) -C emu test
 
 session: system
-	$(PYTHON) tools/prepare-session.py
+	$(PYTHON) tools/prepare-session.py --drive-layout $(DRIVE_LAYOUT)
 
 run: session
-	@test '$(DRIVE_LAYOUT)' = sram-first || { echo 'SD-first needs SD boot and emulator bridge support'; exit 1; }
-	build/system/emu --load build/system/mikbug2.rom@E000 --sram-image build/session.dsk
+	build/system/emu --load build/system/mikbug2.rom@E000 --sram-image $(SRAM_SESSION) --sd-image build/session-sd-$(DRIVE_LAYOUT).dsk
 
 # Only these explicit targets contact (or display commands for) the programmer.
 program-avr: system
