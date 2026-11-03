@@ -15,5 +15,5 @@ with tempfile.TemporaryDirectory(prefix="mikbug2-test-") as tmp:
     subprocess.run(["c++", "-std=c++17", "-O2", "-I" + str(emu / "src"),
                     str(root / "tests/boot.cpp"), *map(str, sources),
                     "-o", executable], check=True)
-    for args in ([], ["direct"]):
+    for args in ([], ["lowercase"], ["direct"]):
         subprocess.run([executable, *args], cwd=flex, check=True)

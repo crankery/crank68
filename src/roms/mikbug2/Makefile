@@ -20,7 +20,7 @@ all: $(TARGET)
 test: $(TARGET)
 	python3 tests/boot.py
 
-$(TARGET): $(SRC) | 
+$(TARGET): $(SRC) sdcard.s
 	$(VASM_BIN) -Fbin -L $(LST) -o $@ $<
 	cat $(LST)
 

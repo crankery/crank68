@@ -109,9 +109,9 @@ def verify(path):
     acceptance_files = [(name, Path('build', name).read_bytes()) for name in
                         ('CZECH.DAT', 'VMBOOT.DAT', 'VMFAIL.DAT', 'VMLIMIT.DAT')]
     for name, expected in story_files() + acceptance_files:
-        actual = bytes(disks[3][name][1])
+        actual = bytes(disks[file_drive(name)][name][1])
         assert actual == expected + bytes((-len(expected)) % 252), f'Story differs: {name}'
-    print(f'{path}: all four drives, imported files, load records, and boot link verified.')
+    print(f'{path}: both SRAM drives, imported files, load records, and boot link verified.')
 
 
 if __name__ == '__main__':

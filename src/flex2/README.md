@@ -1,7 +1,7 @@
 # C68 FLEX 2
 
 `make` builds a C68 version of FLEX, packages `FLEX2.SYS`, `MSBASIC.CMD`, and historical utilities,
-and constructs a linked, formatted **1,048,576-byte SRAM image containing four 256 KiB disks** at
+and constructs a linked, formatted **1,048,576-byte SRAM image containing two 512 KiB disks** at
 `build/flex2.dsk`. The downloaded sources remain unchanged.
 
 Uses `../tools/bin/vasm6800_oldstyle`, as in `../roms/basic680`.
@@ -39,44 +39,47 @@ the original listing's zero value; this does not affect emitted bytes.
 
 ## Disk layout and boot contract
 
-The image contains **four drives, each 64 tracks × 16 sectors × 256 bytes**.
-Each track is one 4 KiB SRAM page. All four disks share the same 1 MiB image;
+The image contains **two SRAM drives, each 128 tracks × 16 sectors × 256 bytes**.
+Each track is one 4 KiB SRAM page. Both disks share the same 1 MiB image;
 the emulator still takes a single `--sram-image` argument.
 
 | Drive | Label | Contents | Files | Free sectors |
 | --- | --- | --- | --- | --- |
-| 0 | C68SYS | FLEX, Z68, and utilities | 62 | 773 |
-| 1 | C68BASIC | BASIC interpreters, renumbering tools, CONVERT.BAS | 6 | 827 |
-| 2 | C68GAMES | BASIC games | 34 | 507 |
-| 3 | C68FILES | Your files and local stories | varies | varies |
+| 0 | C68SYS | FLEX, Z68, utilities and BASIC interpreters/tools | 68 | 1616 |
+| 1 | C68DATA | BASIC games, local stories and user files | 40 | 569 |
 
-- Physical sector offset: `((drive * 64 + track) * 16 + sector - 1) * 256`.
-- Drive numbers are 0–3, tracks are 0–63, and sectors are 1–16.
+- Physical sector offset: `((drive * 128 + track) * 16 + sector - 1) * 256`.
+- SRAM drive numbers are 0–1, tracks are 0–127, and sectors are 1–16.
 - Each drive's track 0 reserves sectors 1–4 and links directory sectors 5–16.
   Sector 3 contains that drive's system information record. Each drive has its
   own file/free chains, with track numbers relative to the drive.
 - Drive 0 sector 1 contains the bootloader; offsets 5 and 6 hold `FLEX2.SYS`'s
   starting track and sector, following `6800Flex/LINK.ASM`'s convention.
 - File placement and geometry are described in `tools/disk_layout.py`;
-  the driver currently implements this fixed four-drive layout.
+  the SRAM backend implements this fixed two-drive layout.
 
-At the FLEX prompt, `CAT` catalogs drive 0. Use `CAT 1`, `CAT 2`, or `CAT 3`
-for the other drives. FLEX starts with system and working drives both set to 0;
+At the FLEX prompt, `CAT` catalogs drive 0. Use `CAT 1` for the SRAM data drive
+and `CAT 2` for the 1 MiB SD volume (updated MIKBUG ROM and AVR bridge required).
+Drive 3 remains unavailable. FLEX starts with system and working drives both set to 0;
 use a drive prefix to run a command from another disk:
 
 ```text
-1.XBASIC
+0.XBASIC
 ```
 
 Then, inside XBASIC:
 
 ```text
-LOAD "2.CRAPS"
+LOAD "1.CRAPS"
 RUN
 ```
 
-Use `SAVE "3.MYPROG"` and `LOAD "3.MYPROG"` for your files on drive 3.
-This layout replaces the former single-drive format; refresh your emulator's
+Use `SAVE "1.MYPROG"` and `LOAD "1.MYPROG"` for your files on drive 1.
+Build with `make DRIVE_LAYOUT=sd-first` to map SD to FLEX drive 0 and the two
+SRAM volumes to drives 1 and 2. `make test-sd DRIVE_LAYOUT=sd-first` tests this
+mapping through actual 6800 sector and FMS calls. The `F` monitor boot still
+starts from SRAM; SD boot and interactive emulator bridge support remain ahead.
+This layout replaces the former four-drive format; refresh your emulator's
 working copy from the new build after exiting any running emulator.
 
 BIOS handoff (not yet added to the sibling BIOS project):
@@ -86,7 +89,7 @@ BIOS handoff (not yet added to the sibling BIOS project):
 3. Copy its first 256 bytes from `$C000` to `$0100`.
 4. Jump to `$0100`.
 
-The 158-byte bootloader establishes a stack at `$9FFF`, follows the linked
+The 162-byte bootloader establishes a stack at `$9FFF`, follows the linked
 system-file sectors directly through SRAM, interprets load records, and jumps
 to `$AD00`. It makes no ROM calls and needs no directory search. A broken chain
 stops in its `BOOTERROR` loop. This loader is specific to the C68 SRAM mapping.
@@ -111,6 +114,24 @@ cp build/flex2.dsk build/session.dsk
 Only refresh `session.dsk` when you want to discard changes from that session.
 No emulator startup/reset-vector integration is supplied here.
 
+## Removable SD media
+
+Drive 2 dispatches through `platform/sdcard.asm` to the SD transport in the
+updated MIKBUG ROM. `make` builds `../roms/mikbug2/mikbug2.rom` alongside FLEX;
+install that ROM as well as the new FLEX system image. Earlier ROMs are detected
+and drive 2 reports unavailable. Drives 0/1 continue to use SRAM.
+
+The AVR uses one 1 MiB FAT32 file, FLEX.DSK, with 128 tracks × 32 sectors.
+Prepare it using the [SD project's image converter](../sd/README.md).
+`make test-sd` tests the real 6800 driver and FMS file operations against the
+AVR protocol engine through a PIA fixture. This is not the interactive emulator
+SD device; hardware handshakes still need bench tests. The ROM's clock-dependent
+timeout setting is documented in [the ROM API](../roms/mikbug2/README.md#sd-bridge-rom-api).
+
+[REMOVABLE.md](REMOVABLE.md) records the mapping and remaining boot/media-change
+work. The monitor's F command still boots SRAM; an SD-aware first-sector loader
+and boot-drive handoff are future work.
+
 ## C68 hardware changes
 
 `platform/console.asm` contains local MC6850 polling routines based on the
@@ -123,8 +144,9 @@ reset vector at `$FFFE`, without a hard-coded monitor routine address.
 `platform/ramdisk.asm` replaces the floppy-controller driver. It uses the
 write-only page latch at `$E002` and the `$C000–$CFFF` window. The `$D000` window
 and `$E003` latch are untouched. Drive selection stores a base SRAM page
-(0, 64, 128, or 192); sector access adds a validated track in the range 0–63.
-Drives outside 0–3 are rejected. Ready checks preserve the selected drive.
+(0 or 128); sector access adds a validated track in the range 0–127.
+Drive 2 dispatches to the ROM SD bridge; other drive numbers are rejected.
+Ready checks preserve the selected drive, including when checking the other backend.
 The C000 window belongs to the disk driver; it does not restore its prior page.
 
 The C68 extension at `$BFF8–$BFF9` holds a wrapping 16-bit input-poll counter.
@@ -134,7 +156,9 @@ Z68 combines it with the FLEX date to seed normal random-number mode. Timer
 interrupts and the RTC are still unused. The counter is outside application RAM.
 
 The added routines and scratch variables live at `$BF00`, in space freed by
-the removed floppy driver. This leaves `$A100` available for utility commands. The reference FLEX user-memory limit remains `$7FFF`.
+the removed floppy driver. Thin SD ROM adapters occupy `$A980..$A9FF`, after
+the complete startup FCB. The ROM transport reserves 18 bytes at `$9B00..$9B11`.
+This leaves `$A100` available for utility commands. The reference FLEX user-memory limit remains `$7FFF`.
 The platform preparation also corrects the historical `DRVX6` routine's final
 `TBA` to `TAB`, transferring the computed drive-times-six offset into B.
 Without this fix, nonzero drives overlap the FMS free-chain caches. The
@@ -160,20 +184,20 @@ boot sector, excluding the stamp itself.
 ## Z68 command
 
 The build assembles `../z68` and installs `Z68.CMD` on drive 0. Run
-`Z68 3.ZORK1.DAT` to inspect and load the writable region of a raw Version 3 story through
-FLEX file I/O. The `.DAT` extension is the default. `Z68 3.ZORK1.DAT RUN` executes its title, opening room description and first
+`Z68 1.ZORK1.DAT` to inspect and load the writable region of a raw Version 3 story through
+FLEX file I/O. The `.DAT` extension is the default. `Z68 1.ZORK1.DAT RUN` executes its title, opening room description and first
 `>` prompt, where it reads one console line with echo and backspace. It then
 fills the story text/parse buffers, and resumes the game. `OPEN MAILBOX` and
 `READ LEAFLET` work in Zork; Deadline accepts `LOOK`. Use the game’s `QUIT`
 command to return to FLEX. Save/restore remains future work.
-The builder imports local `.DAT`/`.z3` files from `../z68/stories` to drive 3
+The builder imports local `.DAT`/`.z3` files from `../z68/stories` to drive 1
 as uppercase `NAME.DAT` files, preserving raw bytes and adding only FLEX sector
 padding. Only V3 files with valid FLEX names are accepted. The folder can be
 absent or empty. No stories are downloaded. Adding, removing, or editing files
 in that folder updates the build dependencies. With the current local
-`ZORK1.DAT` and `deadline.z3`, drive 3 has six files and 46 free sectors, including acceptance fixtures.
+`ZORK1.DAT` and `deadline.z3`, drive 1 has 40 files and 569 free sectors, including acceptance fixtures.
 
-For an 80×24 VT100-compatible terminal, `Z68 3.ZORK1.DAT RUN VT100` adds a
+For an 80×24 VT100-compatible terminal, `Z68 1.ZORK1.DAT RUN VT100` adds a
 reverse-video status bar on row 1, with the room and score/moves or game clock.
 Story output scrolls in rows 2–24. Z68 restores full-screen scrolling on return
 to FLEX. Plain `RUN` keeps the escape-free console output. Both modes wrap story
@@ -192,7 +216,7 @@ and assembler.
 
 ## MSBASIC command
 
-At FLEX's `+++` prompt, type `1.MSBASIC`. For a simple startup, accept the default
+At FLEX's `+++` prompt, type `0.MSBASIC`. For a simple startup, accept the default
 MEMORY SIZE and TERMINAL WIDTH with Return, then answer `N` to the trig-function
 question. `PRINT 2+2` prints `4`.
 
@@ -222,13 +246,13 @@ wins over that disk's duplicate. Other game-disk files and `.TXT` files
 are omitted.
 
 Unlike MSBASIC, XBASIC supports program SAVE/LOAD through FLEX; this is
-verified in the emulator. Start it with `1.XBASIC` at the FLEX prompt:
+verified in the emulator. Start it with `0.XBASIC` at the FLEX prompt:
 
 ```text
 10 PRINT 123*100+45
-SAVE "3.MYPROG"
+SAVE "1.MYPROG"
 NEW
-LOAD "3.MYPROG"
+LOAD "1.MYPROG"
 RUN
 ```
 
@@ -236,7 +260,7 @@ Game files are preserved as supplied. CRAPS startup in XBASIC is tested;
 the rest of the game collection has not been individually tested.
 
 The generated CAT command converts ASCII drive digits by subtracting `'0'`
-instead of masking with 3. This lets the driver reject `CAT 4` through `CAT 9`
+instead of masking with 3. This lets the driver reject unavailable or invalid drive numbers
 rather than silently wrapping them to valid disks. The source disk is unchanged.
 
 The original system images and `SAVE.LOW` are omitted. `LINK` and `NEWDISK`
@@ -257,7 +281,7 @@ the original system file and reports error 21 with this custom system image.
 - Z68 packed-text decoding, abbreviation restoration, binary escapes, static
   file reads, sector boundaries, and 17-bit addresses using synthetic strings.
 - Z68 command loading, writable-story byte comparisons, exact-fit/overflow
-  checks, truncated-read recovery, binary header reads from drive 3, default extensions,
+  checks, truncated-read recovery, binary header reads from drive 1, default extensions,
   missing/unsupported/invalid stories, repeated invocations, and RAM limits
   below physical RAM using synthetic headers, plus any local story headers.
 - Reference assembly bytes against `6800Flex/FLEX21.LST`.
@@ -267,13 +291,13 @@ the original system file and reports error 21 with this custom system image.
   including the documented CAT adaptation.
 - Execution of the linked boot sector using the sibling emulator's real 6800 CPU
   with a small SRAM/ACIA test bus, starting without a preloaded FLEX binary.
-- XBASIC loading from drive 1, program SAVE/LOAD on drive 3, and CRAPS loading
-  from drive 2 followed by execution through its opening prompt.
-- CAT on all four drives, then MSBASIC loading from drive 1 and `PRINT 2+2`.
-- Simultaneous identically named files with different contents on all four drives:
+- XBASIC loading from drive 0, program SAVE/LOAD and CRAPS loading
+  from drive 1 followed by execution through its opening prompt.
+- CAT on both SRAM drives and rejection of unavailable drives, then MSBASIC loading from drive 0 and `PRINT 2+2`.
+- Simultaneous identically named files with different contents on both SRAM drives:
   creation, 1,400-byte binary write/read, deletion, and free-count recovery.
-- SRAM read/write at each drive's track 63, sector 16 (including physical page
-  255), rejection of sectors 0/17, tracks 64/255, and drive 4.
+- SRAM read/write at each drive's track 127, sector 16 (including physical page
+  255), rejection of sectors 0/17, tracks 128/255, and unavailable drives 2/3/4/255.
 - Ready checks do not change the selected drive.
 - Structural validation of the disk after those filesystem operations.
 
@@ -284,7 +308,7 @@ These are emulator checks, not a physical-hardware boot test.
 `make clean` removes generated build files.
 
 CZECH V3 is compiled locally using vendored Inform 6.44 source and installed as
-`3.CZECH.DAT`. `make acceptance` runs six bootstrap gates, the full V3 suite
+`1.CZECH.DAT`. `make acceptance` runs six bootstrap gates, the full V3 suite
 (349 automatic passes, zero failures; 19 visual print checks), and the local
 Zork startup when present. Results are recorded in `build/acceptance.json`.
 `make czech` enforces the automatic conformance count. `make zork` runs the

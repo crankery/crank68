@@ -118,6 +118,8 @@ story_sector_ok:
 ; also fit the reserved index. No direct SRAM or driver calls are made here.
 story_build_index:
         clr file_index_valid
+        clr cache_second_valid
+        clr cache_recent
         clr cache_valid
         ldx story_fcb+21
         stx file_sector_count

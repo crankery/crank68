@@ -41,13 +41,13 @@ int main() {
         }
         std::ofstream("build/build-info-list.txt")<<build_output;
         for(const auto &mode:{"RUNVT100","RUN VT100X"}) {
-            const auto rejected=run(std::string("Z68 3.VMBOOT.DAT ")+mode+"\r");
+            const auto rejected=run(std::string("Z68 1.VMBOOT.DAT ")+mode+"\r");
             require(rejected.find("Usage: Z68")!=std::string::npos && rejected.find(char(27))==std::string::npos,
                     "Invalid terminal mode accepted or altered terminal");
         }
         const auto czech=file("build/CZECH.DAT");
         require(czech[0]==3,"Acceptance story is not V3");
-        auto output=run("Z68 3.CZECH.DAT\r");
+        auto output=run("Z68 1.CZECH.DAT\r");
         require(output.find("Loaded writable story bytes")!=std::string::npos,"CZECH did not load");
         const unsigned dynamic=unsigned(czech[14])*256+czech[15];
         const auto base=word("dynamic_start");
@@ -97,17 +97,17 @@ int main() {
         std::copy(original.begin(),original.end(),bus.ram.begin()+scratch);
         std::copy(saved_stack.begin(),saved_stack.end(),bus.ram.begin()+0x9e00);
         cpu.s_=saved_cpu;
-        output=run("Z68 3.VMBOOT.DAT RUN\r");
+        output=run("Z68 1.VMBOOT.DAT RUN\r");
         require(output.find("Z68 execution smoke test")!=std::string::npos &&
                 byte("vm_finished")==1 && byte("op_halted")==0,"Print/nop/newline/quit execution failed: "+output);
         std::ofstream("build/vmboot.txt")<<output;
-        output=run("Z68 3.VMFAIL.DAT RUN\r");
+        output=run("Z68 1.VMFAIL.DAT RUN\r");
         require(output.find("invalid/truncated instruction")!=std::string::npos &&
                 byte("vm_finished")==0 && byte("op_halted")==1,"Truncated operand/store accepted");
-        output=run("Z68 3.VMLIMIT.DAT RUN\r");
+        output=run("Z68 1.VMLIMIT.DAT RUN\r");
         require(output.find("execution step limit")!=std::string::npos &&
                 byte("vm_finished")==0,"Instruction budget did not stop execution");
-        output=run("Z68 3.CZECH.DAT RUN\r");
+        output=run("Z68 1.CZECH.DAT RUN\r");
         std::ofstream("build/czech-actual.txt")<<output;
         std::smatch summary;
         require(std::regex_search(output,summary,std::regex("Passed: ([0-9]+), Failed: ([0-9]+), Print tests: ([0-9]+)")),
@@ -121,7 +121,7 @@ int main() {
         // The copyrighted story is optional and supplied locally by its owner.
         std::ifstream local("../z68/stories/ZORK1.DAT",std::ios::binary);
         if(local.good()) {
-            output=run("Z68 3.ZORK1.DAT RUN\rOPEN MAILBOX\r",true);
+            output=run("Z68 1.ZORK1.DAT RUN\rOPEN MAILBOX\r",true);
             std::ofstream("build/zork-startup.txt")<<output;
             require(output.find("West of House")!=std::string::npos &&
                     output.find("Opening the small mailbox reveals a leaflet.")!=std::string::npos &&
@@ -133,7 +133,7 @@ int main() {
             require(output.find("WELCOME TO ZORK!")!=std::string::npos && byte("op_halted")==0,"Zork second command failed: "+output);
             output=run("QUIT\rYES\r");
             require(byte("story_opened")==0 && byte("vm_finished")==1,"Zork quit leaked story file");
-            output=run("Z68 3.ZORK1.DAT RUN VT100\rOPEN MAILBOX\r",true);
+            output=run("Z68 1.ZORK1.DAT RUN VT100\rOPEN MAILBOX\r",true);
             std::ofstream("build/zork-vt100.txt")<<output;
             const auto status=symbol("build/z68.lst","status_line");
             const auto bar=std::string(bus.ram.begin()+status,bus.ram.begin()+status+80);
@@ -147,7 +147,7 @@ int main() {
             zork=true;
         }
         if(std::ifstream("../z68/stories/deadline.z3").good()) {
-            output=run("Z68 3.DEADLINE.DAT RUN VT100\rLOOK\r",true);
+            output=run("Z68 1.DEADLINE.DAT RUN VT100\rLOOK\r",true);
             std::ofstream("build/deadline-vt100.txt")<<output;
             const auto description=output.find("You are on a wide lawn");
             require(description!=std::string::npos,"Missing Deadline room description");

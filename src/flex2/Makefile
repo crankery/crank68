@@ -8,6 +8,8 @@ STORY_INPUTS := $(wildcard ../z68/stories ../z68/stories/*.[dD][aA][tT] ../z68/s
 Z68_SRCS := $(wildcard $(Z68_SRC_DIR)/*.s $(Z68_SRC_DIR)/*/*.s)
 VASM_FLAGS := -maxerrors=0 -Fbin -ast -i
 PYTHON := python3
+DRIVE_LAYOUT ?= sram-first
+SD_TEST_VOLUME := $(if $(filter sd-first,$(DRIVE_LAYOUT)),0,1)
 CXX := c++
 CC := cc
 INFORM_SRC_DIR := ../tools/inform6
@@ -18,7 +20,13 @@ EMU_SRCS := $(wildcard $(EMU_DIR)/src/cpu/*.cpp $(EMU_DIR)/src/gen/*.g.cpp) $(ad
 EMU_HEADERS := $(wildcard $(EMU_DIR)/src/cpu/*.h $(EMU_DIR)/src/gen/*.g.h $(EMU_DIR)/src/util/*.h)
 
 .PHONY: all clean image z68 rebuild-image verify-flex21 verify-image verify-opcodes test
-all: verify-flex21 verify-opcodes verify-image
+all: rom verify-flex21 verify-opcodes verify-image
+
+.PHONY: rom
+rom: ../roms/mikbug2/mikbug2.rom
+
+../roms/mikbug2/mikbug2.rom: ../roms/mikbug2/mikbug2.s ../roms/mikbug2/sdcard.s ../roms/mikbug2/Makefile
+	$(MAKE) -C ../roms/mikbug2
 
 verify-opcodes:
 	$(PYTHON) $(Z68_SRC_DIR)/tools/make-opcodes.py --check
@@ -32,7 +40,16 @@ build/flex21.bin: build/flex21.asm Makefile
 verify-flex21: build/flex21.bin 6800Flex/FLEX21.LST tools/verify-flex21.py
 	$(PYTHON) tools/verify-flex21.py
 
-build/c68flex.asm: build/flex21.asm tools/prepare-c68.py platform/console.asm platform/ramdisk.asm
+.PHONY: force-drive-config
+force-drive-config:
+
+build/drive-config.asm: force-drive-config tools/drive_config.py
+	$(PYTHON) tools/drive_config.py $(DRIVE_LAYOUT)
+
+build/drive-config.h: build/drive-config.asm
+	@test -f $@ || $(PYTHON) tools/drive_config.py $(DRIVE_LAYOUT)
+
+build/c68flex.asm: build/flex21.asm tools/prepare-c68.py platform/console.asm platform/ramdisk.asm platform/sdcard.asm build/drive-config.asm
 	$(PYTHON) tools/prepare-c68.py
 
 build/c68flex.bin: build/c68flex.asm Makefile
@@ -84,7 +101,7 @@ image: build/flex2.dsk
 verify-image: image tools/verify-image.py
 	$(PYTHON) tools/verify-image.py
 
-build/smoke: tests/smoke.cpp tests/flex_harness.h tests/z68.h tests/random.h tests/vars.h tests/input.h tests/status.h tests/dict.h tests/wrap.h $(EMU_SRCS) $(EMU_HEADERS)
+build/smoke: tests/smoke.cpp tests/flex_harness.h tests/z68.h tests/random.h tests/vars.h tests/input.h tests/status.h tests/dict.h tests/wrap.h tests/memory.h $(EMU_SRCS) $(EMU_HEADERS)
 	@mkdir -p build
 	$(CXX) -std=c++17 -O2 -I$(EMU_DIR)/src tests/smoke.cpp $(EMU_SRCS) -o $@
 
@@ -107,7 +124,19 @@ acceptance: all build/acceptance
 czech: acceptance
 	$(PYTHON) $(Z68_SRC_DIR)/tests/check-czech.py build/acceptance.json
 
-test: all build/smoke build/acceptance
+build/sd-driver: tests/sd-driver.cpp tests/flex_harness.h ../sd/firmware/sd_bridge/src/protocol.h build/drive-config.h $(EMU_SRCS) $(EMU_HEADERS)
+	@mkdir -p build
+	$(CXX) -std=c++17 -O2 -I$(EMU_DIR)/src tests/sd-driver.cpp $(EMU_SRCS) -o $@
+
+build/sd-test.dsk: build/flex2.dsk build/drive-config.asm ../sd/tools/extract_image.py
+	$(PYTHON) ../sd/tools/extract_image.py --source build/flex2.dsk --drive $(SD_TEST_VOLUME) --output $@ --force
+
+.PHONY: test-sd
+test-sd: all build/sd-driver build/sd-test.dsk
+	./build/sd-driver
+
+test: all build/smoke build/acceptance build/sd-driver build/sd-test.dsk
+	./build/sd-driver
 	./build/smoke
 	./build/acceptance
 	$(PYTHON) tools/verify-image.py build/smoke.dsk

@@ -46,6 +46,8 @@ init_fit:
         staa index_base
         stab index_base+1
         clr dynamic_loaded
+        clr cache_second_valid
+        clr cache_recent
         clr cache_valid
         clr index_count
         clr index_count+1

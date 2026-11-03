@@ -55,7 +55,7 @@ def build_info(root, files):
              'Content ID: ' + info['content_id'],
              'Git: ' + revision + (' (modified)' if dirty else ''),
              'Z68 SHA256: ' + info['z68_sha256'][:16],
-             'Drives: 0 system, 1 BASIC, 2 games, 3 my files',
+             'Drives: 0 system/BASIC, 1 games/my files',
              'Read this file: LIST 0.BUILD.TXT']
     # FLEX text uses CR line endings; sector padding is supplied by make_drive.
     return info, ('\r'.join(lines) + '\r').encode('ascii')
@@ -80,7 +80,7 @@ def make_image():
     drives = []
     for drive in range(DRIVES):
         selected = [(name, payload) for name, payload in files if file_drive(name) == drive]
-        if drive == 3:
+        if drive == 1:
             selected.extend(stories)
             for name in ('CZECH.DAT', 'VMBOOT.DAT', 'VMFAIL.DAT', 'VMLIMIT.DAT'):
                 assert name not in dict(stories), f'Local story name reserved for acceptance tests: {name}'

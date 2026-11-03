@@ -9,15 +9,19 @@ int main(int argc,char **argv) {
     auto sym=[](const std::string &s){return symbol("build/z68.lst",s);};
     const auto wait=symbol("build/c68flex.lst","C68INW"), dispatch=sym("op_dispatch");
     const auto line_entry=sym("input_read_line");
+    const auto sector_entry=sym("story_read_sector"), miss_entry=sym("memory_cache_miss");
+    unsigned sector_reads=0,cache_misses=0,first_reads=0,first_misses=0;uint32_t first_cycles=0;
     const auto pc=sym("op_pc"), group=sym("op_class"), number=sym("op_number"), args=sym("vm_resolved"), count=sym("vm_operand_count");
     std::deque<std::string> trace;unsigned seen[4][32]={};
     auto run=[&](const std::string &initial,const std::string &line=std::string()){
       auto keys=initial;bool queued=false;
       bus.output.clear();size_t next=0;
       for(unsigned n=0;n<500000000;++n){
+       if(cpu.s_.pc==sector_entry)++sector_reads;
+       if(cpu.s_.pc==miss_entry)++cache_misses;
        if(cpu.s_.pc==line_entry){
           if(queued && next==keys.size()) {auto out=bus.output;out.erase(std::remove(out.begin(),out.end(),char(0)),out.end());return out;}
-          if(!queued){keys+=line;queued=true;}
+          if(!queued){first_cycles=cpu.cycles_;first_reads=sector_reads;first_misses=cache_misses;keys+=line;queued=true;}
        }
        if(cpu.s_.pc==dispatch){
         std::ostringstream row;row<<std::hex<<std::setfill('0')<<std::setw(2)<<unsigned(bus.ram[pc])<<std::setw(2)<<unsigned(bus.ram[pc+1])<<std::setw(2)<<unsigned(bus.ram[pc+2])<<" "<<unsigned(bus.ram[group])<<":"<<unsigned(bus.ram[number]);
@@ -37,9 +41,12 @@ int main(int argc,char **argv) {
     std::copy_n(bus.disk.begin(),256,bus.ram.begin()+0x100);cpu.s_.pc=0x100;
     run("11,02,26\r");
     const std::string name=argc>1?argv[1]:"ZORK1";
-    auto output=run("Z68 3."+name+".DAT RUN\r",name=="CZECH"?"":name=="ZORK1"?"OPEN MAILBOX\r":"LOOK\r");
+    cpu.cycles_=0;sector_reads=cache_misses=0;
+    auto output=run("Z68 1."+name+".DAT RUN\r",name=="CZECH"?"":name=="ZORK1"?"OPEN MAILBOX\r":"LOOK\r");
     std::ofstream("build/"+name+"-run.txt")<<output;std::cout<<output<<"\nLast operations:\n";
     for(auto &r:trace)std::cout<<r<<"\n";
+    std::cout<<"Performance: startup cycles="<<first_cycles<<" sector_reads="<<first_reads<<" cache_misses="<<first_misses<<"\n";
+    std::cout<<"Performance: command cycles="<<uint32_t(cpu.cycles_-first_cycles)<<" sector_reads="<<sector_reads-first_reads<<" cache_misses="<<cache_misses-first_misses<<"\n";
     std::cout<<"Executed opcode counts:\n";
     for(unsigned g=0;g<4;++g)for(unsigned n=0;n<32;++n)if(seen[g][n])std::cout<<std::hex<<g<<":"<<n<<std::dec<<" "<<seen[g][n]<<"\n";
     if(argc>2 && std::string(argv[2])=="--expect-prompt") {

@@ -6,7 +6,7 @@
         .equ flex_ceiling, 0x7fff
         .equ stack_bytes, 512
         .equ vm_stack_bytes, 2048
-        .equ cache_bytes, 504       ; two FLEX payload sectors; first slot used by byte reader
+        .equ cache_bytes, 504       ; two FLEX payload sectors, managed as an LRU cache
         .equ index_bytes, 1042      ; ceil(128 KiB / 252) track/sector pairs
         .equ workspace_bytes, vm_stack_bytes+cache_bytes+index_bytes
         .equ fms, 0xb406

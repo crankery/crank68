@@ -50,7 +50,7 @@ struct Bus : IBus {
         ram[a]=v;
     }
 };
-int main(int argc, char **) {
+int main(int argc, char **argv) {
     Bus bus;
     Cpu cpu(bus);
     try {
@@ -60,9 +60,10 @@ int main(int argc, char **) {
         require(rom.size()==8192,"ROM size");
         std::copy(rom.begin(),rom.end(),bus.ram.begin()+0xe000);
         bus.page=123;
-        bus.input='F';
+        const std::string mode = argc > 1 ? argv[1] : "normal";
+        bus.input = mode == "lowercase" ? 'f' : 'F';
         cpu.reset();
-        if (argc>1) { bus.input=-1; cpu.s_.pc=0xffc0; }
+        if (mode == "direct") { bus.input=-1; cpu.s_.pc=0xffc0; }
         // Boot through the ROM; no FLEX code is preloaded into RAM.
         std::string keys="11,01,26\rMSBASIC\r\r\rN\rPRINT 2+2\r";
         size_t next=0;

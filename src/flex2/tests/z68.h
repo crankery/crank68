@@ -55,7 +55,7 @@ static void z68_test() {
             auto stem=entry.path().stem().string();
             std::transform(stem.begin(),stem.end(),stem.begin(),::toupper);
             const auto bytes=file(entry.path().c_str());
-            const auto output=run("Z68 3."+stem+".DAT\r");
+            const auto output=run("Z68 1."+stem+".DAT\r");
             auto word=[&](size_t offset) {
                 std::ostringstream hex;
                 hex<<std::uppercase<<std::hex<<std::setw(4)<<std::setfill('0')

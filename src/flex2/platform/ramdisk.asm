@@ -1,16 +1,23 @@
-; Four drives, each 64 tracks of 16 sectors. Page = drive * 64 + track.
+; Two SRAM volumes, each 128 tracks of 16 sectors. Logical numbers are
+; selected by build/drive-config.asm. SRAM page = unit * 128 + track.
 ; $E002 selects the page visible at $C000. $D000 window is untouched.
 ; FLEX READ/WRITE: A=track, B=sector (1..16), X=256-byte buffer.
 ; Return B=0/Z=1/C=0 on success; B=$10/Z=0/C=1 on invalid sector/drive.
 ; The C000 window is owned by this driver; its latch is write-only.
-C68READ CLR C68WRITEFLAG
+C68READ TST C68SD
+ BEQ C68RAMREAD
+ JMP SDREAD
+C68RAMREAD CLR C68WRITEFLAG
  BRA C68IO
-C68WRITE PSHA
+C68WRITE TST C68SD
+ BEQ C68RAMWRITE
+ JMP SDWRITE
+C68RAMWRITE PSHA
  LDAA #1
  STAA C68WRITEFLAG
  PULA
 C68IO STX C68BUFFER
- CMPA #64
+ CMPA #128
  BCC C68ERROR
  CMPB #1
  BCS C68ERROR
@@ -49,22 +56,36 @@ C68ERROR LDAB #$10
  SEC
  RTS
 ; Read/write use the selection made by DRVSEL (X points to an FCB).
-C68DRIVE BSR C68READY
+C68DRIVE JSR C68READY
  BCS C68ERROR
  LDAA 3,X
- RORA
- RORA
- RORA
- ANDA #$C0
+ CMPA #C68SDDRIVE
+ BNE C68SELECTRAM
+ LDAA #1
+ STAA C68SD
+ BRA C68OK
+C68SELECTRAM CLR C68SD
+ CMPA #C68SRAM0
+ BEQ C68SELECTZERO
+ LDAA #$80
+ BRA C68SELECTSTORE
+C68SELECTZERO CLRA
+C68SELECTSTORE
  STAA C68BASE
  BRA C68OK
 ; A ready check must not change the currently selected drive.
 C68READY LDAA 3,X
- CMPA #4
- BCC C68ERROR
- BRA C68OK
+ CMPA #C68SRAM0
+ BEQ C68OK
+ CMPA #C68SRAM1
+ BEQ C68OK
+ CMPA #C68SDDRIVE
+ BEQ C68SDREADY
+ BRA C68ERROR
+C68SDREADY JMP SDREADY
 C68BASE FCB 0
 C68BUFFER FDB 0
 C68PTR FDB 0
 C68COUNT FCB 0
 C68WRITEFLAG FCB 0
+C68SD FCB 0

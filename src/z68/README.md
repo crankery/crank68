@@ -1,5 +1,7 @@
 # Z68 for C68 FLEX
 
+**Remaining work and deferred features: [TODO.md](TODO.md).**
+
 Z68 is a FLEX-loadable **Version 3 Z-machine interpreter in development**.
 It executes local V3 stories with interactive console input. Zork I accepts
 `open mailbox` and `read leaflet`; Deadline accepts `look` and advances to its
@@ -12,23 +14,23 @@ From this directory, `make` delegates to `../flex2` to assemble Z68 and package
 `Z68.CMD` on drive 0. Outputs are `../flex2/build/z68.bin`, `z68.lst`,
 `Z68.CMD`, and the complete `flex2.dsk` image. `make test` runs the FLEX
 emulator checks, including Z68. Local files in `stories/` with `.DAT` or `.z3`
-extensions are imported as raw binary files on drive 3; their FLEX names are
+extensions are imported as raw binary files on drive 1; their FLEX names are
 uppercased and their extensions become `.DAT`. Only Version 3 files are accepted.
 Use names of at most eight characters, starting with a letter. Duplicate names
-are rejected. Missing/empty `stories/` leaves drive 3 empty. The build preserves
+are rejected. Missing/empty `stories/` adds no local stories to drive 1. The build preserves
 all supplied bytes, including any trailing padding beyond the declared story
 length. No game downloads are performed.
 
 At the FLEX prompt, execute the story:
 
 ```text
-Z68 3.ZORK1.DAT RUN
+Z68 1.ZORK1.DAT RUN
 ```
 
 Omit `RUN` to inspect its header, memory layout and sample object names:
 
 ```text
-Z68 3.ZORK1.DAT
+Z68 1.ZORK1.DAT
 ```
 
 With no address argument, it prints the first three object short names as a
@@ -36,13 +38,13 @@ text-decoder demonstration. This does not execute story instructions. To
 inspect another encoded string, append a hexadecimal story byte address:
 
 ```text
-Z68 3.ZORK1.DAT BB9
+Z68 1.ZORK1.DAT BB9
 ```
 
 Or use `P` followed by a hexadecimal packed address (multiplied by two):
 
 ```text
-Z68 3.ZORK1.DAT P 8000
+Z68 1.ZORK1.DAT P 8000
 ```
 
 Byte addresses accept up to five hex digits in `$00000–$1FFFF`; packed addresses
@@ -83,7 +85,7 @@ below the runtime RAM ceiling:
 | Region | Reserved bytes | State |
 | --- | --- | --- |
 | Sector index | 1,042 | Up to 521 track/sector pairs, built on first static read |
-| Read-only story cache | 504 | First 252-byte slot used; second reserved |
+| Read-only story cache | 504 | Two 252-byte slots with LRU replacement |
 | Z-stack and call frames | 2,048 | Evaluation stack and routine frames |
 | 6800 hardware stack | 512 | Active while Z68 runs |
 
@@ -99,9 +101,9 @@ With the current build and Zork I release 88, the layout is:
 
 | Region | Address range (end excluded) |
 | --- | --- |
-| Code and fixed data | `$0300–$3776` |
-| Writable story | `$3776–$65C9` |
-| Free growth space (2,605 bytes) | `$65C9–$6FF6` |
+| Code and fixed data | `$0300–$382A` |
+| Writable story | `$382A–$667D` |
+| Free growth space (2,425 bytes) | `$667D–$6FF6` |
 | Sector index reservation | `$6FF6–$7408` |
 | Cache reservation | `$7408–$7600` |
 | Z-stack/frame reservation | `$7600–$7E00` |
@@ -135,18 +137,46 @@ The implementation follows [section 3 of the Z-machine Standard](https://inform-
 carry on success, and sets carry for bounds/file errors. X/B are clobbered;
 the requested address is preserved. `memory_next` increments all three bytes.
 Dynamic reads use the RAM copy. Static reads lazily build a validated linked
-file-sector index through FLEX FMS function 9, then fill a 252-byte cache
-through the same service. Sector counts, sequence numbers, premature ends,
+file-sector index through FLEX FMS function 9, then fill one of two 252-byte
+cache slots through the same service. Both slots use the existing 504-byte
+reservation. A hit updates recency; misses fill invalid slots before replacing
+the least recently used slot. A failed fill invalidates only its victim. Sector counts, sequence numbers, premature ends,
 extra links, and index capacity are checked. Addresses are bounded by the
 V3 range, the declared length when nonzero, and indexed file capacity. No
-random-file sector map or direct SRAM access is required. Word reads, writes,
-and instruction-PC APIs remain to be implemented.
+random-file sector map or direct SRAM access is required. Word reads/writes and
+instruction fetching use the same bounded story-memory layer.
 
 Emulator tests decode handcrafted strings through the actual command and file
 reader: alphabets, all punctuation, null/newline/10-bit escapes, abbreviations
 and cursor restoration, invalid nesting, incomplete escapes, file-sector
 crossings, and strings/abbreviations above 64 KiB. The existing RAM-limit and
 full writable-story byte-comparison tests remain in place.
+
+## Story-read performance
+
+Cache misses divide the 17-bit story offset by 252 in exactly 17 bit steps;
+ordinary cache hits perform no division or disk read. Tests exhaust all 131,072
+V3 byte offsets against host quotient/remainder arithmetic and exercise two-slot
+hits, replacement, failed fills, address boundaries and mutable-RAM precedence.
+
+The diagnostic runner reports modeled CPU cycles and calls to
+`story_read_sector`, separating startup from the supplied first command.
+Compared with the previous single-slot/repeated-subtraction reader (measurements
+taken with the earlier four-volume SRAM layout):
+
+| Command | Cycles before | Cycles after | Fewer cycles | Sector reads before → after |
+| --- | ---: | ---: | ---: | ---: |
+| Zork OPEN MAILBOX | 7,836,559 | 5,096,032 | 35.0% | 206 → 113 |
+| Deadline LOOK | 9,811,934 | 7,076,589 | 27.9% | 215 → 141 |
+
+These are deterministic emulator measurements using immediate scripted input,
+not physical-board or UART timings. Counts cover indexed story-sector reads,
+including index construction at startup; they exclude other FLEX disk calls.
+Startup cycles fell from 15,943,951 to 14,224,880 for Zork and 17,434,875 to
+17,247,147 for Deadline. The per-byte dynamic loader and full chain-index scan
+remain candidates for reducing the initial pause; see TODO.md.
+Run `make -C ../flex2 zork`, or use `build/story-runner DEADLINE --expect-prompt`
+from `flex2`, to collect current counters with the normal functional checks.
 
 ## Variables and evaluation stack
 
@@ -239,8 +269,8 @@ The instruction budget is refreshed after each completed input line.
 Use an 80-column, 24-row VT100-compatible terminal and run:
 
 ```text
-Z68 3.ZORK1.DAT RUN VT100
-Z68 3.DEADLINE.DAT RUN VT100
+Z68 1.ZORK1.DAT RUN VT100
+Z68 1.DEADLINE.DAT RUN VT100
 ```
 
 VT100 mode clears the screen and reserves row 1 for an inverse-video status
@@ -280,7 +310,7 @@ A real Deadline room paragraph is checked for line lengths and intact words.
 
 ## Console line capture
 
-`Z68 3.ZORK1.DAT RUN` now waits for a line at the first prompt. Type a command
+`Z68 1.ZORK1.DAT RUN` now waits for a line at the first prompt. Type a command
 and press Enter: Z68 fills the text and parse buffers and resumes the story.
 Use the game’s `quit` command to return to FLEX (confirm when the game asks).
 
@@ -377,7 +407,7 @@ installed Inform compiler is needed. Upstream's deprecated `Switches` directive
 produces one harmless compiler warning; the source is not patched.
 
 The FLEX image installs `CZECH.DAT`, `VMBOOT.DAT`, `VMFAIL.DAT` and `VMLIMIT.DAT`
-on drive 3 along with local stories. These names are reserved for test fixtures.
+on drive 1 along with local stories. These names are reserved for test fixtures.
 The three VM fixtures are ours; their results are **not** CZECH conformance
 checks. They test a print/nop/newline/quit sequence, a truncated call/store
 suffix, and the 30,000-instruction safety limit.
@@ -393,8 +423,8 @@ make czech       # strict 349-pass upstream automatic conformance gate
 At the FLEX prompt:
 
 ```text
-Z68 3.CZECH.DAT RUN
-Z68 3.VMBOOT.DAT RUN
+Z68 1.CZECH.DAT RUN
+Z68 1.VMBOOT.DAT RUN
 ```
 
 The **six bootstrap gates** cover CZECH V3 loading, writable-byte integrity,

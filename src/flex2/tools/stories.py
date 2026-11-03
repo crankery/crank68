@@ -1,4 +1,4 @@
-"""Local raw V3 stories to install on FLEX drive 3 (never load records)."""
+"""Local raw V3 stories to install on FLEX drive 1 (never load records)."""
 from pathlib import Path
 import re
 

@@ -3,8 +3,8 @@
 ; app_base -> app_end:       code, fixed data, FCB and header
 ; app_end -> dynamic_end:    writable story [0, static-memory-base)
 ; dynamic_end -> index_base: unallocated growth space
-; index_base -> cache_base:  1042 bytes reserved for a future sector index
-; cache_base -> vm_stack_base: 504 bytes reserved for future read-only cache
+; index_base -> cache_base:  1042 bytes for the file-sector index
+; cache_base -> vm_stack_base: 504 bytes for a two-slot read-only cache
 ; vm_stack_base -> cpu_stack_base: 2048 bytes for Z-stack/call frames
 ; cpu_stack_base -> ram_top+1: 512-byte 6800 stack (already active)
 ;
@@ -239,50 +239,26 @@ memory_static:
         rts
 memory_have_index:
         tst cache_valid
+        beq memory_probe_second
+        ldx #cache_start
+        jsr memory_cache_probe
+        bcs memory_probe_second
+        clr cache_recent
+        ldx cache_base
+        stx cache_current
+        jmp memory_cache_hit
+memory_probe_second:
+        tst cache_second_valid
         beq memory_cache_miss
-        ldaa mem_address+2
-        suba cache_start+2
-        staa cache_offset
-        ldaa mem_address+1
-        sbca cache_start+1
-        bne memory_cache_miss
-        ldaa mem_address
-        sbca cache_start
-        bne memory_cache_miss
-        ldaa cache_offset
-        cmpa #252
-        bcc memory_cache_miss
+        ldx #cache_second_start
+        jsr memory_cache_probe
+        bcs memory_cache_miss
+        ldaa #1
+        staa cache_recent
+        jsr memory_second_pointer
         jmp memory_cache_hit
 memory_cache_miss:
-        ; Divide the 17-bit address by the FLEX payload length. Only misses
-        ; perform this simple division; sequential string bytes hit the cache.
-        ldaa mem_address
-        staa mem_div
-        ldx mem_address+1
-        stx mem_div+1
-        clr mem_sector
-        clr mem_sector+1
-memory_divide:
-        ldaa mem_div
-        oraa mem_div+1
-        bne memory_subtract
-        ldaa mem_div+2
-        cmpa #252
-        bcs memory_divided
-memory_subtract:
-        ldaa mem_div+2
-        suba #252
-        staa mem_div+2
-        ldaa mem_div+1
-        sbca #0
-        staa mem_div+1
-        ldaa mem_div
-        sbca #0
-        staa mem_div
-        inc mem_sector+1
-        bne memory_divide
-        inc mem_sector
-        bra memory_divide
+        jsr memory_divide_address
 memory_divided:
         ldaa mem_sector
         cmpa index_count
@@ -310,13 +286,13 @@ memory_sector_valid:
         ldab 1,x
         staa story_fcb+30
         stab story_fcb+31
-        clr cache_valid
+        jsr memory_choose_cache
         jsr story_read_sector
         bcs memory_index_error
         ; Cache the sector payload, never its link/sequence header.
         ldx #story_fcb+68
         stx source_pointer
-        ldx cache_base
+        ldx cache_current
         stx mem_pointer
         ldaa #252
         staa copy_count
@@ -331,25 +307,132 @@ memory_cache_copy:
         stx mem_pointer
         dec copy_count
         bne memory_cache_copy
+        ldx #cache_start
+        tst cache_recent
+        beq memory_cache_tag
+        ldx #cache_second_start
+memory_cache_tag:
         ldaa mem_address+2
         suba cache_offset
-        staa cache_start+2
+        staa 2,x
         ldaa mem_address+1
         sbca #0
-        staa cache_start+1
+        staa 1,x
         ldaa mem_address
         sbca #0
-        staa cache_start
+        staa 0,x
+        tst cache_recent
+        bne memory_cache_second_ready
         inc cache_valid
+        bra memory_cache_hit
+memory_cache_second_ready:
+        inc cache_second_valid
 memory_cache_hit:
         ldaa #0
         ldab cache_offset
-        addb cache_base+1
-        adca cache_base
+        addb cache_current+1
+        adca cache_current
         staa mem_pointer
         stab mem_pointer+1
         ldx mem_pointer
         ldaa 0,x
+        clc
+        rts
+
+; Return C=0 and cache_offset if the address is inside the tag pointed to by X.
+memory_cache_probe:
+        ldaa mem_address+2
+        suba 2,x
+        staa cache_offset
+        ldaa mem_address+1
+        sbca 1,x
+        bne memory_cache_probe_bad
+        ldaa mem_address
+        sbca 0,x
+        bne memory_cache_probe_bad
+        ldaa cache_offset
+        cmpa #252
+        bcc memory_cache_probe_bad
+        clc
+        rts
+memory_cache_probe_bad:
+        sec
+        rts
+memory_second_pointer:
+        ldaa cache_base
+        ldab cache_base+1
+        addb #252
+        adca #0
+        staa cache_current
+        stab cache_current+1
+        rts
+; Two slots: fill invalid slots first, then replace the less recently used one.
+; Invalidate only the selected slot before disk I/O; a failed fill keeps the
+; other slot usable. cache_recent identifies the selected/MRU slot (0 or 1).
+memory_choose_cache:
+        tst cache_valid
+        beq memory_choose_first
+        tst cache_second_valid
+        beq memory_choose_second
+        tst cache_recent
+        beq memory_choose_second
+memory_choose_first:
+        clr cache_recent
+        clr cache_valid
+        ldx cache_base
+        stx cache_current
+        rts
+memory_choose_second:
+        ldaa #1
+        staa cache_recent
+        clr cache_second_valid
+        jmp memory_second_pointer
+
+; Divide a 17-bit byte address by 252 in exactly 17 bit steps. Quotient is in
+; mem_sector, remainder in mem_div+2; input mem_address stays unchanged.
+memory_divide_address:
+        ldaa mem_address
+        staa mem_shift
+        ldx mem_address+1
+        stx mem_shift+1
+        ldab #7
+memory_align_dividend:
+        asl mem_shift+2
+        rol mem_shift+1
+        rol mem_shift
+        decb
+        bne memory_align_dividend
+        clr mem_sector
+        clr mem_sector+1
+        clr mem_div
+        clr mem_div+1
+        clr mem_div+2
+        ldaa #17
+        staa mem_divide_bits
+memory_divide_bits_loop:
+        asl mem_sector+1
+        rol mem_sector
+        asl mem_shift+2
+        rol mem_shift+1
+        rol mem_shift
+        rol mem_div+2
+        rol mem_div+1
+        tst mem_div+1
+        bne memory_divide_subtract
+        ldaa mem_div+2
+        cmpa #252
+        bcs memory_divide_next
+memory_divide_subtract:
+        ldaa mem_div+2
+        suba #252
+        staa mem_div+2
+        ldaa mem_div+1
+        sbca #0
+        staa mem_div+1
+        inc mem_sector+1
+memory_divide_next:
+        dec mem_divide_bits
+        bne memory_divide_bits_loop
         clc
         rts
 
@@ -369,3 +452,9 @@ mem_div: .byte 0,0,0
 mem_sector: .word 0
 cache_start: .byte 0,0,0
 cache_offset: .byte 0
+cache_second_valid: .byte 0
+cache_second_start: .space 3,0
+cache_recent: .byte 0
+cache_current: .word 0
+mem_shift: .space 3,0
+mem_divide_bits: .byte 0

@@ -34,7 +34,10 @@ DRVS1 JMP C68DRIVE
 CDRR1 JMP C68READY
 ''' + s[end:]
 s = s.replace(' end', '')
-# Retain the flat binary's $A100 base; utilities may overwrite this padding.
+# The SD byte transport lives in MIKBUG ROM. Thin adapters fit after the
+# complete startup FCB, without consuming application memory.
+s += '\n org $A980\n' + Path('platform/sdcard.asm').read_text()
 s += '\n org $A100\n fcb 0\n org $BF00\n' + Path('platform/console.asm').read_text()
+s += '\n' + Path('build/drive-config.asm').read_text()
 s += '\n' + Path('platform/ramdisk.asm').read_text() + '\n org $BFF8\nC68TICKS fdb 0\n end\n'
 Path('build/c68flex.asm').write_text(s)
