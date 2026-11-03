@@ -49,7 +49,7 @@ build/drive-config.asm: force-drive-config tools/drive_config.py
 build/drive-config.h: build/drive-config.asm
 	@test -f $@ || $(PYTHON) tools/drive_config.py $(DRIVE_LAYOUT)
 
-build/c68flex.asm: build/flex21.asm tools/prepare-c68.py platform/console.asm platform/ramdisk.asm platform/sdcard.asm build/drive-config.asm
+build/c68flex.asm: build/flex21.asm tools/prepare-c68.py platform/console.asm platform/ramdisk.asm platform/sdcard.asm platform/cmdcase.asm build/drive-config.asm
 	$(PYTHON) tools/prepare-c68.py
 
 build/c68flex.bin: build/c68flex.asm Makefile

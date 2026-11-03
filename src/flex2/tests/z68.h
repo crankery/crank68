@@ -121,7 +121,7 @@ static void z68_test() {
     bus.ram[0xac2b]=0x5f; bus.ram[0xac2c]=0xff;
     std::fill(bus.ram.begin()+0x5de0,bus.ram.begin()+0x5e00,0x5a);
     std::fill(bus.ram.begin()+0x6000,bus.ram.begin()+0x8000,0xa5);
-    auto output=run("Z68 0.PROBE.DAT\r");
+    auto output=run("z68 0.probe.dat\r");
     auto has=[&](const std::string &needle) {
         require(output.find(needle)!=std::string::npos,"Missing Z68 report: "+needle+"\n"+output);
     };
@@ -134,7 +134,7 @@ static void z68_test() {
     require(unsigned(bus.ram[budget])*256+bus.ram[budget+1]==expected_budget,
             "Z68 ignored FLEX's memory limit: "+output);
     output=run("Z68 0.PROBE\r"); has("Z68: V3 story header"); // default DAT
-    output=run("Z68\r"); has("Usage: Z68");
+    output=run("z68\r"); has("Usage: Z68");
     output=run("Z68 0.ABSENT.DAT\r"); has("cannot open story");
     output=run("Z68 0.V5.DAT\r"); has("only V3 is supported");
     output=run("Z68 0.BAD.DAT\r"); has("invalid V3 memory layout");

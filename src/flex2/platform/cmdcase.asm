@@ -1,0 +1,28 @@
+; Fold parsed FLEX file names/extensions for disk lookup. The line buffer
+; stays untouched so programs still receive the user's original input.
+C68FILECASE JSR GETFI1
+ BCS C68FILERET
+ PSHA
+ PSHB
+ LDX DTEMP9
+ INX
+ INX
+ INX
+ INX
+ LDAB #11
+C68FILELOOP LDAA 0,X
+ CMPA #'a
+ BCS C68FILENEXT
+ CMPA #'z
+ BHI C68FILENEXT
+ SUBA #$20
+ STAA 0,X
+C68FILENEXT INX
+ DECB
+ BNE C68FILELOOP
+ PULB
+ PULA
+ LDX DTEMP9
+ CLC
+C68FILERET RTS
+C68FILECASEEND FCB 0

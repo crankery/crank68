@@ -36,7 +36,10 @@ void Cpu::step()
 
     bool result = dispatch(opcode, op_info);
 
-    trace(pc);
+    if (trace_enabled_ || !result)
+    {
+        trace(pc);
+    }
 
     if (!result)
     {

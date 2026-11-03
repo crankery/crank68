@@ -126,7 +126,7 @@ int main(int argc,char **argv) {
         std::copy_n(bus.disk.begin(),256,bus.ram.begin()+0x100);
         cpu.s_.pc=0x100;
         // A BIOS has only copied the linked boot sector; the CPU must load FLEX.
-        std::string keys="11,01,26\rCAT\rCAT 4\rCAT 1\rCAT 2\rCAT 3\r0.MSBASIC\r\r\rN\rPRINT 2+2\r";
+        std::string keys="11,01,26\rcaX\177t\rcat 4\rcat 1\rcat 2\rcat 3\r0.msbasic\r\r\rN\rPRINT 2+2\r";
         size_t next=0;
         for (unsigned step=0;step<15000000;++step) {
             if ((cpu.s_.pc==inwait || cpu.s_.pc==basicin) && bus.input<0 && next<keys.size())
@@ -141,6 +141,8 @@ int main(int argc,char **argv) {
                         bus.output.find("MEMFILL")!=std::string::npos &&
                         bus.output.find("C68DATA")!=std::string::npos,
                         "Imported utilities did not run");
+                require(bus.output.find("\b \b")!=std::string::npos,
+                        "FLEX did not visibly erase a DEL input");
                 const std::string drive_zero="CATALOG OF DRIVE NUMBER 0";
                 auto first=bus.output.find(drive_zero);
                 require(first!=std::string::npos &&

@@ -28,11 +28,20 @@ SD images. The default SRAM image is `build/session.dsk`; the SD-first layout
 uses `build/session-sram-sd-first.dsk`. The SD image is
 `build/session-sd-<layout>.dsk`. Each session
 image is copied from its factory image only the first time; later runs preserve
-its files. The emulator exposes the SD image through the PIA bridge protocol.
+its files. Session preparation refreshes `FLEX2.SYS` in place when its build
+changes and saves a full image backup named `*.pre-flex-*` first. The emulator
+exposes the SD image through the PIA bridge protocol.
 `make DRIVE_LAYOUT=sd-first run` puts SD at FLEX drive 0. MIKBUG's current `F`
 command still starts from physical SRAM before FLEX selects its configured
 drives. Use `make DRIVE_LAYOUT=sd-first test` to run its driver and FMS tests
 without the SRAM boot smoke test.
+
+For a raw TCP terminal, run `make run TCP_PORT=6800` and connect PuTTY in Raw
+mode to `127.0.0.1:6800`. The emulator waits for the connection before running
+the CPU. This uses the same persistent SRAM and SD session images. Continuous
+instruction tracing is off by default; add `TRACE=1` to `make run` to enable it.
+The emulator also runs without speed pacing by default; add `THROTTLE=1` to
+pace the CPU at roughly 1 MHz.
 
 `make test` also runs the MIKBUG boot, FLEX and emulator suites. `make` already
 runs FLEX image verification, SD protocol tests, the SD board pin audit and AVR

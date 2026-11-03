@@ -2,6 +2,15 @@
 
 Build with `make`; run tests with `make test`.
 
+Per-instruction tracing is off by default. Pass `--trace` to keep the recent
+instruction trace in the emulator's diagnostic ring buffer. From `src`,
+`make run TRACE=1` enables it for a system session. Breakpoint and error
+snapshots remain available without continuous tracing.
+
+The CPU runs as fast as the host permits by default. Pass `--throttle` to
+limit it to roughly 1 MHz, or use `make run THROTTLE=1` from `src`.
+The CPU still pauses when a TCP console is disconnected.
+
 The SRAM card provides 1 MiB (two 512K × 8 chips), mapped through two
 independent 4 KiB windows:
 

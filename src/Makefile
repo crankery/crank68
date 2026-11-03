@@ -27,7 +27,7 @@ session: system
 	$(PYTHON) tools/prepare-session.py --drive-layout $(DRIVE_LAYOUT)
 
 run: session
-	build/system/emu --load build/system/mikbug2.rom@E000 --sram-image $(SRAM_SESSION) --sd-image build/session-sd-$(DRIVE_LAYOUT).dsk
+	build/system/emu --load build/system/mikbug2.rom@E000 --sram-image $(SRAM_SESSION) --sd-image build/session-sd-$(DRIVE_LAYOUT).dsk $(if $(TCP_PORT),--tcp-console $(TCP_PORT)) $(if $(filter 1,$(TRACE)),--trace) $(if $(filter 1,$(THROTTLE)),--throttle)
 
 # Only these explicit targets contact (or display commands for) the programmer.
 program-avr: system

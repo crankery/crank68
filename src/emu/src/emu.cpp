@@ -36,6 +36,7 @@ bool terminal_mode_set_ = false;
 volatile std::sig_atomic_t stop_requested_ = 0;
 void request_stop(int) { stop_requested_ = 1; }
 bool show_control_ = false;
+bool throttle_enabled_ = false;
 const uint64_t sleep_threshold_cycles = 1000; // sleep/check every 1000 cycles
 uint64_t total_cycles_ = 0;
 uint64_t last_sleep_check_cycles_ = 0;
@@ -178,6 +179,18 @@ int parse_args(int argc, char **argv)
         if (arg == "--show-control")
         {
             show_control_ = true;
+            continue;
+        }
+
+        if (arg == "--trace")
+        {
+            machine_.cpu_->setTraceEnabled(true);
+            continue;
+        }
+
+        if (arg == "--throttle")
+        {
+            throttle_enabled_ = true;
             continue;
         }
 
@@ -412,8 +425,11 @@ void throttle()
                     sleep_us = 20000;
                 }
 
-                std::string msg = "(sleep for " + std::to_string(sleep_us) + "µs)\r\n";
-                Logging::log(msg.c_str());
+                if (machine_.cpu_->traceEnabled())
+                {
+                    std::string msg = "(sleep for " + std::to_string(sleep_us) + "µs)\r\n";
+                    Logging::log(msg.c_str());
+                }
 
                 usleep((useconds_t)sleep_us);
             }
@@ -462,7 +478,10 @@ void run()
             if (term_out_acia_in()) return;
         }
 
-        throttle();
+        if (throttle_enabled_)
+        {
+            throttle();
+        }
 
         uint16_t pc = machine_.cpu_->state().pc;
 

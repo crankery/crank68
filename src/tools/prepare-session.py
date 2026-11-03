@@ -2,6 +2,7 @@
 """Seed emulator SRAM and SD working copies once; preserve saved changes."""
 import argparse
 from pathlib import Path
+from session_flex import sync_flex
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--drive-layout', choices=('sram-first', 'sd-first'), default='sram-first')
@@ -26,3 +27,7 @@ def seed(factory, session):
 ram_session = 'session.dsk' if args.drive_layout == 'sram-first' else 'session-sram-sd-first.dsk'
 seed(root / 'build/system/flex2.dsk', root / 'build' / ram_session)
 seed(root / 'build/system/FLEX.DSK', root / f'build/session-sd-{args.drive_layout}.dsk')
+sync_flex(root / 'build/system/flex2.dsk', root / 'build' / ram_session, 16)
+if args.drive_layout == 'sd-first':
+    sync_flex(root / 'build/system/flex2.dsk',
+              root / 'build/session-sd-sd-first.dsk', 32)

@@ -100,6 +100,21 @@ with tempfile.TemporaryDirectory(prefix='crank68-tcp-') as temporary:
         if local.poll() is None:
             local.kill(); local.wait()
         local.stdin.close(); local.stdout.close()
+    assert b' a:' not in (root / 'emu_traceback.log').read_bytes(), 'Instruction trace was enabled by default'
+    traced = subprocess.Popen([str(emulator), '--trace', '--throttle',
+                               '--load', f'{root / "echo.bin"}@E100',
+                               '--load', f'{root / "vector.bin"}@FFFE'], cwd=root,
+                              stdin=subprocess.PIPE, stdout=subprocess.DEVNULL,
+                              stderr=subprocess.DEVNULL)
+    try:
+        time.sleep(0.05)
+        traced.stdin.write(b'\x1d'); traced.stdin.flush()
+        assert traced.wait(timeout=5) == 0
+        assert b' a:' in (root / 'emu_traceback.log').read_bytes(), '--trace did not record instructions'
+    finally:
+        if traced.poll() is None:
+            traced.kill(); traced.wait()
+        traced.stdin.close()
     for value in ('0', '-1', '65536', 'xyz', ''):
         result = subprocess.run([str(emulator), '--tcp-console', value], cwd=root,
                                 capture_output=True, timeout=5)

@@ -138,6 +138,8 @@ int main()
         const auto flex = file("build/c68flex.bin");
         std::copy(flex.begin(), flex.end(), bus.ram.begin() + 0xa100);
         require(symbol("build/c68flex.lst", "SDADAPTEREND") < 0xaa00, "SD adapters overlap FMEME");
+        require(symbol("build/c68flex.lst", "C68FILECASEEND") < 0xaa00,
+                "Filename case routine overlaps FMEME");
         const uint16_t fcb = 0x8000, buffer = 0x8400;
         const auto select = [&](uint8_t drive)
         {

@@ -25,7 +25,10 @@ C68POLL LDAB $E010
  RTS
 ; This FLEX's GETCHR expects the monitor-style input entry to echo.
 C68ECHO JSR C68IN
- JMP C68OUT
+ CMPA #$7F
+ BNE C68ECHOREADY
+ LDAA #8
+C68ECHOREADY JMP C68OUT
 ; MON leaves FLEX and restarts whichever BIOS/monitor is installed.
 C68MON SEI
  LDX $FFFE

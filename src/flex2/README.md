@@ -60,6 +60,11 @@ the emulator still takes a single `--sram-image` argument.
 
 At the FLEX prompt, `CAT` catalogs drive 0. Use `CAT 1` for the SRAM data drive
 and `CAT 2` for the 1 MiB SD volume (updated MIKBUG ROM and AVR bridge required).
+Command and filename lookup accepts lowercase at the FLEX prompt, including
+`cat 1` and `z68 1.zork1.dat`. The input line retains its typed case for
+programs to inspect.
+At the prompt, both Backspace and DEL erase the preceding character on a
+VT100-style terminal.
 Drive 3 remains unavailable. FLEX starts with system and working drives both set to 0;
 use a drive prefix to run a command from another disk:
 
@@ -78,7 +83,7 @@ Use `SAVE "1.MYPROG"` and `LOAD "1.MYPROG"` for your files on drive 1.
 Build with `make DRIVE_LAYOUT=sd-first` to map SD to FLEX drive 0 and the two
 SRAM volumes to drives 1 and 2. `make test-sd DRIVE_LAYOUT=sd-first` tests this
 mapping through actual 6800 sector and FMS calls. The `F` monitor boot still
-starts from SRAM; SD boot and interactive emulator bridge support remain ahead.
+starts from SRAM; SD boot remains ahead.
 This layout replaces the former four-drive format; refresh your emulator's
 working copy from the new build after exiting any running emulator.
 

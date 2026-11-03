@@ -38,6 +38,8 @@ public:
 
     void reset();
     void step();
+    void setTraceEnabled(bool enabled) { trace_enabled_ = enabled; }
+    bool traceEnabled() const { return trace_enabled_; }
 
     const State &state() const { return s_; }
     State &state() { return s_; }
@@ -50,6 +52,7 @@ public:
     void trace(uint16_t pc);
 
 private:
+    bool trace_enabled_ = false;
     uint8_t read8(uint16_t addr) const;
     void write8(uint16_t addr, uint8_t value);
     uint16_t read16(uint16_t addr) const;
