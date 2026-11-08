@@ -37,6 +37,7 @@ public:
     };
 
     void reset();
+    void requestNmi() { nmi_pending_ = true; }
     void step();
     void setTraceEnabled(bool enabled) { trace_enabled_ = enabled; }
     bool traceEnabled() const { return trace_enabled_; }
@@ -53,6 +54,7 @@ public:
 
 private:
     bool trace_enabled_ = false;
+    bool nmi_pending_ = false;
     uint8_t read8(uint16_t addr) const;
     void write8(uint16_t addr, uint8_t value);
     uint16_t read16(uint16_t addr) const;

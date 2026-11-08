@@ -4,11 +4,16 @@ TOOLS_BIN_DIR := ../tools/bin
 VASM_BIN := $(TOOLS_BIN_DIR)/vasm6800_oldstyle
 VASM_STD_BIN := $(TOOLS_BIN_DIR)/vasm6800_std
 Z68_SRC_DIR := ../z68
+VERA_SRC_DIR := ../vera
 STORY_INPUTS := $(wildcard ../z68/stories ../z68/stories/*.[dD][aA][tT] ../z68/stories/*.[zZ]3)
 Z68_SRCS := $(wildcard $(Z68_SRC_DIR)/*.s $(Z68_SRC_DIR)/*/*.s)
 VASM_FLAGS := -maxerrors=0 -Fbin -ast -i
 PYTHON := python3
 DRIVE_LAYOUT ?= sram-first
+SOUND_BOARD_REV ?= 1
+ifneq ($(filter $(SOUND_BOARD_REV),1 2),$(SOUND_BOARD_REV))
+$(error SOUND_BOARD_REV must be 1 or 2)
+endif
 SD_TEST_VOLUME := $(if $(filter sd-first,$(DRIVE_LAYOUT)),0,1)
 CXX := c++
 CC := cc
@@ -23,10 +28,8 @@ EMU_HEADERS := $(wildcard $(EMU_DIR)/src/cpu/*.h $(EMU_DIR)/src/gen/*.g.h $(EMU_
 all: rom verify-flex21 verify-opcodes verify-image
 
 .PHONY: rom
-rom: ../roms/mikbug2/mikbug2.rom
-
-../roms/mikbug2/mikbug2.rom: ../roms/mikbug2/mikbug2.s ../roms/mikbug2/sdcard.s ../roms/mikbug2/Makefile
-	$(MAKE) -C ../roms/mikbug2
+rom:
+	$(MAKE) -C ../roms/mikbug2 SOUND_BOARD_REV=$(SOUND_BOARD_REV)
 
 verify-opcodes:
 	$(PYTHON) $(Z68_SRC_DIR)/tools/make-opcodes.py --check
@@ -49,11 +52,20 @@ build/drive-config.asm: force-drive-config tools/drive_config.py
 build/drive-config.h: build/drive-config.asm
 	@test -f $@ || $(PYTHON) tools/drive_config.py $(DRIVE_LAYOUT)
 
-build/c68flex.asm: build/flex21.asm tools/prepare-c68.py platform/console.asm platform/ramdisk.asm platform/sdcard.asm platform/cmdcase.asm build/drive-config.asm
+build/c68flex.asm: build/flex21.asm tools/prepare-c68.py platform/console.asm platform/sound.asm platform/ramdisk.asm platform/sdcard.asm platform/cmdcase.asm build/drive-config.asm
 	$(PYTHON) tools/prepare-c68.py
 
-build/c68flex.bin: build/c68flex.asm Makefile
-	$(VASM_BIN) $(VASM_FLAGS) -L build/c68flex.lst -o $@ $<
+build/c68flex.bin: build/c68flex.asm build/sound-board.cfg Makefile
+	$(VASM_BIN) $(VASM_FLAGS) -DSOUND_BOARD_REV=$(SOUND_BOARD_REV) -L build/c68flex.lst -o $@ $<
+
+.PHONY: force-sound-board
+force-sound-board:
+
+build/sound-board.cfg: force-sound-board
+	@mkdir -p build
+	@printf '%s\n' $(SOUND_BOARD_REV) > $@.tmp
+	@cmp -s $@.tmp $@ || mv $@.tmp $@
+	@rm -f $@.tmp
 
 build/msbasic.asm: $(BASIC_SRC) tools/prepare-msbasic.py
 	@mkdir -p build
@@ -84,13 +96,27 @@ build/z68.bin: $(Z68_SRCS) Makefile
 	@mkdir -p build
 	$(VASM_STD_BIN) -I$(Z68_SRC_DIR)/hardware -I$(Z68_SRC_DIR)/app -I$(Z68_SRC_DIR)/z -Fbin -L build/z68.lst -o $@ $(Z68_SRC_DIR)/z68.s
 
+.PHONY: vera
+vera: image
+
+$(VERA_SRC_DIR)/font.bin: $(VERA_SRC_DIR)/make-font.py ../terminal/picodvi/software/assets/font_8x8.h
+	$(PYTHON) $(VERA_SRC_DIR)/make-font.py
+
+build/vera.bin: $(VERA_SRC_DIR)/terminal.s $(VERA_SRC_DIR)/keyboard.s $(VERA_SRC_DIR)/font.bin Makefile
+	@mkdir -p build
+	$(VASM_STD_BIN) -I$(VERA_SRC_DIR) -Fbin -L build/vera.lst -o $@ $(VERA_SRC_DIR)/terminal.s
+
+build/boop.bin: platform/boop.s Makefile
+	@mkdir -p build
+	$(VASM_STD_BIN) -Fbin -L build/boop.lst -o $@ $<
+
 z68: image
 
-build/flex2.dsk: build/c68flex.bin build/msbasic.bin build/boot.bin build/z68.bin build/CZECH.DAT build/VMBOOT.DAT build/VMFAIL.DAT build/VMLIMIT.DAT tools/mkimage.py tools/stories.py $(STORY_INPUTS) tools/disk_layout.py tools/source-disk.py 6800Flex/6800FLEX.DSK 6800Flex/6800UTL1.DSK 6800Flex/6800UTL2.DSK 6800Flex/GAMES_5.DSK 6800Flex/MYGAMES.DSK 6800Flex/XBASIC_1.DSK
+build/flex2.dsk: build/c68flex.bin build/msbasic.bin build/boot.bin build/z68.bin build/vera.bin build/boop.bin build/CZECH.DAT build/VMBOOT.DAT build/VMFAIL.DAT build/VMLIMIT.DAT tools/mkimage.py tools/stories.py $(STORY_INPUTS) tools/disk_layout.py tools/source-disk.py 6800Flex/6800FLEX.DSK 6800Flex/6800UTL1.DSK 6800Flex/6800UTL2.DSK 6800Flex/GAMES_5.DSK 6800Flex/MYGAMES.DSK 6800Flex/XBASIC_1.DSK
 	$(PYTHON) tools/mkimage.py
 
 # Explicitly discard generated disk contents even if an emulator saved a newer file.
-rebuild-image: build/c68flex.bin build/msbasic.bin build/boot.bin build/z68.bin build/CZECH.DAT build/VMBOOT.DAT build/VMFAIL.DAT build/VMLIMIT.DAT
+rebuild-image: build/c68flex.bin build/msbasic.bin build/boot.bin build/z68.bin build/vera.bin build/boop.bin build/CZECH.DAT build/VMBOOT.DAT build/VMFAIL.DAT build/VMLIMIT.DAT
 	$(PYTHON) tools/mkimage.py
 	$(PYTHON) tools/verify-image.py
 

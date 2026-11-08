@@ -30,6 +30,36 @@ protected:
     }
 };
 
+TEST_F(CpuRegression, NmiStacksStateAndRtiRestoresItEvenWhenInterruptsAreMasked)
+{
+    cpu.s_ = {0x12, 0x34, 0x5678, 0x9000, 0x1000, uint8_t(I | C)};
+    bus.memory[0xfffc] = 0x20;
+    bus.memory[0xfffd] = 0x00;
+    bus.memory[0x2000] = 0x3b; // RTI
+
+    cpu.requestNmi();
+    cpu.step();
+
+    EXPECT_EQ(cpu.s_.pc, 0x2000);
+    EXPECT_EQ(cpu.s_.sp, 0x8ff9);
+    EXPECT_EQ(cpu.s_.cc & I, I);
+    EXPECT_EQ(bus.memory[0x8ffa], uint8_t(I | C));
+    EXPECT_EQ(bus.memory[0x8ffb], 0x34);
+    EXPECT_EQ(bus.memory[0x8ffc], 0x12);
+    EXPECT_EQ(bus.memory[0x8ffd], 0x56);
+    EXPECT_EQ(bus.memory[0x8ffe], 0x78);
+    EXPECT_EQ(bus.memory[0x8fff], 0x10);
+    EXPECT_EQ(bus.memory[0x9000], 0x00);
+
+    cpu.step();
+    EXPECT_EQ(cpu.s_.pc, 0x1000);
+    EXPECT_EQ(cpu.s_.sp, 0x9000);
+    EXPECT_EQ(cpu.s_.a, 0x12);
+    EXPECT_EQ(cpu.s_.b, 0x34);
+    EXPECT_EQ(cpu.s_.x, 0x5678);
+    EXPECT_EQ(cpu.s_.cc, uint8_t(I | C));
+}
+
 TEST_F(CpuRegression, DecimalAdjustAllValidBcdAdditions)
 {
     // Decimal arithmetic supplies an independent oracle for ADD/ADC followed by DAA.

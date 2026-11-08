@@ -91,6 +91,16 @@ input, not a shutdown command. Breakpoint messages and continuation keys remain
 on the launching terminal. Without `--tcp-console`, the existing local console
 continues to work.
 
+Press **Ctrl-\\** (Control plus backslash) to pulse the emulated 6800 NMI pin.
+In TCP mode, this works from either the connected raw terminal or the launching
+terminal. The key is consumed by the emulator and is not sent to the guest
+ACIA. The CPU stacks its state and follows the NMI vector at `$FFFC`.
+MIKBUG now vectors directly to its NMI handler. While MIKBUG owns RAM it
+displays the interrupted registers; if FLEX has replaced its workspace, it
+reinitializes the monitor and abandons the running FLEX session.
+MIKBUG's `C` command cannot resume that abandoned session; it reports
+`NO SAVED CONTEXT`.
+
 `make test` covers raw transport bytes, connection rejection/reconnect,
 bounded output queuing, occupied-port errors, and a real 6800 ACIA echo program
 through the executable. The process test checks its startup banner, reconnect,

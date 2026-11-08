@@ -37,6 +37,7 @@ volatile std::sig_atomic_t stop_requested_ = 0;
 void request_stop(int) { stop_requested_ = 1; }
 bool show_control_ = false;
 bool throttle_enabled_ = false;
+constexpr int nmi_key_ = 0x1c; // Ctrl-\\, reserved for the host NMI button.
 const uint64_t sleep_threshold_cycles = 1000; // sleep/check every 1000 cycles
 uint64_t total_cycles_ = 0;
 uint64_t last_sleep_check_cycles_ = 0;
@@ -343,6 +344,12 @@ bool term_out_acia_in()
             return true;
         }
 
+        if (c == nmi_key_)
+        {
+            machine_.cpu_->requestNmi();
+            return false;
+        }
+
         // map delete to backspace
         if (c == 0x7F)
         {
@@ -455,7 +462,11 @@ void run()
         if (stop_requested_) return;
         if (tcp_console_) {
             // The launching terminal remains a local shutdown/debug console.
-            if (isatty(0) && kbhit() && getch()==(']' & 0x1f)) return;
+            if (isatty(0) && kbhit()) {
+                const int key=getch();
+                if (key==(']' & 0x1f)) return;
+                if (key==nmi_key_) machine_.cpu_->requestNmi();
+            }
             const auto cycles=machine_.cpu_->cycles_;
             if (!tcp_console_->connected() || !tcp_console_->writable() ||
                 cycles-last_tcp_poll>=1000) {
@@ -470,7 +481,10 @@ void run()
             }
             auto &acia=machine_.memory_io_->acia_1_0_;
             if (!acia.terminalOutAciaInReady()) {
-                if (auto value=tcp_console_->read()) acia.terminalOutAciaIn(*value);
+            if (auto value=tcp_console_->read()) {
+                if (*value==nmi_key_) machine_.cpu_->requestNmi();
+                else acia.terminalOutAciaIn(*value);
+            }
             }
             if (auto value=acia.terminalInAciaOut()) tcp_console_->write(*value);
         } else {

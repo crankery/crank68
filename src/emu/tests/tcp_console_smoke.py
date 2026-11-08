@@ -32,14 +32,16 @@ with tempfile.TemporaryDirectory(prefix='crank68-tcp-') as temporary:
     for value in banner:
         program.extend(bytes([0x86, value, 0xb7, 0xe0, 0x11]))
     program.extend(bytes.fromhex('b6 e010 85 01 27 f9 b6 e011 b7 e011 20 f1'))
+    program.extend(bytes(0x80 - len(program)))
+    program.extend(bytes.fromhex('86 21 b7 e011 3b'))  # NMI: print '!', RTI.
     (root / 'echo.bin').write_bytes(program)
-    (root / 'vector.bin').write_bytes(bytes.fromhex('e100'))
+    (root / 'vector.bin').write_bytes(bytes.fromhex('e180 e100'))
     with socket.socket() as reservation:
         reservation.bind(('127.0.0.1', 0))
         port = reservation.getsockname()[1]
     command = [str(emulator), '--tcp-console', str(port),
                '--load', f'{root / "echo.bin"}@E100',
-               '--load', f'{root / "vector.bin"}@FFFE',
+               '--load', f'{root / "vector.bin"}@FFFC',
                '--sram-image', str(root / 'session.dsk')]
     with (root / 'stderr.log').open('w+') as errors:
         process = subprocess.Popen(command, cwd=root, stdin=subprocess.DEVNULL,
@@ -59,6 +61,8 @@ with tempfile.TemporaryDirectory(prefix='crank68-tcp-') as temporary:
             with client:
                 client.settimeout(5)
                 assert receive(client, len(banner)) == banner, 'Startup banner lost'
+                client.sendall(b'\x1c')  # Ctrl-\\ pulses NMI, not guest input.
+                assert receive(client, 1) == b'!', 'TCP NMI key did not vector'
                 payload = b'aAzZ\x00\x08\x1b[31m\x1d\xff'
                 client.sendall(payload)
                 assert receive(client, len(payload)) == payload, 'ACIA bytes were transformed'
@@ -76,7 +80,7 @@ with tempfile.TemporaryDirectory(prefix='crank68-tcp-') as temporary:
                 process.wait()
     # Default local console retains its historical case swap and Ctrl-] exit.
     local = subprocess.Popen([str(emulator), '--load', f'{root / "echo.bin"}@E100',
-                              '--load', f'{root / "vector.bin"}@FFFE'], cwd=root,
+                              '--load', f'{root / "vector.bin"}@FFFC'], cwd=root,
                              stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                              stderr=subprocess.DEVNULL)
     def local_read(count):
@@ -90,6 +94,8 @@ with tempfile.TemporaryDirectory(prefix='crank68-tcp-') as temporary:
         return bytes(data)
     try:
         assert local_read(len(banner)) == banner
+        local.stdin.write(b'\x1c'); local.stdin.flush()
+        assert local_read(1) == b'!', 'Local NMI key did not vector'
         local.stdin.write(b'a'); local.stdin.flush()
         assert local_read(1) == b'A'
         local.stdin.write(b'A'); local.stdin.flush()
@@ -103,7 +109,7 @@ with tempfile.TemporaryDirectory(prefix='crank68-tcp-') as temporary:
     assert b' a:' not in (root / 'emu_traceback.log').read_bytes(), 'Instruction trace was enabled by default'
     traced = subprocess.Popen([str(emulator), '--trace', '--throttle',
                                '--load', f'{root / "echo.bin"}@E100',
-                               '--load', f'{root / "vector.bin"}@FFFE'], cwd=root,
+                               '--load', f'{root / "vector.bin"}@FFFC'], cwd=root,
                               stdin=subprocess.PIPE, stdout=subprocess.DEVNULL,
                               stderr=subprocess.DEVNULL)
     try:

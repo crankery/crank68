@@ -10099,7 +10099,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "FM1608"
+		(property "Value" "6264"
 			(at 150.7333 26.67 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11744,7 +11744,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "FM1808"
+		(property "Value" "62256"
 			(at 103.7433 26.67 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -13797,7 +13797,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "FM1608"
+		(property "Value" "6264"
 			(at 205.3433 26.67 0)
 			(show_name no)
 			(do_not_autoplace no)

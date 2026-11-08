@@ -6,3 +6,6 @@ source from a binary of Microsoft basic for the Altair 680 computer.
 I'm trying to get assembling with vasm6800_oldstyle to run on my 6800 computer.
 
 So, we're starting with a rough disassembly file. Getting this to build to match the binaries it was made from is the first goal.
+
+The [AM9511A performance preflight](am9511-performance.md) records chip timing
+and a cycle-counting plan for possible hardware trig/math hooks in this BASIC.

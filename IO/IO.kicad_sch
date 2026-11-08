@@ -16046,7 +16046,7 @@
 		(dnp no)
 		(uuid "773279f3-e928-4a24-a3dc-88470a9af7bb")
 		(property "Reference" "U1"
-			(at 131.6833 156.21 0)
+			(at 131.572 173.99 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects

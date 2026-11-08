@@ -72,6 +72,7 @@
 
     .equ endin0, RAM_PTR
     ALLOC aciat, 1
+    ALLOC resume_valid, 1
 
 ; stack is at 0x100
 
@@ -124,8 +125,7 @@ io:         ldx iov
 ; 
 ; nmi sequence 
 ; 
-powdwn:     ldx nio                     ; get nmi vector
-            jmp 0,x
+powdwn:     jmp nmi                     ; fixed NMI target survives FLEX RAM use
 ; 
 ; swi interrupt sequence 
 ; 
@@ -379,6 +379,7 @@ inilp2:     clr 0,x                     ; clear next byte of ram
             inx                         ; update index
             cpx #endin0                 ; any more bytes to init?
             bne inilp2                  ; no, continue clearing
+            clr resume_valid            ; no interrupted program yet
 ; 
 ; set cc so when we 'GO' to user pgm the 
 ; interupt mask is set 
@@ -398,12 +399,13 @@ inz1:       staa aciat                  ; save for control loop acia in
 ; 
             staa acias                  ; inz acia
 ent1:       lds sp
+            jsr sound_startup           ; play startup tone, then mute
             jsr pcrlf
             bra contb                   ; skip to insure mikbug : compat.
 inch2:      bra inch1                   ; mikbug 1.0 input 1 character
 contb:      ldx #mcl2                   ; print header
             jsr pdata1                  ; print data string
-            ldx #nmi                    ; init pdn
+            ldx #nmi                    ; mark monitor workspace valid
             stx nio
 ; 
 ; main command/control loop 
@@ -449,13 +451,19 @@ goodch:     ldx 1,x                     ; get address from j.t.
 ; 
 ; nmi entry 
 ; 
-nmi:        sts sp                      ; save stack
+nmi:        ldx nio                     ; monitor workspace still intact?
+            cpx #nmi
+            beq nmi_ready
+            jmp start                   ; FLEX replaced workspace: cold monitor entry
+nmi_ready:  sts sp                      ; save stack
+            ldaa #1
+            staa resume_valid
             jsr pcrlf
             ldaa #'B'                   ;  print b
             bsr out2
             jsr outs
             ldaa #2                     ; remove breakpoints
-            bsr brksub
+            jsr brksub                  ; outside BSR range after context guard
             bra pstak1
 ; 
 ; set speed for user tty 
@@ -514,7 +522,14 @@ goto:       bsr baddrj                  ; go get address from user
 next:       ldx #1                      ; # instructions to trace
 trace2:     clr brktrc                  ; clear flag indicating trace
 ; is due to break 
-trace3:     stx ntrace                  ; save # inst's to trace
+trace3:     tst resume_valid
+            bne trace3_ready
+            clr brktrc
+            jsr pcrlf
+            ldx #mcl_noresume
+            jsr pdata1
+            jmp contrl
+trace3_ready: stx ntrace                ; save # inst's to trace
 ; is due to break 
             ldx sp                      ; x : = stack pointer
             ldx 6,x                     ; x : = address of instr to be ex
@@ -775,6 +790,8 @@ punt2:      addb 0,x                    ; update checksum
 ; 
 swi15:
             sts sp                      ; save user's sp
+            ldaa #1
+            staa resume_valid
 ; 
             ldaa #3
             jsr brksub                  ; go take out all the breaks
@@ -1035,6 +1052,7 @@ mcl4:       .byte "BEG ADDR ?"
             .byte 4
 mcl5:       .byte "END ADDR ?"
             .byte 4
+mcl_noresume: .byte "NO SAVED CONTEXT",4
 ; 
 ; 
 ; mits used B rather than A
@@ -1066,6 +1084,10 @@ polcat_mits:
 ; Shared SD transport at fixed ROM addresses.
             .include "sdcard.s"
 
+; Startup sound and monitor help live after the SD transport.
+            .include "sound.s"
+            .include "help.s"
+
 ; Keep existing monitor entry addresses stable by extending dispatch here.
             .org 0xff80
 flexdispatch:
@@ -1075,10 +1097,15 @@ flexdispatch:
             bhi flexcommand
             subb #0x20
 flexcommand:
+            cmpb #0x3f                  ; ? - show commands
+            beq flexhelp
+            cmpb #0x48                  ; H/h - show commands
+            beq flexhelp
             cmpb #0x46                  ; F - boot FLEX
             beq flexboot
             ldx #fctabl
             jmp nxtchr
+flexhelp:   jmp help_command
 
 ; FLEX 2 cold boot entry. Fixed address for JMP/JSR callers and G FFC0.
 ; Does not return: FLEX replaces monitor workspace/stack. Requires a

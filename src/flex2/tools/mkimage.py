@@ -65,8 +65,14 @@ def make_image():
     root = Path('build')
     z68 = (root / 'z68.bin').read_bytes()
     assert 0 < len(z68) <= 0x7E00 - 0x0300, 'Z68 overlaps its reserved stack or FLEX'
+    vera = (root / 'vera.bin').read_bytes()
+    assert 0 < len(vera) <= 0x7E00 - 0x0300, 'VERA exceeds FLEX application RAM'
+    boop = (root / 'boop.bin').read_bytes()
+    assert 0 < len(boop) <= 0x7E00 - 0x0300, 'BOOP exceeds FLEX application RAM'
     files = [
         ('Z68.CMD', binary_records(z68, 0x0300, 0x0300)),
+        ('VERA.CMD', binary_records(vera, 0x0300, 0x0300)),
+        ('BOOP.CMD', binary_records(boop, 0x0300, 0x0300)),
         ('FLEX2.SYS', binary_records((root / 'c68flex.bin').read_bytes(), 0xA100, 0xAD00)),
         ('MSBASIC.CMD', binary_records((root / 'msbasic.bin').read_bytes(), 0, 0)),
     ]

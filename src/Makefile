@@ -1,24 +1,43 @@
 PYTHON ?= python3
 DRIVE_LAYOUT ?= sram-first
+SOUND_BOARD_REV ?= 1
 SD_VOLUME ?= $(if $(filter sd-first,$(DRIVE_LAYOUT)),0,1)
 SRAM_SESSION := $(if $(filter sd-first,$(DRIVE_LAYOUT)),build/session-sram-sd-first.dsk,build/session.dsk)
+GALASM := tools/GALasm/src/galasm
+GALASM_SOURCES := $(wildcard tools/GALasm/src/*.c tools/GALasm/src/*.h tools/GALasm/src/Makefile)
+GAL_SOURCES := $(wildcard pld/*.gal)
+GAL_JEDECS := $(patsubst pld/%.gal,build/pld/%.jed,$(GAL_SOURCES))
+GAL_FUSE_MAPS := $(patsubst pld/%.gal,build/pld/%.fus,$(GAL_SOURCES))
+GAL_PIN_REPORTS := $(patsubst pld/%.gal,build/pld/%.pin,$(GAL_SOURCES))
 
-.PHONY: all system test run session program-avr program-avr-dry-run program-avr-isp program-avr-isp-dry-run
+.PHONY: all system pld test run session program-avr program-avr-dry-run program-avr-isp program-avr-isp-dry-run
 all: system
 
+$(GALASM): $(GALASM_SOURCES)
+	$(MAKE) -C tools/GALasm/src galasm
+
+# GALasm writes outputs beside its input. Assemble a copy under build/ so
+# generated JEDEC, fuse and pin files never appear among the source files.
+build/pld/%.jed build/pld/%.fus build/pld/%.pin: pld/%.gal $(GALASM)
+	@mkdir -p build/pld
+	cp $< build/pld/$*.gal
+	$(GALASM) build/pld/$*.gal
+
+pld: $(GAL_JEDECS) $(GAL_FUSE_MAPS) $(GAL_PIN_REPORTS)
+
 # Keep the nested builds in order: FLEX builds the matching MIKBUG ROM.
-system:
-	$(MAKE) -C flex2 all DRIVE_LAYOUT=$(DRIVE_LAYOUT)
+system: pld
+	$(MAKE) -C flex2 all DRIVE_LAYOUT=$(DRIVE_LAYOUT) SOUND_BOARD_REV=$(SOUND_BOARD_REV)
 	$(MAKE) -C sd check
 	$(MAKE) -C emu all
 	$(PYTHON) tools/package-system.py --sd-volume $(SD_VOLUME) --drive-layout $(DRIVE_LAYOUT)
 
 test: system
 ifeq ($(DRIVE_LAYOUT),sd-first)
-	$(MAKE) -C flex2 test-sd DRIVE_LAYOUT=$(DRIVE_LAYOUT)
+	$(MAKE) -C flex2 test-sd DRIVE_LAYOUT=$(DRIVE_LAYOUT) SOUND_BOARD_REV=$(SOUND_BOARD_REV)
 else
-	$(MAKE) -C roms/mikbug2 test
-	$(MAKE) -C flex2 test DRIVE_LAYOUT=$(DRIVE_LAYOUT)
+	$(MAKE) -C roms/mikbug2 test SOUND_BOARD_REV=$(SOUND_BOARD_REV)
+	$(MAKE) -C flex2 test DRIVE_LAYOUT=$(DRIVE_LAYOUT) SOUND_BOARD_REV=$(SOUND_BOARD_REV)
 endif
 	$(PYTHON) tools/test-sd-emu.py --drive-layout $(DRIVE_LAYOUT)
 	$(MAKE) -C emu test

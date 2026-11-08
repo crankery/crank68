@@ -5101,6 +5101,16 @@
 			(embedded_fonts no)
 		)
 	)
+	(text "Note: TI was still in the era of \"D0 is the most significant bit\" on this chip."
+		(exclude_from_sim no)
+		(at 161.29 80.264 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+		(uuid "d10cc546-7b2a-45bd-b626-b0a9f6f92290")
+	)
 	(junction
 		(at 106.68 132.08)
 		(diameter 0)
@@ -6254,7 +6264,7 @@
 		(uuid "19af791b-3a3a-406a-a2e0-f627f5a83cad")
 	)
 	(label "D1"
-		(at 149.86 52.07 180)
+		(at 149.86 64.77 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -6264,7 +6274,7 @@
 		(uuid "1ba3955a-b785-4fa7-8618-d1170ba7cdb3")
 	)
 	(label "D0"
-		(at 149.86 49.53 180)
+		(at 149.86 67.31 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -6274,7 +6284,7 @@
 		(uuid "1dd302a0-ebd8-414f-bc51-701a1d2d34c5")
 	)
 	(label "D7"
-		(at 149.86 67.31 180)
+		(at 149.86 49.53 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -6314,7 +6324,7 @@
 		(uuid "33e31d44-a15f-4cdd-8afe-38873059a65d")
 	)
 	(label "D6"
-		(at 149.86 64.77 180)
+		(at 149.86 52.07 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -6414,7 +6424,7 @@
 		(uuid "726cd3ca-405d-40c8-9cea-829c214df63b")
 	)
 	(label "D5"
-		(at 149.86 62.23 180)
+		(at 149.86 54.61 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -6424,7 +6434,7 @@
 		(uuid "7ce3efc2-9b66-41b7-bd30-7b278888a5d7")
 	)
 	(label "D4"
-		(at 149.86 59.69 180)
+		(at 149.86 57.15 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -6484,7 +6494,7 @@
 		(uuid "a7f288d4-eabd-44c0-b140-e88ed01ae754")
 	)
 	(label "D2"
-		(at 149.86 54.61 180)
+		(at 149.86 62.23 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -6634,7 +6644,7 @@
 		(uuid "eabd11b0-27a7-43af-a8e4-ef50a0ea9655")
 	)
 	(label "D3"
-		(at 149.86 57.15 180)
+		(at 149.86 59.69 180)
 		(effects
 			(font
 				(size 1.27 1.27)

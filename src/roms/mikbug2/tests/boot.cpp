@@ -34,6 +34,7 @@ struct Bus : IBus {
     uint8_t page=0;
     int input=-1;
     std::string output;
+    std::vector<uint8_t> sound_writes;
     uint8_t read8(uint16_t a) override {
         if (a>=0xc000 && a<0xd000) return disk[size_t(page)*4096+(a&4095)];
         if (a==0xe010) return 2 | (input>=0 ? 1 : 0);
@@ -46,6 +47,7 @@ struct Bus : IBus {
         if (a==0xe002) { page=v; return; }
         if (a==0xe010) return;
         if (a==0xe011) { output+=char(v); return; }
+        if (a==0xe060) { sound_writes.push_back(v); return; }
         if (a>=0xe000 && a<0xe100) throw std::runtime_error("Unexpected I/O write "+std::to_string(a));
         ram[a]=v;
     }
@@ -61,8 +63,101 @@ int main(int argc, char **argv) {
         std::copy(rom.begin(),rom.end(),bus.ram.begin()+0xe000);
         bus.page=123;
         const std::string mode = argc > 1 ? argv[1] : "normal";
-        bus.input = mode == "lowercase" ? 'f' : 'F';
+        bus.input = mode == "nmi" ? -1 : mode == "lowercase" ? 'f'
+                  : mode == "continue-empty" ? 'C'
+                  : mode == "help" ? '?'
+                  : mode == "help-lower" ? 'h' : 'F';
         cpu.reset();
+        if (mode == "help" || mode == "help-lower") {
+            const auto command_loop=symbol("../roms/mikbug2/mikbug2.lst","contrl");
+            for (unsigned step=0;step<2000000;++step) {
+                cpu.step();
+                if (bus.output.find("V    SET BREAK")!=std::string::npos &&
+                    cpu.s_.pc==command_loop) {
+                    require(bus.output.find("F  BOOT FLEX")!=std::string::npos &&
+                            bus.output.find("L    LOAD S-RECORDS")!=std::string::npos &&
+                            bus.output.find("C  CONTINUE")!=std::string::npos,
+                            "MIKBUG help omitted a command group");
+                    std::cout<<"MIKBUG help command passed: "<<mode<<".\n";
+                    return 0;
+                }
+            }
+            throw std::runtime_error("MIKBUG help did not return to prompt");
+        }
+        if (mode == "continue-empty") {
+            const auto command_loop=symbol("../roms/mikbug2/mikbug2.lst","contrl");
+            for (unsigned step=0;step<100000;++step) {
+                cpu.step();
+                if (bus.output.find("NO SAVED CONTEXT")!=std::string::npos &&
+                    cpu.s_.pc==command_loop) {
+                    std::cout<<"Fresh MIKBUG C command rejected safely.\n";
+                    return 0;
+                }
+            }
+            throw std::runtime_error("Fresh MIKBUG C did not return to prompt");
+        }
+        if (mode == "nmi") {
+            const auto command_loop=symbol("../roms/mikbug2/mikbug2.lst","contrl");
+            for (unsigned step=0;step<100000 && cpu.s_.pc!=command_loop;++step)
+                cpu.step();
+            require(cpu.s_.pc==command_loop,"MIKBUG did not reach its command loop");
+            cpu.requestNmi();
+            cpu.step();
+            require(cpu.s_.pc==symbol("../roms/mikbug2/mikbug2.lst","powdwn"),
+                    "NMI did not use the hardware vector");
+            cpu.step(); // JMP nmi
+            require(cpu.s_.pc==symbol("../roms/mikbug2/mikbug2.lst","nmi"),
+                    "MIKBUG NMI vector did not reach its monitor handler");
+            for (unsigned resume=0;resume<200000 && cpu.s_.pc!=command_loop;++resume)
+                cpu.step();
+            require(cpu.s_.pc==command_loop,
+                    "MIKBUG NMI handler did not return to the command loop");
+            require(bus.output.find("CC B A X P S")!=std::string::npos,
+                    "MIKBUG NMI did not display the interrupted registers");
+            std::cout<<"MIKBUG NMI direct vector passed.\n";
+            return 0;
+        }
+        if (mode == "flex-nmi") {
+            const std::string date="11,01,26\r";
+            size_t next=0;
+            for (unsigned step=0;step<2000000;++step) {
+                if (cpu.s_.pc==inwait && bus.input<0 && next<date.size())
+                    bus.input=uint8_t(date[next++]);
+                if (next==date.size() && bus.output.find("+++")!=std::string::npos &&
+                    cpu.s_.pc==inwait) {
+                    cpu.requestNmi();
+                    cpu.step();
+                    require(cpu.s_.pc==symbol("../roms/mikbug2/mikbug2.lst","powdwn"),
+                            "FLEX NMI did not use hardware vector");
+                    cpu.step();
+                    require(cpu.s_.pc==symbol("../roms/mikbug2/mikbug2.lst","nmi"),
+                            "FLEX NMI did not reach MIKBUG handler");
+                    const auto command_loop=symbol("../roms/mikbug2/mikbug2.lst","contrl");
+                    for (unsigned resume=0;resume<200000 && cpu.s_.pc!=command_loop;++resume)
+                        cpu.step();
+                    require(cpu.s_.pc==command_loop,
+                            "MIKBUG did not regain its command loop after FLEX NMI");
+                    const auto first_banner=bus.output.find("MIKBUG 2.0");
+                    require(first_banner!=std::string::npos &&
+                            bus.output.find("MIKBUG 2.0",first_banner+1)!=std::string::npos,
+                            "FLEX NMI did not reinitialize MIKBUG");
+                    require(bus.ram[0xbe44]==0x11,
+                            "FLEX NMI did not restore MIKBUG ACIA configuration");
+                    bus.input='C';
+                    for (unsigned resume=0;resume<100000;++resume) {
+                        cpu.step();
+                        if (bus.output.find("NO SAVED CONTEXT")!=std::string::npos &&
+                            cpu.s_.pc==command_loop) {
+                            std::cout<<"FLEX NMI returned to MIKBUG; C rejected safely.\n";
+                            return 0;
+                        }
+                    }
+                    throw std::runtime_error("C after FLEX NMI did not return to prompt");
+                }
+                cpu.step();
+            }
+            throw std::runtime_error("FLEX did not reach its prompt for NMI test");
+        }
         if (mode == "direct") { bus.input=-1; cpu.s_.pc=0xffc0; }
         // Boot through the ROM; no FLEX code is preloaded into RAM.
         std::string keys="11,01,26\rMSBASIC\r\r\rN\rPRINT 2+2\r";
@@ -73,6 +168,16 @@ int main(int argc, char **argv) {
             cpu.step();
             if (bus.output.find("MITS ALTAIR 680 BASIC")!=std::string::npos &&
                 bus.output.find(" 4 ")!=std::string::npos) {
+                std::ifstream sound_config("../roms/mikbug2/build/sound-board.cfg");
+                int sound_revision=0;
+                sound_config >> sound_revision;
+                require(bool(sound_config) && (sound_revision==1 || sound_revision==2),
+                        "Missing sound board revision");
+                const std::vector<uint8_t> expected = sound_revision==2
+                    ? std::vector<uint8_t>{0x9f,0xbf,0xdf,0xff,0x8c,0x11,0x92,0x9f}
+                    : std::vector<uint8_t>{0xf9,0xfd,0xfb,0xff,0x31,0x88,0x49,0xf9};
+                require(mode=="direct" ? bus.sound_writes.empty() : bus.sound_writes==expected,
+                        "Unexpected MIKBUG startup sound writes");
                 for(auto c:bus.output) if(c) std::cout<<c;
                 std::cout<<"\nBoot, FLEX command loading, and BASIC arithmetic passed.\n";
 

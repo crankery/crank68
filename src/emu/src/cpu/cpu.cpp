@@ -29,6 +29,20 @@ void Cpu::write16(uint16_t addr, uint16_t value)
 
 void Cpu::step()
 {
+    if (nmi_pending_)
+    {
+        nmi_pending_ = false;
+        push16(s_.pc);
+        push16(s_.x);
+        push8(s_.a);
+        push8(s_.b);
+        push8(s_.cc);
+        set_flag(I, true);
+        s_.pc = read16(0xfffc);
+        cycles_ += 12;
+        return;
+    }
+
     uint16_t pc = s_.pc;
     uint8_t opcode = fetch8();
     OpInfo op_info = cpu_op_table[opcode];
@@ -153,6 +167,7 @@ uint16_t Cpu::sub16(uint16_t lhs, uint16_t rhs, bool carry_in)
 
 void Cpu::reset()
 {
+    nmi_pending_ = false;
     uint16_t reset_vector = read16(0xFFFE);
 
     char message[256];

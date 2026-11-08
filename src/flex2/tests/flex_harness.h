@@ -41,6 +41,7 @@ struct Bus : IBus {
     uint8_t page=0;
     int input=-1;
     std::string output;
+    std::vector<uint8_t> sound_writes;
     uint8_t read8(uint16_t a) override {
         if (a>=0xc000 && a<0xd000) return disk[size_t(page)*4096+(a&4095)];
         if (a==0xe010) return 2 | (input>=0 ? 1 : 0);
@@ -53,6 +54,7 @@ struct Bus : IBus {
         if (a>=0xc000 && a<0xd000) { disk[size_t(page)*4096+(a&4095)]=v; return; }
         if (a==0xe002) { page=v; return; }
         if (a==0xe011) { output+=char(v); return; }
+        if (a==0xe060) { sound_writes.push_back(v); return; }
         if (a>=0xe020 && a<=0xe023) return;
         if (a>=0xe000 && a<0xe100) throw std::runtime_error("Unexpected I/O write "+std::to_string(a));
         ram[a]=v;

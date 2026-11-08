@@ -1,7 +1,7 @@
 # C68 system build
 
 From this directory (`src`), run `make`. It builds and verifies FLEX, MIKBUG2,
-the AVR SD bridge and the emulator, then gathers matching outputs in
+every `pld/*.gal`, the AVR SD bridge and the emulator, then gathers matching outputs in
 `build/system/`:
 
 | File | Use |
@@ -12,7 +12,12 @@ the AVR SD bridge and the emulator, then gathers matching outputs in
 | `sd_bridge.hex` | ATmega328P-PU firmware, compiled for internal 8 MHz |
 | `avr-fuses.conf` | Minipro fuses for the internal 8 MHz clock |
 | `emu` | Host emulator executable |
+| `pld/*.jed` | JEDEC programming files for all GALasm sources in `pld/` |
+| `pld/*.fus`, `pld/*.pin` | Fuse maps and pin reports for those GALs |
 | `MANIFEST.txt` | File sizes and SHA-256 hashes for the packaged set |
+
+Run `make pld` to build just the GALs. Their generated files also live in
+`build/pld/`; the full system package copies them into `build/system/pld/`.
 
 The default `make` layout is SRAM volumes at FLEX drives 0/1 and SD at drive 2.
 Use `make DRIVE_LAYOUT=sd-first` for SD at drive 0 and SRAM at drives 1/2.

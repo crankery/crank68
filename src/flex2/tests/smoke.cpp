@@ -126,7 +126,7 @@ int main(int argc,char **argv) {
         std::copy_n(bus.disk.begin(),256,bus.ram.begin()+0x100);
         cpu.s_.pc=0x100;
         // A BIOS has only copied the linked boot sector; the CPU must load FLEX.
-        std::string keys="11,01,26\rcaX\177t\rcat 4\rcat 1\rcat 2\rcat 3\r0.msbasic\r\r\rN\rPRINT 2+2\r";
+        std::string keys="11,01,26\rboop\rcaX\177t\rcat 4\rcat 1\rcat 2\rcat 3\r0.msbasic\r\r\rN\rPRINT 2+2\r";
         size_t next=0;
         for (unsigned step=0;step<15000000;++step) {
             if ((cpu.s_.pc==inwait || cpu.s_.pc==basicin) && bus.input<0 && next<keys.size())
@@ -143,6 +143,17 @@ int main(int argc,char **argv) {
                         "Imported utilities did not run");
                 require(bus.output.find("\b \b")!=std::string::npos,
                         "FLEX did not visibly erase a DEL input");
+                std::ifstream sound_config("build/sound-board.cfg");
+                int sound_revision=0;
+                sound_config >> sound_revision;
+                require(bool(sound_config) && (sound_revision==1 || sound_revision==2),
+                        "Missing sound board revision");
+                const std::vector<uint8_t> boop = sound_revision==2
+                    ? std::vector<uint8_t>{0x9f,0xbf,0xdf,0xff,0x8c,0x11,0x92,0x9f}
+                    : std::vector<uint8_t>{0xf9,0xfd,0xfb,0xff,0x31,0x88,0x49,0xf9};
+                require(std::search(bus.sound_writes.begin(),bus.sound_writes.end(),
+                                    boop.begin(),boop.end())!=bus.sound_writes.end(),
+                        "BOOP did not write the expected bit-reversed sound commands");
                 const std::string drive_zero="CATALOG OF DRIVE NUMBER 0";
                 auto first=bus.output.find(drive_zero);
                 require(first!=std::string::npos &&

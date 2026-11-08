@@ -103,6 +103,11 @@ socket. Verify the mating pin-1/row orientation in the board assembly view.
 status codes, data lengths, the 16-bit sector checksum and recovery. This is a concrete starting contract
 for the FLEX backend, not a pre-existing device standard.
 
+[DIRECT_BUS.md](DIRECT_BUS.md) sketches a possible **new** two-register
+memory-mapped SD board with its own AVR. It lists the external latches and
+ready flags needed to use the C68 data bus without a PIA. It does not describe
+the current board or firmware.
+
 Source organization:
 
 - `firmware/sd_bridge/sd_bridge.ino`: initialization, pin-change interrupt and loop.

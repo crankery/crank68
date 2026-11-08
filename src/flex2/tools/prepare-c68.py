@@ -49,6 +49,7 @@ CDRR1 JMP C68READY
 s = s.replace(' end', '')
 # The SD byte transport lives in MIKBUG ROM. Thin adapters fit after the
 # complete startup FCB, without consuming application memory.
+s += '\n org $A400\n' + Path('platform/sound.asm').read_text()
 s += '\n org $A980\n' + Path('platform/sdcard.asm').read_text()
 s += '\n' + Path('platform/cmdcase.asm').read_text()
 s += '\n org $A100\n fcb 0\n org $BF00\n' + Path('platform/console.asm').read_text()

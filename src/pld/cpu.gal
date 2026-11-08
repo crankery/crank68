@@ -1,75 +1,28 @@
-Device   g22v10;
-Name     c68_cpu;
-PartNo   0001;
-Date     2026-05-11;
-Revision 01;
-Designer Hamilton;
+GAL22V10
+C68CPU
 
-/* =========================================================
-   ADDRESS_SELECT
+; Processor PCB U7 pins 1-12. Pin 12 is ground, not R/W.
+PHI2 RW VMA A15 A14 A13 A12 A11 A10 A9 A8 GND
+; Pins 13-24. The select outputs are physically active low.
+NC NC NC NC NC NC BUSOK IOSELN BANKSELN ROMSELN RAMSELN VCC
 
-    C68 6800 computer memory map decode
+; Valid bus cycle: both phase 2 and VMA are high.
+BUSOK = PHI2 * VMA
 
-   0000-bfff RAM
-   c000-efff Banked RAMR
-   f000-f0ff IO
-   f100-ffff ROM
+; Express the inactive-high selects directly. This keeps GALasm's
+; output polarity unambiguous and matches the board net names.
+; RAM       $0000-$BFFF
+RAMSELN = /PHI2 + /VMA + A15 * A14
 
-   Inputs
-     A15..A8
-     PHI2
-     VMA
-     RE
+; Banked RAM $C000-$DFFF
+BANKSELN = /PHI2 + /VMA + /A15 + /A14 + A13
 
-   Outputs (active low)
-     RAM_SEL_N
-     ROM_SEL_N
-     BANK_SEL_N
-     IO_SEL_N
-     BUS_OK
-   ========================================================= */
+; I/O       $E000-$E0FF
+IOSELN = /PHI2 + /VMA + /A15 + /A14 + /A13 + A12 + A11 + A10 + A9 + A8
 
-/* ------------ Inputs ------------ */
+; ROM       $E100-$FFFF
+ROMSELN = /PHI2 + /VMA + /A15 + /A14 + /A13 + /A12 * /A11 * /A10 * /A9 * /A8
 
-PIN 1  = PHI2;
-PIN 2  = RE;
-PIN 3  = VMA;
-PIN 4  = A15;
-PIN 5  = A14;
-PIN 6  = A13;
-PIN 7  = A12;
-PIN 8  = A11;
-PIN 9  = A10;
-PIN 10 = A9; 
-PIN 11 = A8;
-PIN 12 = R_W;
-
-/* ------------ Outputs ------------ */
-
-PIN 23 = RAM_SEL_N;
-PIN 22 = ROM_SEL_N;
-PIN 21 = BANK_SEL_N;
-PIN 20 = IO_SEL_N;
-PIN 19 = BUS_OK;
-
-/* ------------ Internal nodes ------------ */
-
-BUSOK = PHI2 & VMA;
-
-RAMSEL = BUSOK  & !(A15 & A14);
-BANKSEL = BUSOK & A15 & A14 & !A13;
-IOSEL = BUSOK &
-        A15 & A14 & A13 &
-        !A12 & !A11 & !A10 & !A9 & !A8;
-ROMSEL = BUSOK &
-         A15 & A14 & A13 &
-         (A12 # A11 # A10 # A9 # A8);
-
-/* ------------ Outputs ------------ */
-
-RAM_SEL_N  = !RAMSEL;
-BANK_SEL_N = !FRAMSEL;
-IO_SEL_N   = !IOSEL;
-ROM_SEL_N  = !ROMSEL;
-
-BUS_OK = BUSOK;
+DESCRIPTION
+C68 processor address decoder. Pin 2 is the unused R/W input; output pins
+19-23 drive BUS_OK, /IO_SEL, /BANK_SEL, /ROM_SEL and /RAM_SEL respectively.

@@ -42,6 +42,10 @@ def main():
         'avr-fuses.conf': ROOT / 'sd/fuses.conf',
         'emu': ROOT / 'emu/build/bin/emu',
     }
+    for source in sorted((ROOT / 'pld').glob('*.gal')):
+        for suffix in ('.jed', '.fus', '.pin'):
+            name = source.stem + suffix
+            sources[f'pld/{name}'] = ROOT / 'build/pld' / name
     payloads = {name: path.read_bytes() for name, path in sources.items()}
     payloads['FLEX.DSK'] = image_tool.expand(
         image_tool.extract(sources['flex2.dsk'], args.sd_volume))
@@ -61,7 +65,7 @@ def main():
         digest = hashlib.sha256(data).hexdigest()
         lines.append(f'{digest}  {len(data):>8}  {name}')
     write_atomic(OUTPUT / 'MANIFEST.txt', ('\n'.join(lines) + '\n').encode())
-    print(f'Packaged ROM, SRAM, SD, AVR and emulator in {OUTPUT.relative_to(ROOT)}')
+    print(f'Packaged ROM, SRAM, SD, AVR, GALs and emulator in {OUTPUT.relative_to(ROOT)}')
 
 
 if __name__ == '__main__':

@@ -3,6 +3,7 @@
 `make` builds the 8 KiB `mikbug2.rom` image mapped at `$E000–$FFFF`.
 
 Type `F` or `f` at the monitor prompt to cold boot FLEX 2 from banked SRAM.
+Type `?`, `H`, or `h` to list the monitor commands.
 
 Monitor command letters are case insensitive. The EXORTAPE audio cassette command and its PIA tape routines have been
 removed. The monitor's `L` and `P` commands remain: they transfer S-records
@@ -18,12 +19,19 @@ the linked FLEX system file and starts FLEX. No disk validation is performed
 by the ROM handoff; it requires a valid bootable image.
 
 Booting clobbers A, X, SP and the sector buffer. FLEX takes over the monitor
-workspace and stack; return to MIKBUG through reset. Existing monitor entry
-addresses are preserved.
+workspace and stack. The NMI vector now jumps directly into MIKBUG's handler.
+If MIKBUG still owns its workspace, it displays the interrupted registers;
+if FLEX has replaced that workspace, NMI reinitializes MIKBUG and abandons
+the running FLEX session. `C`, `N`, and `T` require a saved interrupted
+context; after a fresh start or a return from FLEX they report
+`NO SAVED CONTEXT` and return to the prompt. Existing monitor entry addresses
+are preserved.
 
 After building the sibling FLEX project, `make test` uses its generated disk
 and the sibling emulator's 6800 CPU to test both reset → `F` → FLEX and the
-direct `$FFC0` entry. Each path loads MSBASIC and checks `PRINT 2+2`.
+direct `$FFC0` entry. Each path loads MSBASIC and checks `PRINT 2+2`. The
+tests also cover NMI from MIKBUG and from the FLEX prompt, plus `?` and `h`
+help output.
 Test binaries are temporary; the disk image is read into memory.
 
 ## SD bridge ROM API

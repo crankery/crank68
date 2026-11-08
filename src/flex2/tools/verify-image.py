@@ -65,6 +65,8 @@ def verify(path):
         ('FLEX2.SYS', 'c68flex.bin', 0xA100, 0xAD00),
         ('MSBASIC.CMD', 'msbasic.bin', 0, 0),
         ('Z68.CMD', 'z68.bin', 0x0300, 0x0300),
+        ('VERA.CMD', 'vera.bin', 0x0300, 0x0300),
+        ('BOOP.CMD', 'boop.bin', 0x0300, 0x0300),
     ]:
         payload = disks[file_drive(name)][name][1]
         loaded = {}
@@ -91,8 +93,8 @@ def verify(path):
                 address += 1
             pos += count
         binary = Path('build', binary_name).read_bytes()
-        if name == 'Z68.CMD':
-            assert loaded and min(loaded) == 0x0300 and max(loaded) < 0x7E00, 'Z68 exceeds application RAM'
+        if name in ('Z68.CMD', 'VERA.CMD', 'BOOP.CMD'):
+            assert loaded and min(loaded) == 0x0300 and max(loaded) < 0x7E00, f'{name} exceeds application RAM'
         assert entry == entrypoint
         assert loaded == dict(enumerate(binary, base)), name
     source_files = runpy.run_path(str(Path(__file__).with_name('source-disk.py')))['distribution_files']()

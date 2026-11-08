@@ -1,0 +1,239 @@
+(footprint "Oscillator_SMD_SeikoEpson_SG8002LB-4Pin_5.0x3.2mm"
+	(version 20260206)
+	(generator "pcbnew")
+	(generator_version "10.0")
+	(layer "F.Cu")
+	(descr "Seiko Epson SG-8002LB, Crystal Oscillator, 5.0x3.2mm package, SMD, https://support.epson.biz/td/api/doc_check.php?mode=dl&lang=en&Parts=SG-8002DC")
+	(property "Reference" "REF**"
+		(at 0 -2.8 0)
+		(layer "F.SilkS")
+		(uuid "fbbd47cc-49d7-4177-92fb-e23dbf8303b5")
+		(effects
+			(font
+				(size 0.8 0.8)
+				(thickness 0.1)
+			)
+		)
+	)
+	(property "Value" "Oscillator_SMD_SeikoEpson_SG8002LB-4Pin_5.0x3.2mm"
+		(at 0 2.8 0)
+		(layer "F.SilkS")
+		(uuid "11baa3b1-a811-43bb-a32b-43037ac70ba8")
+		(effects
+			(font
+				(size 0.8 0.8)
+				(thickness 0.1)
+			)
+		)
+	)
+	(property "Datasheet" ""
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "5933cd1e-be2b-4b35-93c7-ba99bf77dfa0")
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+	)
+	(property "Description" ""
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "bcdad9e7-6441-4ffa-a214-1d9b5e1a601a")
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+	)
+	(property "KiLib_Generator" "crystal_resonator_oscillator"
+		(at 0 0 0)
+		(layer "F.SilkS")
+		(hide yes)
+		(uuid "d972b70d-74f4-4b80-bd01-ee3f1649f8e3")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(attr smd)
+	(duplicate_pad_numbers_are_jumpers no)
+	(fp_line
+		(start -2.76 -1.86)
+		(end -2.33 -1.86)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "e0c3a004-59d4-42b0-adea-452d3aa132a5")
+	)
+	(fp_line
+		(start -2.76 1.86)
+		(end -2.76 -1.86)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "cd1a956c-5c5e-46bb-bd4a-263c7332b14f")
+	)
+	(fp_line
+		(start -2.33 1.86)
+		(end -2.76 1.86)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "1ba270ff-afff-4048-b66e-5eb94fca02bf")
+	)
+	(fp_line
+		(start -2.33 2.11)
+		(end -2.33 1.86)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "ab67aa59-a2b8-42dc-a799-89ed3c140b1f")
+	)
+	(fp_line
+		(start -0.21 -1.86)
+		(end 0.21 -1.86)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "47ebfb5d-69a7-4065-a480-cc7602892274")
+	)
+	(fp_line
+		(start -0.21 1.86)
+		(end -0.21 2.11)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "c70586f9-47df-4879-ad7e-6e4c95e15c34")
+	)
+	(fp_line
+		(start 0.21 1.86)
+		(end -0.21 1.86)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "bc72a232-3a36-42f8-b628-a51f1fe6c4c7")
+	)
+	(fp_line
+		(start 2.33 -1.86)
+		(end 2.76 -1.86)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "6d0bd480-83a1-4efc-86db-867f634ef4f5")
+	)
+	(fp_line
+		(start 2.76 -1.86)
+		(end 2.76 1.86)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "1dba61c1-128d-4288-bbe5-53f9c6ae8431")
+	)
+	(fp_line
+		(start 2.76 1.86)
+		(end 2.33 1.86)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "e3606f86-72ab-4ee0-84ab-0dd42503ab10")
+	)
+	(fp_circle
+		(center 0 0)
+		(end 0.25 0)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(fill yes)
+		(layer "F.Adhes")
+		(uuid "34438685-f14e-43ca-9009-1a95705d984c")
+	)
+	(fp_rect
+		(start -3 -2.1)
+		(end 3 2.1)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.CrtYd")
+		(uuid "8724fab6-eb8f-4096-b2d4-7255764fabf1")
+	)
+	(fp_poly
+		(pts
+			(xy 2.5 -1.6) (xy 2.5 1.6) (xy -1.7 1.6) (xy -2.5 0.8) (xy -2.5 -1.6)
+		)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.Fab")
+		(uuid "62df4665-878e-42c1-9bec-0f3f91d12aa6")
+	)
+	(pad "1" smd roundrect
+		(at -1.27 1.1)
+		(size 1.6 1.5)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(roundrect_rratio 0.166667)
+		(uuid "7d830be3-87b0-440b-89d6-fcf3952682d5")
+	)
+	(pad "2" smd roundrect
+		(at 1.27 1.1)
+		(size 1.6 1.5)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(roundrect_rratio 0.166667)
+		(uuid "f5846154-5584-4104-b682-2ddeea5efa6a")
+	)
+	(pad "3" smd roundrect
+		(at 1.27 -1.1)
+		(size 1.6 1.5)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(roundrect_rratio 0.166667)
+		(uuid "e1b453e6-dd03-47ad-915e-f83a8443a1f3")
+	)
+	(pad "4" smd roundrect
+		(at -1.27 -1.1)
+		(size 1.6 1.5)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(roundrect_rratio 0.166667)
+		(uuid "eff13c1c-8154-4640-a4d3-5e51b16d21bc")
+	)
+	(embedded_fonts no)
+	(model "/Users/dave/Source/crankery/crank68/3D/xtal_osc_5x3.2.step"
+		(offset
+			(xyz 0 0 0)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz 0 0 0)
+		)
+	)
+)
