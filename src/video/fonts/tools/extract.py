@@ -22,7 +22,8 @@ def extract(kind, source):
         return bytes(data[row * 128 + code] for code in range(128) for row in range(10))
 
     sizes = {"vt100": 2048, "pet-graphics": 2048, "pet-business": 2048,
-             "spectrum": 16384, "atari": 10240, "ega": 16384}
+             "spectrum": 16384, "atari": 10240, "ega": 16384,
+             "ega-8x8": 16384}
     if len(data) != sizes[kind]:
         raise ValueError(f"Unexpected {kind} ROM size: {len(data)}")
     start, length = {
@@ -32,6 +33,7 @@ def extract(kind, source):
         "spectrum": (0x3D00, 768),
         "atari": (0x800, 1024),
         "ega": (8752, 3584),
+        "ega-8x8": (0x3160, 2048),
     }[kind]
     return data[start:start + length]
 
@@ -39,7 +41,7 @@ def extract(kind, source):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("kind", choices=("vt100", "pet-graphics", "pet-business",
-                                         "spectrum", "atari", "ega", "alto", "osborne"))
+                                         "spectrum", "atari", "ega", "ega-8x8", "alto", "osborne"))
     parser.add_argument("source", type=Path)
     parser.add_argument("output", type=Path)
     args = parser.parse_args()

@@ -15,12 +15,12 @@ SAMPLE_LINES = (
 )
 
 
-def draw_glyph(draw, data, index, height, x, y, scale):
+def draw_glyph(draw, data, index, height, x, y, scale, row_address_xor=0):
     if index >= len(data) // height:
         return
     offset = index * height
     for row in range(height):
-        bits = data[offset + row]
+        bits = data[offset + (row ^ row_address_xor)]
         for col in range(8):
             if bits & (0x80 >> col):
                 px = x + col * scale
@@ -35,10 +35,16 @@ def main():
     parser.add_argument("--height", type=int, default=16,
                         help="Bytes per glyph (default: 16)")
     parser.add_argument("--scale", type=int, default=4)
+    parser.add_argument("--row-address-xor", type=int, default=0,
+                        help="Decode rows stored for inverted ROM address lines")
     parser.add_argument("--output", "-o", type=Path)
     args = parser.parse_args()
     if args.height <= 0 or args.scale <= 0:
         parser.error("Height and scale must be positive")
+    if args.row_address_xor < 0 or any(
+            (row ^ args.row_address_xor) >= args.height
+            for row in range(args.height)):
+        parser.error("Row address XOR maps outside the glyph")
 
     data = args.rom.read_bytes()
     if len(data) % args.height:
@@ -71,7 +77,8 @@ def main():
             y = block_y + 32 + line_no * args.height * sample_scale
             for column, character in enumerate(line):
                 draw_glyph(draw, data, bank * 256 + ord(character), args.height,
-                           16 + column * 8 * sample_scale, y, sample_scale)
+                           16 + column * 8 * sample_scale, y, sample_scale,
+                           args.row_address_xor)
 
     for index in range(count):
         x = (index % columns) * cell_w
@@ -87,7 +94,7 @@ def main():
                         y + 18 + args.height * args.scale + 1),
                        outline="#555555")
         draw_glyph(draw, data, index, args.height,
-                   x + 16, y + 18, args.scale)
+                   x + 16, y + 18, args.scale, args.row_address_xor)
 
     output = args.output or args.rom.with_suffix(".png")
     image.save(output)
