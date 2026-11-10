@@ -10,7 +10,7 @@ GAL_JEDECS := $(patsubst pld/%.gal,build/pld/%.jed,$(GAL_SOURCES))
 GAL_FUSE_MAPS := $(patsubst pld/%.gal,build/pld/%.fus,$(GAL_SOURCES))
 GAL_PIN_REPORTS := $(patsubst pld/%.gal,build/pld/%.pin,$(GAL_SOURCES))
 
-.PHONY: all system pld test run session program-avr program-avr-dry-run program-avr-isp program-avr-isp-dry-run
+.PHONY: all system pld fonts test run session program-avr program-avr-dry-run program-avr-isp program-avr-isp-dry-run
 all: system
 
 $(GALASM): $(GALASM_SOURCES)
@@ -25,8 +25,11 @@ build/pld/%.jed build/pld/%.fus build/pld/%.pin: pld/%.gal $(GALASM)
 
 pld: $(GAL_JEDECS) $(GAL_FUSE_MAPS) $(GAL_PIN_REPORTS)
 
+fonts:
+	$(MAKE) -C video/fonts all PYTHON=$(PYTHON)
+
 # Keep the nested builds in order: FLEX builds the matching MIKBUG ROM.
-system: pld
+system: pld fonts
 	$(MAKE) -C flex2 all DRIVE_LAYOUT=$(DRIVE_LAYOUT) SOUND_BOARD_REV=$(SOUND_BOARD_REV)
 	$(MAKE) -C sd check
 	$(MAKE) -C emu all

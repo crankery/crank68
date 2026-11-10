@@ -37,6 +37,7 @@ def main():
 
     sources = {
         'mikbug2.rom': ROOT / 'roms/mikbug2/mikbug2.rom',
+        'fonts-28c256.bin': ROOT / 'video/fonts/build/fonts-28c256.bin',
         'flex2.dsk': ROOT / 'flex2/build/flex2.dsk',
         'sd_bridge.hex': ROOT / 'sd/build/sd_bridge.ino.hex',
         'avr-fuses.conf': ROOT / 'sd/fuses.conf',
@@ -52,6 +53,8 @@ def main():
 
     if len(payloads['mikbug2.rom']) != 8192:
         raise ValueError('MIKBUG ROM must be 8 KiB')
+    if len(payloads['fonts-28c256.bin']) != 32768:
+        raise ValueError('Font ROM must be 32 KiB')
     if len(payloads['flex2.dsk']) != 1048576 or len(payloads['FLEX.DSK']) != 1048576:
         raise ValueError('SRAM and SD images must each be 1 MiB')
     if not payloads['sd_bridge.hex'].startswith(b':'):
@@ -65,7 +68,7 @@ def main():
         digest = hashlib.sha256(data).hexdigest()
         lines.append(f'{digest}  {len(data):>8}  {name}')
     write_atomic(OUTPUT / 'MANIFEST.txt', ('\n'.join(lines) + '\n').encode())
-    print(f'Packaged ROM, SRAM, SD, AVR, GALs and emulator in {OUTPUT.relative_to(ROOT)}')
+    print(f'Packaged ROMs, SRAM, SD, AVR, GALs and emulator in {OUTPUT.relative_to(ROOT)}')
 
 
 if __name__ == '__main__':
