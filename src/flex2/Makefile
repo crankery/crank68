@@ -99,6 +99,9 @@ build/z68.bin: $(Z68_SRCS) Makefile
 .PHONY: vera
 vera: image
 
+.PHONY: video-demo
+video-demo: build/video_demo.bin
+
 $(VERA_SRC_DIR)/font.bin: $(VERA_SRC_DIR)/make-font.py ../terminal/picodvi/software/assets/font_8x8.h
 	$(PYTHON) $(VERA_SRC_DIR)/make-font.py
 
@@ -109,6 +112,10 @@ build/vera.bin: $(VERA_SRC_DIR)/terminal.s $(VERA_SRC_DIR)/keyboard.s $(VERA_SRC
 build/boop.bin: platform/boop.s Makefile
 	@mkdir -p build
 	$(VASM_STD_BIN) -Fbin -L build/boop.lst -o $@ $<
+
+build/video_demo.bin: platform/video_demo.s Makefile
+	@mkdir -p build
+	$(VASM_STD_BIN) -Fbin -L build/video_demo.lst -o $@ $<
 
 z68: image
 

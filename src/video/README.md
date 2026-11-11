@@ -90,31 +90,65 @@ presents the attribute byte. Its falling edge at count 0 also advances the
 6845. The snapshots prevent that simultaneous 6845 address change from
 disturbing the current RAM fetch.
 
-The font ROM gets `RA0'`–`RA3'` for the raster row, U11's character byte,
-and three mode bits for the selected font. Its eight data outputs are
-`CGD0`–`CGD7`.
+The font ROM gets `RA0'`–`RA2'` for the raster row, U11's character byte,
+and four mode bits for the selected font. Its eight data outputs are
+`CGD0`–`CGD7`. The EEPROM image in `fonts/` follows this 8-row wiring.
 
 ### Font ROM image layout options
 
-Each of the eight font-select values owns a 4 KiB ROM bank. As wired, ROM
-A0–A3 come from `RA0'`–`RA3'`, A4–A11 come from all eight character bits,
-and A12–A14 select the font. This supports 256 glyphs × 16 rows per bank.
+Each of the sixteen font-select values owns a 2 KiB ROM bank. ROM A0–A2
+come from `RA0'`–`RA2'`, A3–A10 from all eight character bits, and A11–A14
+select the font. This supports 256 glyphs × 8 rows per bank. The current
+schematic leaves 6845 pin 34 (`RA4`) unconnected; `RA3` is captured but
+does not address the font ROM. Set the 6845 maximum-scan-line register to 7
+for the supplied fonts.
 
-For inverse video with no hardware change, use character bit 7 to select
-an inverted copy of each glyph: 128 glyphs × 16 rows × two polarities per
-bank. Store the inverted row byte as `normal_row ^ 0xFF`. With raster row
-`r`, seven-bit character `c`, and font bank `f`, the address is
-`(f << 12) | (inverse << 11) | (c << 4) | r`.
+## First-light FLEX command
 
-Alternatively, 128 glyphs × 32 rows also fits in a 4 KiB bank, but that
-requires ROM A11 to receive the 6845's `RA4` rather than character bit 7.
-The current schematic leaves 6845 pin 34 (`RA4`) unconnected, and U21 has
-no free snapshot bit. Add a flip-flop clocked by `SNAPSHOT_CAPTURE` for RA4
-before using it as a ROM address. The 6845 maximum-scan-line register can
-then select rows 0–31. A 32-line font at 80 × 25 would require 800 visible
-scanlines; at 16 MHz and 640 visible dots per line, even zero blanking would
-limit refresh to 31.25 Hz. A practical tall-font mode needs fewer text rows
-or a different video clock/format.
+`src/flex2/platform/video_demo.s` is a draft first-light FLEX command. Run
+`make -C src/flex2 video-demo` to assemble it; it is **not installed in the
+FLEX disk image yet**. It initializes the 6845 for 80 columns × 25 rows of
+8-scanline characters, clears the 2 KiB character and attribute regions,
+writes `C68 VIDEO DEMO`, and displays eight colour swatches. FLEX console
+input and output stay on the serial ACIA.
+
+**Do not run this draft with the current processor GAL.** The normal
+`src/pld/cpu.gal` drives `/BANK_SEL` for `$C000–$DFFF`. The Video board is
+intended to take over that net: with `VRAM/~BANK` low it asserts
+`/BANK_SEL` for the BankedMemory board, and with the bit high it deasserts
+`/BANK_SEL` and selects its own VRAM. `src/pld/cpu-video.gal` is the optional
+processor variant that leaves its `/BANK_SEL` pin high impedance. Install
+that variant only with the Video board and its corresponding GAL program.
+The normal processor GAL remains the choice for a system without Video.
+
+The command assumes the video slot comparator is strapped to `$4`: 6845
+address/data at `$E040/$E041`, and the write-only configuration latch at
+`$E042`. The video GAL equations have not yet been added. They must decode
+these addresses and use latch bit 0 as **0 = banked SRAM, 1 = VRAM**.
+The 74ACT273 resets to zero, leaving the banked disk visible for MIKBUG
+and FLEX without a mode-latch write. The command sets font bank 1
+(IBM EGA 8×8) with bit 2 and leaves page bit 1 clear; it writes `$04` for
+banked SRAM and `$05` for VRAM, restoring `$04` on return.
+
+CPU video RAM layout with page bit 1 clear:
+
+| CPU address | Contents |
+| --- | --- |
+| `$C000–$C7FF` | Page 0 character bytes |
+| `$C800–$CFFF` | Page 1 character bytes |
+| `$D000–$D7FF` | Page 0 attribute bytes |
+| `$D800–$DFFF` | Page 1 attribute bytes |
+
+The CPU-visible attribute byte uses bits 0–3 for foreground B/G/R/I and
+bits 4–7 for background B/G/R/I. U13 reorders those bits into alternating
+background/foreground signals before U17, which is why U17's input order
+looks different. Bright white on black is `$0F`; bright white on blue is
+`$1F`.
+
+U13's swapped CRA input pairs now place background on U14's `I0` inputs
+and foreground on `I1`, through U17. The 74LS157 selects `I1` when
+`PIXEL` is high, matching the supplied fonts' 1 = lit convention. The CPU
+attribute byte still uses the foreground-low, background-high format above.
 
 ## Registered strobes
 

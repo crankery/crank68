@@ -11145,6 +11145,17 @@
 			(embedded_fonts no)
 		)
 	)
+	(text "R4: if the scaler doesn't see sync, try 680Ω then 470Ω"
+		(exclude_from_sim no)
+		(at 340.106 376.682 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left top)
+		)
+		(uuid "fa9382ef-7379-4dc2-afd3-c46f4643841a")
+	)
 	(junction
 		(at 129.54 262.89)
 		(diameter 0)
@@ -12837,7 +12848,7 @@
 	)
 	(wire
 		(pts
-			(xy 365.76 368.3) (xy 379.73 368.3)
+			(xy 365.76 373.38) (xy 379.73 373.38)
 		)
 		(stroke
 			(width 0)
@@ -13487,7 +13498,7 @@
 	)
 	(wire
 		(pts
-			(xy 358.14 368.3) (xy 360.68 368.3)
+			(xy 358.14 373.38) (xy 360.68 373.38)
 		)
 		(stroke
 			(width 0)
@@ -13667,7 +13678,7 @@
 	)
 	(wire
 		(pts
-			(xy 379.73 368.3) (xy 379.73 358.14)
+			(xy 379.73 373.38) (xy 379.73 358.14)
 		)
 		(stroke
 			(width 0)
@@ -15056,7 +15067,7 @@
 		(uuid "00f8cda9-ab1a-44db-9eba-4da53fede5b1")
 	)
 	(label "R_{F}'"
-		(at 332.74 181.61 0)
+		(at 332.74 184.15 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -15116,7 +15127,7 @@
 		(uuid "04bece77-634e-433d-a626-30fdddb4e895")
 	)
 	(label "B_{F}'"
-		(at 332.74 171.45 0)
+		(at 332.74 173.99 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -15166,7 +15177,7 @@
 		(uuid "0851806a-3d17-4e7c-9e6f-bbc697312b3a")
 	)
 	(label "G_{F}'"
-		(at 332.74 176.53 0)
+		(at 332.74 179.07 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -15256,7 +15267,7 @@
 		(uuid "0ea0911b-a6f4-4f57-826b-25399b133778")
 	)
 	(label "CSYNC"
-		(at 358.14 368.3 180)
+		(at 358.14 373.38 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -15416,7 +15427,7 @@
 		(uuid "1af6c5f8-41c6-4117-8d5b-7fcd4819cb08")
 	)
 	(label "CRA10"
-		(at 261.62 184.15 180)
+		(at 261.62 181.61 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -15536,7 +15547,7 @@
 		(uuid "20079d8f-e420-4e5c-b5b6-ec89de401c47")
 	)
 	(label "CRA8"
-		(at 261.62 173.99 180)
+		(at 261.62 171.45 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -15636,7 +15647,7 @@
 		(uuid "2c867124-ce44-4395-81c6-a52885c9664c")
 	)
 	(label "I_{B}'"
-		(at 332.74 189.23 0)
+		(at 332.74 186.69 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -15726,7 +15737,7 @@
 		(uuid "351e4c44-d228-45d9-8bd8-bdb733f8da49")
 	)
 	(label "I_{F}'"
-		(at 332.74 186.69 0)
+		(at 332.74 189.23 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -15866,7 +15877,7 @@
 		(uuid "40bce683-6472-48a0-a0b3-ce897d4b62da")
 	)
 	(label "B_{B}'"
-		(at 332.74 173.99 0)
+		(at 332.74 171.45 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -15936,7 +15947,7 @@
 		(uuid "47ce2f0a-d123-49b2-853f-108ab848c79b")
 	)
 	(label "CRA11"
-		(at 261.62 189.23 180)
+		(at 261.62 186.69 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -15966,7 +15977,7 @@
 		(uuid "4b5fe771-42f2-4982-8f65-ff5a02018530")
 	)
 	(label "G_{F}"
-		(at 287.02 176.53 0)
+		(at 287.02 179.07 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -16356,7 +16367,7 @@
 		(uuid "6bc3d793-1445-48ed-a7bc-02f50838c48d")
 	)
 	(label "R_{B}'"
-		(at 332.74 184.15 0)
+		(at 332.74 181.61 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -16466,7 +16477,7 @@
 		(uuid "7564170c-3539-4115-91a6-0c2990e50881")
 	)
 	(label "I_{B}"
-		(at 287.02 189.23 0)
+		(at 287.02 186.69 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -16486,7 +16497,7 @@
 		(uuid "77db45fd-cb6e-48e5-9ff5-134544e3505f")
 	)
 	(label "CRA4"
-		(at 261.62 171.45 180)
+		(at 261.62 173.99 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -16506,7 +16517,7 @@
 		(uuid "7d9b4b5d-2087-4fe0-8a41-dd76f64fd7a1")
 	)
 	(label "CRA9"
-		(at 261.62 179.07 180)
+		(at 261.62 176.53 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -16536,7 +16547,7 @@
 		(uuid "817aab26-c126-491f-8014-8d91a9c6b0bc")
 	)
 	(label "R_{F}"
-		(at 287.02 181.61 0)
+		(at 287.02 184.15 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -16635,7 +16646,7 @@
 		)
 		(uuid "86c5dbe2-a976-4e66-bc06-6020f2a9f987")
 	)
-	(label "BANK{slash}~{VRAM}"
+	(label "VRAM{slash}~{BANK}"
 		(at 196.85 273.05 0)
 		(effects
 			(font
@@ -16716,7 +16727,7 @@
 		(uuid "918c18a5-3d41-42d8-8531-4d2dfcf96c13")
 	)
 	(label "CRA5"
-		(at 261.62 176.53 180)
+		(at 261.62 179.07 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -16736,7 +16747,7 @@
 		(uuid "94614164-ad30-470f-b1b1-109853557224")
 	)
 	(label "G_{B}"
-		(at 287.02 179.07 0)
+		(at 287.02 176.53 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -16806,7 +16817,7 @@
 		(uuid "99826d0b-a51e-46cb-b790-a9aab2a0c3c5")
 	)
 	(label "B_{F}"
-		(at 287.02 171.45 0)
+		(at 287.02 173.99 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -17046,7 +17057,7 @@
 		(uuid "aa5824e2-7f9f-4c1f-a39d-f0510322926c")
 	)
 	(label "R_{B}"
-		(at 287.02 184.15 0)
+		(at 287.02 181.61 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -17116,7 +17127,7 @@
 		(uuid "af0d8654-1d9f-4a1c-b377-b5234aab32b4")
 	)
 	(label "CRA7"
-		(at 261.62 186.69 180)
+		(at 261.62 189.23 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -17246,7 +17257,7 @@
 		(uuid "b9a63fc4-65ae-4e87-a564-25cebdcd9053")
 	)
 	(label "I_{F}"
-		(at 287.02 186.69 0)
+		(at 287.02 189.23 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -17526,7 +17537,7 @@
 		(uuid "d1e1ae9d-b9e3-4a3f-ae31-17f2a916398b")
 	)
 	(label "G_{B}'"
-		(at 332.74 179.07 0)
+		(at 332.74 176.53 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -17756,7 +17767,7 @@
 		(uuid "eba33834-5f60-47b3-a070-3a4d2f5e102f")
 	)
 	(label "B_{B}"
-		(at 287.02 173.99 0)
+		(at 287.02 171.45 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -17806,7 +17817,7 @@
 		(uuid "ef2679d6-c8fb-4228-9a56-44b520e6c16b")
 	)
 	(label "CRA6"
-		(at 261.62 181.61 180)
+		(at 261.62 184.15 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -26450,7 +26461,7 @@
 	)
 	(symbol
 		(lib_id "Device:R_Small")
-		(at 363.22 368.3 90)
+		(at 363.22 373.38 90)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -26461,7 +26472,7 @@
 		(fields_autoplaced yes)
 		(uuid "912380a9-a87e-4dcd-9a11-1a3e1f5db360")
 		(property "Reference" "R4"
-			(at 363.22 363.22 90)
+			(at 363.22 368.3 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -26470,8 +26481,8 @@
 				)
 			)
 		)
-		(property "Value" "1.2K"
-			(at 363.22 365.76 90)
+		(property "Value" "1.2K*"
+			(at 363.22 370.84 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -26480,8 +26491,8 @@
 				)
 			)
 		)
-		(property "Footprint" "0-Footprints:R_0805_2012Metric"
-			(at 363.22 368.3 0)
+		(property "Footprint" "0-Footprints:R_Axial_DIN0204_L3.6mm_D1.6mm_P5.08mm_Horizontal"
+			(at 363.22 373.38 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -26492,7 +26503,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 363.22 368.3 0)
+			(at 363.22 373.38 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -26503,7 +26514,7 @@
 			)
 		)
 		(property "Description" "Resistor, small symbol"
-			(at 363.22 368.3 0)
+			(at 363.22 373.38 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)

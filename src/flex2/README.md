@@ -108,6 +108,49 @@ will not regenerate it. Exit the emulator before refreshing its working copy.
 Use `make rebuild-image` to recreate and verify the initial image regardless
 of timestamps; this discards any changes made to `build/flex2.dsk`. Back up
 wanted files first. A full `make clean` is not needed.
+
+### Load the SRAM disk through MIKBUG
+
+`tools/load_ramdisk.py` sends `build/flex2.dsk` to a running MIKBUG monitor over
+the serial console. Install `pyserial` on the host and close any terminal
+program using the port first:
+
+```sh
+python3 -m pip install pyserial
+make verify-image
+python3 tools/load_ramdisk.py /dev/tty.usbserial-XXXX
+```
+
+Run this from `src/flex2`, with the monitor at its `*` prompt. The script
+uses 9600 baud, eight data bits, no parity, and two stop bits by default;
+set `--baud` to match your serial adapter and monitor clock. It selects
+adjacent 4 KiB SRAM pages with MIKBUG `M` writes to `$E002` and `$E003`,
+then sends S1 records for `$C000–$DFFF` through `L`. It repeats this for
+all 128 page pairs. MIKBUG may print `?` after an `M` write because its
+readback check cannot verify a write-only latch; the write has already
+happened. By default, the script uses MIKBUG `P` to read back and compare
+each 8 KiB pair before proceeding. After success, reconnect the terminal
+and type `F` to boot FLEX.
+
+The Video board's `VRAM/~BANK` bit resets low, leaving banked SRAM selected
+for this loader and for FLEX boot. To retry from a verified page pair, use
+`--start-pair N`; `--pairs 1` limits a run to one pair. `--no-verify` skips
+readback, and `--record-gap` adds time between S1 records if the monitor
+needs it. `--skip-free-payload` follows each drive's FLEX free-sector chain
+and sends only the two next-sector link bytes in each free sector. This
+roughly halves the upload for the initial image. Readback still covers each
+8 KiB pair, but comparison ignores the omitted payload bytes, so it does
+not reduce verification time. The resulting SRAM disk has valid free chains;
+its free-sector payloads retain whatever was already in SRAM. Use the
+default full load when an exact byte-for-byte image is needed. Loading
+overwrites the current 1 MiB SRAM disk image.
+
+For a sparse load:
+
+```sh
+python3 tools/load_ramdisk.py /dev/tty.usbserial-XXXX --skip-free-payload
+```
+
 For example, from this directory:
 
 ```sh
