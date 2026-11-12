@@ -24,4 +24,5 @@ void setup()
 void loop()
 {
     link.poll();
+    board::serviceActivity();
 }

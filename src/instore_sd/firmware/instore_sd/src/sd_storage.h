@@ -1,5 +1,6 @@
 #pragma once
 #include <SD.h>
+#include "avr_board.h"
 #include "protocol.h"
 
 // Use the Arduino SD library's SdFile API so sync() failures are observable.
@@ -53,10 +54,11 @@ public:
             return status_;
         if (offset > sdbridge::ImageBytes - sdbridge::SectorBytes)
             return sdbridge::Status::BadAddress;
-        if (!image_.seekSet(offset) ||
-            image_.read(buffer, sdbridge::SectorBytes) != sdbridge::SectorBytes)
-            return fail();
-        return sdbridge::Status::Ok;
+        board::beginActivity();
+        const bool ok = image_.seekSet(offset) &&
+                        image_.read(buffer, sdbridge::SectorBytes) == sdbridge::SectorBytes;
+        board::endActivity();
+        return ok ? sdbridge::Status::Ok : fail();
     }
 
     sdbridge::Status write(uint32_t offset, const uint8_t *buffer)
@@ -65,17 +67,22 @@ public:
             return status_;
         if (offset > sdbridge::ImageBytes - sdbridge::SectorBytes)
             return sdbridge::Status::BadAddress;
-        if (!image_.seekSet(offset) ||
-            image_.write(buffer, sdbridge::SectorBytes) != sdbridge::SectorBytes || !image_.sync())
-            return fail();
-        return sdbridge::Status::Ok;
+        board::beginActivity();
+        const bool ok = image_.seekSet(offset) &&
+                        image_.write(buffer, sdbridge::SectorBytes) == sdbridge::SectorBytes &&
+                        image_.sync();
+        board::endActivity();
+        return ok ? sdbridge::Status::Ok : fail();
     }
 
     sdbridge::Status sync()
     {
         if (status_ != sdbridge::Status::Ok)
             return status_;
-        return image_.sync() ? sdbridge::Status::Ok : fail();
+        board::beginActivity();
+        const bool ok = image_.sync();
+        board::endActivity();
+        return ok ? sdbridge::Status::Ok : fail();
     }
 
 private:
