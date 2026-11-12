@@ -1,0 +1,264 @@
+(footprint "Oscillator_SMD_SeikoEpson_SG8002LB-4Pin_5.0x3.2mm"
+	(version 20260206)
+	(generator "pcbnew")
+	(generator_version "10.0")
+	(layer "F.Cu")
+	(descr "Seiko Epson SG-8002LB, Crystal Oscillator, 5.0x3.2mm package, SMD, https://support.epson.biz/td/api/doc_check.php?mode=dl&lang=en&Parts=SG-8002DC")
+	(property "Reference" "REF**"
+		(at 0 -2.8 0)
+		(layer "F.SilkS")
+		(hide yes)
+		(uuid "15f85c84-ff84-40ed-a23f-8f0a0686a658")
+		(effects
+			(font
+				(size 0.8 0.8)
+				(thickness 0.1)
+			)
+		)
+	)
+	(property "Value" "Oscillator_SMD_SeikoEpson_SG8002LB-4Pin_5.0x3.2mm"
+		(at 0 2.8 0)
+		(layer "F.SilkS")
+		(hide yes)
+		(uuid "99bcd886-f383-435b-951a-0dd8fb8303ed")
+		(effects
+			(font
+				(size 0.8 0.8)
+				(thickness 0.1)
+			)
+		)
+	)
+	(property "Datasheet" ""
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "6fcbd8f0-e593-4985-8e0f-8e1e82cd92f8")
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+	)
+	(property "Description" ""
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "6fb7c7c3-c43a-4e7c-9bf2-7a74f4286f19")
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+	)
+	(property "KiLib_Generator" "crystal_resonator_oscillator"
+		(at 0 0 0)
+		(layer "F.SilkS")
+		(hide yes)
+		(uuid "556f2525-4cab-45f8-95b5-59b1a5d385a0")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Label" "${Reference} ${Value}"
+		(at 0 -2.8 0)
+		(layer "F.SilkS")
+		(uuid "11e05934-aaf0-4dcb-9b4c-d4cd13087201")
+		(effects
+			(font
+				(size 0.8 0.8)
+				(thickness 0.1)
+			)
+		)
+	)
+	(attr smd)
+	(duplicate_pad_numbers_are_jumpers no)
+	(fp_line
+		(start -2.76 -1.86)
+		(end -2.33 -1.86)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "f643d8cf-39b5-42e5-a1b3-a99b047b56c4")
+	)
+	(fp_line
+		(start -2.76 1.86)
+		(end -2.76 -1.86)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "427b0feb-fefa-4c77-bbf8-203116497250")
+	)
+	(fp_line
+		(start -2.33 1.86)
+		(end -2.76 1.86)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "bef711c3-2aac-4dd3-b75b-371e0bffe25a")
+	)
+	(fp_line
+		(start -2.33 2.11)
+		(end -2.33 1.86)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "37d79cf3-9269-40de-8df5-2a409a9253ce")
+	)
+	(fp_line
+		(start -0.21 -1.86)
+		(end 0.21 -1.86)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "b2c9a40f-1171-40a3-a92f-517384c4315e")
+	)
+	(fp_line
+		(start -0.21 1.86)
+		(end -0.21 2.11)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "f1019192-4e15-47c9-ba6a-0d447a3fecdd")
+	)
+	(fp_line
+		(start 0.21 1.86)
+		(end -0.21 1.86)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "8d02bdd8-e495-42ea-bb93-51a71dcfaac2")
+	)
+	(fp_line
+		(start 2.33 -1.86)
+		(end 2.76 -1.86)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "d2227bf0-2e0c-4090-93bf-11b5d01d7457")
+	)
+	(fp_line
+		(start 2.76 -1.86)
+		(end 2.76 1.86)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "9ee85c8e-7c1e-4812-b459-7b7008d31e2f")
+	)
+	(fp_line
+		(start 2.76 1.86)
+		(end 2.33 1.86)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "c5c2db7a-bb85-4320-b16f-cc5b6a0f6c7f")
+	)
+	(fp_poly
+		(pts
+			(xy -1.27 1.987) (xy -0.93 2.457) (xy -1.61 2.457)
+		)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(fill yes)
+		(layer "F.SilkS")
+		(uuid "c2066779-b88b-474c-bda6-e248fd1db561")
+	)
+	(fp_circle
+		(center 0 0)
+		(end 0.25 0)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(fill yes)
+		(layer "F.Adhes")
+		(uuid "4e546cbd-fefe-436f-8df8-3d32d0f09e1d")
+	)
+	(fp_rect
+		(start -3 -2.1)
+		(end 3 2.1)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.CrtYd")
+		(uuid "cb829b32-df5e-4aef-a158-83c75f51ce8d")
+	)
+	(fp_poly
+		(pts
+			(xy 2.5 -1.6) (xy 2.5 1.6) (xy -1.7 1.6) (xy -2.5 0.8) (xy -2.5 -1.6)
+		)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.Fab")
+		(uuid "86ea2014-434a-4275-925b-b23ac386c20b")
+	)
+	(pad "1" smd roundrect
+		(at -1.27 1.1)
+		(size 1.6 1.5)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(roundrect_rratio 0.166667)
+		(uuid "1097e895-7263-4716-a7c1-492b37467283")
+	)
+	(pad "2" smd roundrect
+		(at 1.27 1.1)
+		(size 1.6 1.5)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(roundrect_rratio 0.166667)
+		(uuid "9b5c1884-af8c-4f16-9ef9-5f17c49c2268")
+	)
+	(pad "3" smd roundrect
+		(at 1.27 -1.1)
+		(size 1.6 1.5)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(roundrect_rratio 0.166667)
+		(uuid "32d243e1-2635-4776-8563-766008c5d97b")
+	)
+	(pad "4" smd roundrect
+		(at -1.27 -1.1)
+		(size 1.6 1.5)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(roundrect_rratio 0.166667)
+		(uuid "1a615080-8cfd-41df-a861-fef4a5d7260d")
+	)
+	(embedded_fonts no)
+	(model "/Users/dave/Source/crankery/crank68/hw/3D/xtal_osc_5x3.2.step"
+		(offset
+			(xyz 0 0 0)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz 0 0 0)
+		)
+	)
+)

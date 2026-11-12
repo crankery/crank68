@@ -20,18 +20,18 @@ Progress is tracked as **initial development → PCB created → PCB built → c
 
 | Project | Purpose | Status |
 | --- | --- | --- |
-| [Beep (76489)](76489/) | SN76489 sound board | PCB created (rev 01) |
-| [Backplane](Backplane/) | Chainable card slots | PCB created (rev 01) |
-| [Banked Memory](BankedMemory/) | 1 MB battery-backed SRAM in two 4 KB windows | PCB created (rev 01) |
-| [Height](Height/) | Max RAM / banked ROM experiment; plans still undecided | PCB created (rev 01) |
-| [IO](IO/) | Two MC6850 ACIAs and two MC6821 PIAs | PCB created (rev 01) |
-| [Keyboard](Keyboard/) | Keyboard board | PCB created (rev 01) |
-| [Memory](Memory/) | 48 KB FRAM and 8 KB EEPROM | PCB created (rev 01) |
-| [Processor](Processor/) | M6800 CPU and MC6875 clock generator | PCB created (rev 01) |
-| [RTC](RTC/) | Real-time clock | Initial development |
-| [Instore](Instore/) | Keyboard and microSD add-on | Initial development |
-| [Math](Math/) | AMD AM9511 FPU | Initial development |
-| [Video](Video/) | Video board | Initial development |
+| [Beep (76489)](hw/76489/) | SN76489 sound board | PCB created (rev 01) |
+| [Backplane](hw/Backplane/) | Chainable card slots | PCB created (rev 01) |
+| [Banked Memory](hw/BankedMemory/) | 1 MB battery-backed SRAM in two 4 KB windows | PCB created (rev 01) |
+| [Height](hw/Height/) | Max RAM / banked ROM experiment; plans still undecided | PCB created (rev 01) |
+| [IO](hw/IO/) | Two MC6850 ACIAs and two MC6821 PIAs | PCB created (rev 01) |
+| [Keyboard](hw/Keyboard/) | Keyboard board | PCB created (rev 01) |
+| [Memory](hw/Memory/) | 48 KB FRAM and 8 KB EEPROM | PCB created (rev 01) |
+| [Processor](hw/Processor/) | M6800 CPU and MC6875 clock generator | PCB created (rev 01) |
+| [RTC](hw/RTC/) | Real-time clock | Initial development |
+| [Instore](hw/Instore/) | Keyboard and microSD add-on | Initial development |
+| [Math](hw/Math/) | AMD AM9511 FPU | Initial development |
+| [Video](hw/Video/) | Video board | Initial development |
 
 ## Software
 
