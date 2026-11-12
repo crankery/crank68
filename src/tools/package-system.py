@@ -39,8 +39,8 @@ def main():
         'mikbug2.rom': ROOT / 'roms/mikbug2/mikbug2.rom',
         'fonts-28c256.bin': ROOT / 'video/fonts/build/fonts-28c256.bin',
         'flex2.dsk': ROOT / 'flex2/build/flex2.dsk',
-        'sd_bridge.hex': ROOT / 'sd/build/sd_bridge.ino.hex',
-        'avr-fuses.conf': ROOT / 'sd/fuses.conf',
+        'instore_sd.hex': ROOT / 'instore_sd/build/instore_sd.ino.hex',
+        'avr-fuses.conf': ROOT / 'instore_sd/fuses.conf',
         'emu': ROOT / 'emu/build/bin/emu',
     }
     for source in sorted((ROOT / 'pld').glob('*.gal')):
@@ -57,7 +57,7 @@ def main():
         raise ValueError('Font ROM must be 32 KiB')
     if len(payloads['flex2.dsk']) != 1048576 or len(payloads['FLEX.DSK']) != 1048576:
         raise ValueError('SRAM and SD images must each be 1 MiB')
-    if not payloads['sd_bridge.hex'].startswith(b':'):
+    if not payloads['instore_sd.hex'].startswith(b':'):
         raise ValueError('AVR hex file is missing Intel HEX records')
 
     lines = [f'FLEX drive layout: {args.drive_layout}',

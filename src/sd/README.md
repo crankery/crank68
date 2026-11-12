@@ -3,18 +3,15 @@
 > **Inactive legacy add-on:** this firmware targets the separate PIA 1 SD
 > daughterboard in [`../../SD`](../../SD/), which is paused in favor of the
 > [Instore board](../../Instore/). The code and tests remain for the existing
-> emulator, ROM and FLEX path. This firmware does not run on Instore's
-> direct-bus SD AVR; use [the Instore firmware](../instore_sd/) for that board.
+> legacy PIA emulator device. The current ROM and FLEX SD drivers use the
+> [Instore direct-bus firmware](../instore_sd/), not this protocol.
 
 AVR project for the daughterboard in `../../SD`, connected to IO board PIA 1
 through J2. Target: **ATmega328P-PU, 5 V, internal 8 MHz**, with two HCT574
 latches and a level-shifted SPI SD card. This implements the proposed byte/sector
 protocol; it has been compiled and host-tested, **not tested on assembled hardware**.
-FLEX uses the transport in MIKBUG ROM as drive 2 by default, or drive 0 with
-`DRIVE_LAYOUT=sd-first`; see
-[the ROM API](../roms/mikbug2/README.md#sd-bridge-rom-api). Building this AVR
-project alone does not update the host ROM or FLEX image. Removable boot
-support remains future work.
+The current MIKBUG ROM and FLEX driver use the Instore direct-register
+protocol instead. This project remains only for the retired PIA daughterboard.
 
 ## Build and test
 

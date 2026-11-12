@@ -46,7 +46,7 @@ struct Bus : IBus {
         if (a>=0xc000 && a<0xd000) return disk[size_t(page)*4096+(a&4095)];
         if (a==0xe010) return 2 | (input>=0 ? 1 : 0);
         if (a==0xe011) { require(input>=0,"Read empty ACIA"); auto c=input; input=-1; return c; }
-        if (a>=0xe020 && a<=0xe023) return 0; // Unattached PIA/SD bridge.
+        if (a==0xe080 || a==0xe081) return 0; // Unattached direct SD device.
         if (a>=0xe000 && a<0xe100) throw std::runtime_error("Unexpected I/O read "+std::to_string(a));
         return ram[a];
     }
@@ -55,7 +55,7 @@ struct Bus : IBus {
         if (a==0xe002) { page=v; return; }
         if (a==0xe011) { output+=char(v); return; }
         if (a==0xe060) { sound_writes.push_back(v); return; }
-        if (a>=0xe020 && a<=0xe023) return;
+        if (a==0xe080 || a==0xe081) return;
         if (a>=0xe000 && a<0xe100) throw std::runtime_error("Unexpected I/O write "+std::to_string(a));
         ram[a]=v;
     }

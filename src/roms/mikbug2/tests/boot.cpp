@@ -137,9 +137,9 @@ int main(int argc, char **argv) {
                         cpu.step();
                     require(cpu.s_.pc==command_loop,
                             "MIKBUG did not regain its command loop after FLEX NMI");
-                    const auto first_banner=bus.output.find("MIKBUG 2.0");
+                    const auto first_banner=bus.output.find("MIKBUG 2/C68");
                     require(first_banner!=std::string::npos &&
-                            bus.output.find("MIKBUG 2.0",first_banner+1)!=std::string::npos,
+                            bus.output.find("MIKBUG 2/C68",first_banner+1)!=std::string::npos,
                             "FLEX NMI did not reinitialize MIKBUG");
                     require(bus.ram[0xbe44]==0x11,
                             "FLEX NMI did not restore MIKBUG ACIA configuration");

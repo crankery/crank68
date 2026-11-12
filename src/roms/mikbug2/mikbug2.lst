@@ -1,13 +1,12 @@
 Sections:
-00: "org0001:e000" (E000-E000)
-01: "org0002:e010" (E010-E012)
-02: "org0003:e100" (E100-E613)
-03: "org0004:f000" (F000-F243)
-04: "org0005:f300" (F300-F33C)
-05: "org0006:f350" (F350-F477)
-06: "org0007:ff80" (FF80-FF9F)
-07: "org0008:ffc0" (FFC0-FFE0)
-08: "org0009:fff8" (FFF8-0)
+00: "org0001:e000" (E000-E04E)
+01: "org0002:e100" (E100-E615)
+02: "org0003:f000" (F000-F21A)
+03: "org0004:f300" (F300-F33C)
+04: "org0005:f350" (F350-F477)
+05: "org0006:ff80" (FF80-FF9F)
+06: "org0007:ffc0" (FFC0-FFE0)
+07: "org0008:fff8" (FFF8-0)
 
 
 Source: "mikbug2.s"
@@ -167,11 +166,33 @@ Source: "mikbug2.s"
                         	   108: ; 
                         	   109:             .equ swiop, 0x3f            ; swi op code
                         	   110: 
-                        	   111:             .org 0xe000 ; slot 0
-                        	   112: 
-                        	   113:             .org 0xe010 ; slot 1
-01:E010 00              	   114: acias:      .space 0x01
-01:E011 00              	   115: aciad:      .space 0x01
+                        	   111:             .org 0xe000 ; physical ROM bytes shadowed by I/O
+                        	   112: rom_id:     .include "build/rom-id.s"
+
+Source: "build/rom-id.s"
+                        	     1: ; Physical ROM bytes at $E000; CPU reads in this range select I/O.
+00:E000 4352414E4B363820	     2:     .byte "CRANK68 MIKBUG2",0
+00:E008 4D494B42554732
+00:E00F 00
+00:E010 524F4D2056455253	     3:     .byte "ROM VERSION 1",0
+00:E018 494F4E2031
+00:E01D 00
+00:E01E 4255494C54203230	     4:     .byte "BUILT 2026-11-12 22:03 UTC",0
+00:E026 32362D31312D3132
+00:E02E 2032323A30332055
+00:E036 5443
+00:E038 00
+00:E039 5344204142492033	     5:     .byte "SD ABI 3",0
+00:E041 00
+00:E042 534F554E44205245	     6:     .byte "SOUND REV 1",0
+00:E04A 562031
+00:E04D 00
+                        	     7: 
+
+Source: "mikbug2.s"
+                        	   113: 
+                        	   114:             .equ acias, 0xe010 ; slot 1 ACIA I/O addresses
+                        	   115:             .equ aciad, 0xe011
                         	   116: 
                         	   117:             .org 0xe100
                         	   118: baseorg:    
@@ -179,242 +200,242 @@ Source: "mikbug2.s"
                         	   120: ; 
                         	   121: ; i/o interrupt sequence 
                         	   122: ; 
-02:E100 FEBE00          	   123: io:         ldx iov
-02:E103 6E00            	   124:             jmp 0,x
+01:E100 FEBE00          	   123: io:         ldx iov
+01:E103 6E00            	   124:             jmp 0,x
                         	   125: ; 
                         	   126: ; nmi sequence 
                         	   127: ; 
-02:E105 7EE2EC          	   128: powdwn:     jmp nmi                     ; fixed NMI target survives FLEX RAM use
+01:E105 7EE2EC          	   128: powdwn:     jmp nmi                     ; fixed NMI target survives FLEX RAM use
                         	   129: ; 
                         	   130: ; swi interrupt sequence 
                         	   131: ; 
-02:E108 FEBE0A          	   132: sfei:       ldx swi1
-02:E10B 6E00            	   133:             jmp 0,x
+01:E108 FEBE0A          	   132: sfei:       ldx swi1
+01:E10B 6E00            	   133:             jmp 0,x
                         	   134: ; 
                         	   135: ; jump table to routines performing mikbug fctn's 
                         	   136: ; 
                         	   137: fctabl:
-02:E10D 42              	   138:             .byte "B"                   ; "B" - print all breaks
-02:E10E E328            	   139:             .word pntbrk
-02:E110 43              	   140:             .byte "C"                   ; "C" - continue
-02:E111 E37A            	   141:             .word cont
-02:E113 44              	   142:             .byte "D"                   ; "D" - delete all breaks
-02:E114 E31D            	   143:             .word delbrk
-02:E116 47              	   144:             .byte "G"                   ; "G" - go to entered address
-02:E117 E337            	   145:             .word goto
-02:E119 4C              	   146:             .byte "L"                   ; "L" - load
-02:E11A E1CB            	   147:             .word load
-02:E11C 4D              	   148:             .byte "M"                   ; "M" - memory change
-02:E11D E218            	   149:             .word change
-02:E11F 4E              	   150:             .byte "N"                   ; "N" - next (trace 1 instr)
-02:E120 E349            	   151:             .word next
-02:E122 50              	   152:             .byte "P"                   ; "P" - punch
-02:E123 E428            	   153:             .word punch
-02:E125 52              	   154:             .byte "R"                   ; "R" - print stack
-02:E126 E382            	   155:             .word pstak1
-02:E128 53              	   156:             .byte "S"                   ; "S" - change speed for tty
-02:E129 E310            	   157:             .word spd
-02:E12B 54              	   158:             .byte "T"                   ; "T" - trace n instructions
-02:E12C E376            	   159:             .word trace
-02:E12E 55              	   160:             .byte "U"                   ; "U" - reset a breakpoint
-02:E12F E323            	   161:             .word rstbrk
-02:E131 56              	   162:             .byte "V"                   ; "V" - set a breakpoint
-02:E132 E32F            	   163:             .word setbrk
+01:E10D 42              	   138:             .byte "B"                   ; "B" - print all breaks
+01:E10E E328            	   139:             .word pntbrk
+01:E110 43              	   140:             .byte "C"                   ; "C" - continue
+01:E111 E37A            	   141:             .word cont
+01:E113 44              	   142:             .byte "D"                   ; "D" - delete all breaks
+01:E114 E31D            	   143:             .word delbrk
+01:E116 47              	   144:             .byte "G"                   ; "G" - go to entered address
+01:E117 E337            	   145:             .word goto
+01:E119 4C              	   146:             .byte "L"                   ; "L" - load
+01:E11A E1CB            	   147:             .word load
+01:E11C 4D              	   148:             .byte "M"                   ; "M" - memory change
+01:E11D E218            	   149:             .word change
+01:E11F 4E              	   150:             .byte "N"                   ; "N" - next (trace 1 instr)
+01:E120 E349            	   151:             .word next
+01:E122 50              	   152:             .byte "P"                   ; "P" - punch
+01:E123 E428            	   153:             .word punch
+01:E125 52              	   154:             .byte "R"                   ; "R" - print stack
+01:E126 E382            	   155:             .word pstak1
+01:E128 53              	   156:             .byte "S"                   ; "S" - change speed for tty
+01:E129 E310            	   157:             .word spd
+01:E12B 54              	   158:             .byte "T"                   ; "T" - trace n instructions
+01:E12C E376            	   159:             .word trace
+01:E12E 55              	   160:             .byte "U"                   ; "U" - reset a breakpoint
+01:E12F E323            	   161:             .word rstbrk
+01:E131 56              	   162:             .byte "V"                   ; "V" - set a breakpoint
+01:E132 E32F            	   163:             .word setbrk
                         	   164: fctben:
                         	   165: ; 
                         	   166: ; initialization/reset code 
                         	   167: ; 
                         	   168: adrstr:
-02:E134 BCFF            	   169:             .word stack                 ; init for "SP"
-02:E136 E49C            	   170:             .word swi15                 ; init for "SWI1"
-02:E138 E4CB            	   171:             .word brkinh                ; init for "SWI2"
+01:E134 BCFF            	   169:             .word stack                 ; init for "SP"
+01:E136 E49C            	   170:             .word swi15                 ; init for "SWI1"
+01:E138 E4CB            	   171:             .word brkinh                ; init for "SWI2"
                         	   172: ; 
-02:E13A 2003            	   173:             bra brg                     ; "BRA" inst is replaced by
-02:E13C 7EE509          	   174:             jmp brnogo                  ; cond bra inst in rout.
-02:E13F 7EE50D          	   175: brg:        jmp brgo                    ; which determines if
+01:E13A 2003            	   173:             bra brg                     ; "BRA" inst is replaced by
+01:E13C 7EE509          	   174:             jmp brnogo                  ; cond bra inst in rout.
+01:E13F 7EE50D          	   175: brg:        jmp brgo                    ; which determines if
                         	   176: ; bra is go/nogo 
                         	   177: ; 
                         	   178: ; build address 
                         	   179: ; 
-02:E142 8D0C            	   180: baddr:      bsr byte                    ; read 2 frames
-02:E144 B7BE3E          	   181:             staa xhi
-02:E147 8D07            	   182:             bsr byte
-02:E149 B7BE3F          	   183:             staa xlow
-02:E14C FEBE3E          	   184:             ldx xhi                     ; (x) address we built
-02:E14F 39              	   185:             rts
+01:E142 8D0C            	   180: baddr:      bsr byte                    ; read 2 frames
+01:E144 B7BE3E          	   181:             staa xhi
+01:E147 8D07            	   182:             bsr byte
+01:E149 B7BE3F          	   183:             staa xlow
+01:E14C FEBE3E          	   184:             ldx xhi                     ; (x) address we built
+01:E14F 39              	   185:             rts
                         	   186: ; input byte (two frames) 
-02:E150 8D53            	   187: byte:       bsr inhex                   ; get hex char
-02:E152 48              	   188: byte2:      asla
-02:E153 48              	   189:             asla
-02:E154 48              	   190:             asla
-02:E155 48              	   191:             asla
-02:E156 16              	   192:             tab
-02:E157 8D4C            	   193:             bsr inhex
-02:E159 1B              	   194:             aba
-02:E15A 16              	   195:             tab
-02:E15B FBBE3C          	   196:             addb cksm
-02:E15E F7BE3C          	   197:             stab cksm
-02:E161 39              	   198:             rts
-02:E162 44              	   199: outhl:      lsra                        ; out hex left bcd digit
-02:E163 44              	   200:             lsra
-02:E164 44              	   201:             lsra
-02:E165 44              	   202:             lsra
-02:E166 840F            	   203: outhr:      anda #0xf                   ; out hex right bcd digit
-02:E168 8B30            	   204:             adda #0x30
-02:E16A 8139            	   205:             cmpa #0x39
-02:E16C 2302            	   206:             bls outch
-02:E16E 8B07            	   207:             adda #0x7
+01:E150 8D53            	   187: byte:       bsr inhex                   ; get hex char
+01:E152 48              	   188: byte2:      asla
+01:E153 48              	   189:             asla
+01:E154 48              	   190:             asla
+01:E155 48              	   191:             asla
+01:E156 16              	   192:             tab
+01:E157 8D4C            	   193:             bsr inhex
+01:E159 1B              	   194:             aba
+01:E15A 16              	   195:             tab
+01:E15B FBBE3C          	   196:             addb cksm
+01:E15E F7BE3C          	   197:             stab cksm
+01:E161 39              	   198:             rts
+01:E162 44              	   199: outhl:      lsra                        ; out hex left bcd digit
+01:E163 44              	   200:             lsra
+01:E164 44              	   201:             lsra
+01:E165 44              	   202:             lsra
+01:E166 840F            	   203: outhr:      anda #0xf                   ; out hex right bcd digit
+01:E168 8B30            	   204:             adda #0x30
+01:E16A 8139            	   205:             cmpa #0x39
+01:E16C 2302            	   206:             bls outch
+01:E16E 8B07            	   207:             adda #0x7
                         	   208: ; output one char 
-02:E170 7EE254          	   209: outch:      jmp outch1
-02:E173 7EE261          	   210: inch:       jmp inch1
+01:E170 7EE254          	   209: outch:      jmp outch1
+01:E173 7EE261          	   210: inch:       jmp inch1
                         	   211: ; print data pointed at by x-reg 
-02:E176 8DF8            	   212: pdata2:     bsr outch
-02:E178 08              	   213:             inx
-02:E179 A600            	   214: pdata1:     ldaa 0,x
-02:E17B 8104            	   215:             cmpa #4
-02:E17D 26F7            	   216:             bne pdata2
-02:E17F 39              	   217:             rts                         ; stop on eot
+01:E176 8DF8            	   212: pdata2:     bsr outch
+01:E178 08              	   213:             inx
+01:E179 A600            	   214: pdata1:     ldaa 0,x
+01:E17B 8104            	   215:             cmpa #4
+01:E17D 26F7            	   216:             bne pdata2
+01:E17F 39              	   217:             rts                         ; stop on eot
                         	   218: ; 
                         	   219: ; input address 
                         	   220: ; 
-02:E180 8D17            	   221: getadd:     bsr pcrlf                   ; print cr lf
-02:E182 CEE5D0          	   222:             ldx #mcl4
-02:E185 8DF2            	   223:             bsr pdata1                  ; ask for begaddr
-02:E187 8DB9            	   224:             bsr baddr                   ; get beg addr
-02:E189 FFBE02          	   225:             stx bega
-02:E18C 8D0B            	   226:             bsr pcrlf                   ; print cr lf
-02:E18E CEE5DB          	   227:             ldx #mcl5
-02:E191 8DE6            	   228:             bsr pdata1                  ; ask for end addr
-02:E193 8DAD            	   229:             bsr baddr                   ; get end address
-02:E195 FFBE04          	   230:             stx enda
-02:E198 39              	   231:             rts                         ; *
+01:E180 8D17            	   221: getadd:     bsr pcrlf                   ; print cr lf
+01:E182 CEE5D2          	   222:             ldx #mcl4
+01:E185 8DF2            	   223:             bsr pdata1                  ; ask for begaddr
+01:E187 8DB9            	   224:             bsr baddr                   ; get beg addr
+01:E189 FFBE02          	   225:             stx bega
+01:E18C 8D0B            	   226:             bsr pcrlf                   ; print cr lf
+01:E18E CEE5DD          	   227:             ldx #mcl5
+01:E191 8DE6            	   228:             bsr pdata1                  ; ask for end addr
+01:E193 8DAD            	   229:             bsr baddr                   ; get end address
+01:E195 FFBE04          	   230:             stx enda
+01:E198 39              	   231:             rts                         ; *
                         	   232: ; print cr lf 
                         	   233: ; 
-02:E199 FFBE3E          	   234: pcrlf:      stx xhi                     ; save xr
-02:E19C CEE5B1          	   235:             ldx #mcl1
-02:E19F 8DD8            	   236:             bsr pdata1                  ; print crlf
-02:E1A1 FEBE3E          	   237:             ldx xhi
-02:E1A4 39              	   238:             rts
+01:E199 FFBE3E          	   234: pcrlf:      stx xhi                     ; save xr
+01:E19C CEE5B1          	   235:             ldx #mcl1
+01:E19F 8DD8            	   236:             bsr pdata1                  ; print crlf
+01:E1A1 FEBE3E          	   237:             ldx xhi
+01:E1A4 39              	   238:             rts
                         	   239: 
                         	   240: ; 
-02:E1A5 8DCC            	   241: inhex:      bsr inch
-02:E1A7 8030            	   242: inhex2:     suba #0x30
-02:E1A9 2B6A            	   243:             bmi c1                      ; not hex
-02:E1AB 8109            	   244:             cmpa #0x09
-02:E1AD 2F0A            	   245:             ble in1hg
-02:E1AF 8111            	   246:             cmpa #0x11
-02:E1B1 2B62            	   247:             bmi c1                      ; not hex
-02:E1B3 8116            	   248:             cmpa #0x16
-02:E1B5 2E5E            	   249:             bgt c1                      ; not hex
-02:E1B7 8007            	   250:             suba #7
-02:E1B9 39              	   251: in1hg:      rts
+01:E1A5 8DCC            	   241: inhex:      bsr inch
+01:E1A7 8030            	   242: inhex2:     suba #0x30
+01:E1A9 2B6A            	   243:             bmi c1                      ; not hex
+01:E1AB 8109            	   244:             cmpa #0x09
+01:E1AD 2F0A            	   245:             ble in1hg
+01:E1AF 8111            	   246:             cmpa #0x11
+01:E1B1 2B62            	   247:             bmi c1                      ; not hex
+01:E1B3 8116            	   248:             cmpa #0x16
+01:E1B5 2E5E            	   249:             bgt c1                      ; not hex
+01:E1B7 8007            	   250:             suba #7
+01:E1B9 39              	   251: in1hg:      rts
                         	   252: ; 
-02:E1BA A600            	   253: out2h:      ldaa 0,x                    ; output 2 hex char
-02:E1BC 8DA4            	   254: out2ha:     bsr outhl                   ; out left hex char
-02:E1BE A600            	   255:             ldaa 0,x                    ; pick up byte again
-02:E1C0 08              	   256:             inx
-02:E1C1 20A3            	   257:             bra outhr                   ; output right hex char and rts
-02:E1C3 8DF5            	   258: out4hs:     bsr out2h                   ; output 4 hex char + space
-02:E1C5 8DF3            	   259: out2hs:     bsr out2h                   ; output 2 hex char + space
-02:E1C7 8620            	   260: outs:       ldaa #0x20                  ; space
-02:E1C9 20A5            	   261:             bra outch                   ; (bsr & rts)
+01:E1BA A600            	   253: out2h:      ldaa 0,x                    ; output 2 hex char
+01:E1BC 8DA4            	   254: out2ha:     bsr outhl                   ; out left hex char
+01:E1BE A600            	   255:             ldaa 0,x                    ; pick up byte again
+01:E1C0 08              	   256:             inx
+01:E1C1 20A3            	   257:             bra outhr                   ; output right hex char and rts
+01:E1C3 8DF5            	   258: out4hs:     bsr out2h                   ; output 4 hex char + space
+01:E1C5 8DF3            	   259: out2hs:     bsr out2h                   ; output 2 hex char + space
+01:E1C7 8620            	   260: outs:       ldaa #0x20                  ; space
+01:E1C9 20A5            	   261:             bra outch                   ; (bsr & rts)
                         	   262: load:
-02:E1CB 8611            	   263:             ldaa #021
-02:E1CD 8DA1            	   264:             bsr outch                   ; output char
+01:E1CB 8611            	   263:             ldaa #021
+01:E1CD 8DA1            	   264:             bsr outch                   ; output char
                         	   265: ; 
                         	   266: ; turn reader relay on 
                         	   267: ; 
-02:E1CF B6BE44          	   268:             ldaa aciat                  ; get acia control reg format
-02:E1D2 8A40            	   269:             oraa #0x40                  ; set rts to turn rdr relay on
-02:E1D4 B7E010          	   270:             staa acias                  ; turn it on
+01:E1CF B6BE44          	   268:             ldaa aciat                  ; get acia control reg format
+01:E1D2 8A40            	   269:             oraa #0x40                  ; set rts to turn rdr relay on
+01:E1D4 B7E010          	   270:             staa acias                  ; turn it on
                         	   271: ; 
-02:E1D7 7CBE16          	   272:             inc outsw                   ; do not echo tape
+01:E1D7 7CBE16          	   272:             inc outsw                   ; do not echo tape
                         	   273: ; 
-02:E1DA 8D97            	   274: load3:      bsr inch
-02:E1DC 2003            	   275:             bra load4
-02:E1DE 7EE2A2          	   276: enter:      jmp ent1                    ; mikbug 1 entry point
+01:E1DA 8D97            	   274: load3:      bsr inch
+01:E1DC 2003            	   275:             bra load4
+01:E1DE 7EE2A2          	   276: enter:      jmp ent1                    ; mikbug 1 entry point
                         	   277: load4:
-02:E1E1 8153            	   278:             cmpa #'S'
-02:E1E3 26F5            	   279:             bne load3                   ; 1st char not (s)
-02:E1E5 8D8C            	   280:             bsr inch                    ; read char
-02:E1E7 8139            	   281:             cmpa #'9'
-02:E1E9 272A            	   282:             beq c1
-02:E1EB 8131            	   283:             cmpa #'1'
-02:E1ED 26EB            	   284:             bne load3                   ; 2nd char not (1)
-02:E1EF 7FBE3C          	   285:             clr cksm                    ; zero checksum
-02:E1F2 BDE150          	   286:             jsr byte                    ; read byte
-02:E1F5 8002            	   287:             suba #2
-02:E1F7 B7BE3D          	   288:             staa bytect                 ; byte count
+01:E1E1 8153            	   278:             cmpa #'S'
+01:E1E3 26F5            	   279:             bne load3                   ; 1st char not (s)
+01:E1E5 8D8C            	   280:             bsr inch                    ; read char
+01:E1E7 8139            	   281:             cmpa #'9'
+01:E1E9 272A            	   282:             beq c1
+01:E1EB 8131            	   283:             cmpa #'1'
+01:E1ED 26EB            	   284:             bne load3                   ; 2nd char not (1)
+01:E1EF 7FBE3C          	   285:             clr cksm                    ; zero checksum
+01:E1F2 BDE150          	   286:             jsr byte                    ; read byte
+01:E1F5 8002            	   287:             suba #2
+01:E1F7 B7BE3D          	   288:             staa bytect                 ; byte count
                         	   289: ; build address 
-02:E1FA BDE142          	   290:             jsr baddr
+01:E1FA BDE142          	   290:             jsr baddr
                         	   291: ; store data 
-02:E1FD BDE150          	   292: load11:     jsr byte
-02:E200 7ABE3D          	   293:             dec bytect
-02:E203 2709            	   294:             beq load15                  ; zero byte count
-02:E205 A700            	   295:             staa 0,x                    ; store data
-02:E207 A100            	   296:             cmpa 0,x                    ; check data
-02:E209 2606            	   297:             bne load19                  ; data not stored
-02:E20B 08              	   298:             inx
-02:E20C 20EF            	   299:             bra load11
+01:E1FD BDE150          	   292: load11:     jsr byte
+01:E200 7ABE3D          	   293:             dec bytect
+01:E203 2709            	   294:             beq load15                  ; zero byte count
+01:E205 A700            	   295:             staa 0,x                    ; store data
+01:E207 A100            	   296:             cmpa 0,x                    ; check data
+01:E209 2606            	   297:             bne load19                  ; data not stored
+01:E20B 08              	   298:             inx
+01:E20C 20EF            	   299:             bra load11
                         	   300: ; 
                         	   301: ; does checksum check? 
                         	   302: ; 
-02:E20E 5C              	   303: load15:     incb
-02:E20F 27C9            	   304:             beq load3
-02:E211 863F            	   305: load19:     ldaa #'?'                   ;  print question mark
-02:E213 8D3F            	   306:             bsr outch1
-02:E215 7EE2BB          	   307: c1:         jmp contrl
+01:E20E 5C              	   303: load15:     incb
+01:E20F 27C9            	   304:             beq load3
+01:E211 863F            	   305: load19:     ldaa #'?'                   ;  print question mark
+01:E213 8D3F            	   306:             bsr outch1
+01:E215 7EE2BB          	   307: c1:         jmp contrl
                         	   308: ; 
                         	   309: ; change memory (m aaaa dd nn) 
                         	   310: ; 
-02:E218 BDE142          	   311: change:     jsr baddr                   ; build address
-02:E21B 8DAA            	   312:             bsr outs                    ; output space
-02:E21D FEBE3E          	   313: chang:      ldx xhi
-02:E220 8DA3            	   314:             bsr out2hs                  ; print data old
-02:E222 09              	   315:             dex
-02:E223 8D3C            	   316: cha1:       bsr inch1                   ; input char
-02:E225 810A            	   317:             cmpa #0x0a
-02:E227 2712            	   318:             beq lf                      ; check for line feed
-02:E229 815E            	   319:             cmpa #0x5e
-02:E22B 2711            	   320:             beq ua                      ; check for ^
-02:E22D BDE1A7          	   321:             jsr inhex2                  ; s bsr byte
-02:E230 BDE152          	   322:             jsr byte2                   ; get new byte
-02:E233 A700            	   323:             staa 0,x                    ; change memory
-02:E235 A100            	   324:             cmpa 0,x
-02:E237 26D8            	   325:             bne load19                  ; no change
-02:E239 20E8            	   326:             bra cha1
-02:E23B 08              	   327: lf:         inx                         ; inc addr
-02:E23C 2005            	   328:             bra ua1
-02:E23E 860A            	   329: ua:         ldaa #0x0a
-02:E240 8D12            	   330:             bsr outch1                  ; output lf
-02:E242 09              	   331:             dex                         ; dec addr
-02:E243 FFBE3E          	   332: ua1:        stx xhi                     ; sav data addr
-02:E246 CEE5A9          	   333:             ldx #mcl+1
-02:E249 BDE179          	   334:             jsr pdata1                  ; print cr
-02:E24C CEBE3E          	   335:             ldx #xhi
-02:E24F BDE1C3          	   336:             jsr out4hs                  ; output data addr
-02:E252 20C9            	   337:             bra chang
+01:E218 BDE142          	   311: change:     jsr baddr                   ; build address
+01:E21B 8DAA            	   312:             bsr outs                    ; output space
+01:E21D FEBE3E          	   313: chang:      ldx xhi
+01:E220 8DA3            	   314:             bsr out2hs                  ; print data old
+01:E222 09              	   315:             dex
+01:E223 8D3C            	   316: cha1:       bsr inch1                   ; input char
+01:E225 810A            	   317:             cmpa #0x0a
+01:E227 2712            	   318:             beq lf                      ; check for line feed
+01:E229 815E            	   319:             cmpa #0x5e
+01:E22B 2711            	   320:             beq ua                      ; check for ^
+01:E22D BDE1A7          	   321:             jsr inhex2                  ; s bsr byte
+01:E230 BDE152          	   322:             jsr byte2                   ; get new byte
+01:E233 A700            	   323:             staa 0,x                    ; change memory
+01:E235 A100            	   324:             cmpa 0,x
+01:E237 26D8            	   325:             bne load19                  ; no change
+01:E239 20E8            	   326:             bra cha1
+01:E23B 08              	   327: lf:         inx                         ; inc addr
+01:E23C 2005            	   328:             bra ua1
+01:E23E 860A            	   329: ua:         ldaa #0x0a
+01:E240 8D12            	   330:             bsr outch1                  ; output lf
+01:E242 09              	   331:             dex                         ; dec addr
+01:E243 FFBE3E          	   332: ua1:        stx xhi                     ; sav data addr
+01:E246 CEE5A9          	   333:             ldx #mcl+1
+01:E249 BDE179          	   334:             jsr pdata1                  ; print cr
+01:E24C CEBE3E          	   335:             ldx #xhi
+01:E24F BDE1C3          	   336:             jsr out4hs                  ; output data addr
+01:E252 20C9            	   337:             bra chang
                         	   338: ; 
-02:E254 37              	   339: outch1:     pshb                        ; save breg
-02:E255 F6E010          	   340: outc1:      ldab acias
-02:E258 57              	   341:             asrb
-02:E259 57              	   342:             asrb
-02:E25A 24F9            	   343:             bcc outc1                   ; xmit not ready
-02:E25C B7E011          	   344:             staa aciad                  ; output char
-02:E25F 33              	   345:             pulb
-02:E260 39              	   346:             rts
+01:E254 37              	   339: outch1:     pshb                        ; save breg
+01:E255 F6E010          	   340: outc1:      ldab acias
+01:E258 57              	   341:             asrb
+01:E259 57              	   342:             asrb
+01:E25A 24F9            	   343:             bcc outc1                   ; xmit not ready
+01:E25C B7E011          	   344:             staa aciad                  ; output char
+01:E25F 33              	   345:             pulb
+01:E260 39              	   346:             rts
                         	   347: ; 
                         	   348: ; input one char to areg 
-02:E261 B6E010          	   349: inch1:      ldaa acias
-02:E264 47              	   350:             asra
-02:E265 24FA            	   351:             bcc inch1                   ; receiver not ready
-02:E267 B6E011          	   352:             ldaa aciad                  ; input char
-02:E26A 847F            	   353:             anda #0x7f                  ; reset parity bit
-02:E26C 817F            	   354:             cmpa #0x7f
-02:E26E 27F1            	   355:             beq inch1                   ; rubout"del
-02:E270 7DBE16          	   356:             tst outsw                   ; should input be echoed?
-02:E273 27DF            	   357:             beq outch1                  ; if so, output the char
-02:E275 39              	   358:             rts                         ; else,return to caller of inch1
+01:E261 B6E010          	   349: inch1:      ldaa acias
+01:E264 47              	   350:             asra
+01:E265 24FA            	   351:             bcc inch1                   ; receiver not ready
+01:E267 B6E011          	   352:             ldaa aciad                  ; input char
+01:E26A 847F            	   353:             anda #0x7f                  ; reset parity bit
+01:E26C 817F            	   354:             cmpa #0x7f
+01:E26E 27F1            	   355:             beq inch1                   ; rubout"del
+01:E270 7DBE16          	   356:             tst outsw                   ; should input be echoed?
+01:E273 27DF            	   357:             beq outch1                  ; if so, output the char
+01:E275 39              	   358:             rts                         ; else,return to caller of inch1
                         	   359: 
                         	   360: ; 
                         	   361: ; constant initialization 
@@ -422,50 +443,50 @@ Source: "mikbug2.s"
                         	   363: ; x = pointer to ram bytes to be initialized 
                         	   364: ; 
                         	   365: start:                                  ; actual code start
-02:E276 8EE133          	   366:             lds #adrstr-1               ; start of constant data
-02:E279 CEBE08          	   367:             ldx #sp                     ; start of ram area
+01:E276 8EE133          	   366:             lds #adrstr-1               ; start of constant data
+01:E279 CEBE08          	   367:             ldx #sp                     ; start of ram area
                         	   368: ; 
-02:E27C 32              	   369: inilp1:     pula                        ; get next constant byte
-02:E27D A700            	   370:             staa 0,x                    ; init next ram byte
-02:E27F 08              	   371:             inx                         ; update pointer
-02:E280 8CBE16          	   372:             cpx #branen                 ; end of constant ram area?
-02:E283 26F7            	   373:             bne inilp1                  ; no, continue initialization
+01:E27C 32              	   369: inilp1:     pula                        ; get next constant byte
+01:E27D A700            	   370:             staa 0,x                    ; init next ram byte
+01:E27F 08              	   371:             inx                         ; update pointer
+01:E280 8CBE16          	   372:             cpx #branen                 ; end of constant ram area?
+01:E283 26F7            	   373:             bne inilp1                  ; no, continue initialization
                         	   374: ; 
                         	   375: ; initialization to 0 
                         	   376: ; x holds index of 1st byte to be set to 0 
                         	   377: ; 
-02:E285 6F00            	   378: inilp2:     clr 0,x                     ; clear next byte of ram
-02:E287 08              	   379:             inx                         ; update index
-02:E288 8CBE44          	   380:             cpx #endin0                 ; any more bytes to init?
-02:E28B 26F8            	   381:             bne inilp2                  ; no, continue clearing
-02:E28D 7FBE45          	   382:             clr resume_valid            ; no interrupted program yet
+01:E285 6F00            	   378: inilp2:     clr 0,x                     ; clear next byte of ram
+01:E287 08              	   379:             inx                         ; update index
+01:E288 8CBE44          	   380:             cpx #endin0                 ; any more bytes to init?
+01:E28B 26F8            	   381:             bne inilp2                  ; no, continue clearing
+01:E28D 7FBE45          	   382:             clr resume_valid            ; no interrupted program yet
                         	   383: ; 
                         	   384: ; set cc so when we 'GO' to user pgm the 
                         	   385: ; interupt mask is set 
                         	   386: ; 
-02:E290 86D0            	   387:             ldaa #0xd0
-02:E292 B7BE43          	   388:             staa brktrc                 ; put in stack to be pulled jdh: not sure about this one
+01:E290 86D0            	   387:             ldaa #0xd0
+01:E292 B7BE43          	   388:             staa brktrc                 ; put in stack to be pulled jdh: not sure about this one
                         	   389: ; 
                         	   390: ; initialize acia 
                         	   391: ; 
-02:E295 8603            	   392:             ldaa #3                     ; master reset code
-02:E297 B7E010          	   393:             staa acias                  ; reset acia
+01:E295 8603            	   392:             ldaa #3                     ; master reset code
+01:E297 B7E010          	   393:             staa acias                  ; reset acia
                         	   394: ; 
-02:E29A 8611            	   395: inz:        ldaa #0b00010001            ; char len=8" no parity
+01:E29A 8611            	   395: inz:        ldaa #0b00010001            ; char len=8" no parity
                         	   396: ; 2 stop bits 
                         	   397: ; 
-02:E29C B7BE44          	   398: inz1:       staa aciat                  ; save for control loop acia in
+01:E29C B7BE44          	   398: inz1:       staa aciat                  ; save for control loop acia in
                         	   399: ; 
-02:E29F B7E010          	   400:             staa acias                  ; inz acia
-02:E2A2 BEBE08          	   401: ent1:       lds sp
-02:E2A5 BDF300          	   402:             jsr sound_startup           ; play startup tone, then mute
-02:E2A8 BDE199          	   403:             jsr pcrlf
-02:E2AB 2002            	   404:             bra contb                   ; skip to insure mikbug : compat.
-02:E2AD 20B2            	   405: inch2:      bra inch1                   ; mikbug 1.0 input 1 character
-02:E2AF CEE5B8          	   406: contb:      ldx #mcl2                   ; print header
-02:E2B2 BDE179          	   407:             jsr pdata1                  ; print data string
-02:E2B5 CEE2EC          	   408:             ldx #nmi                    ; mark monitor workspace valid
-02:E2B8 FFBE06          	   409:             stx nio
+01:E29F B7E010          	   400:             staa acias                  ; inz acia
+01:E2A2 BEBE08          	   401: ent1:       lds sp
+01:E2A5 BDF300          	   402:             jsr sound_startup           ; play startup tone, then mute
+01:E2A8 BDE199          	   403:             jsr pcrlf
+01:E2AB 2002            	   404:             bra contb                   ; skip to insure mikbug : compat.
+01:E2AD 20B2            	   405: inch2:      bra inch1                   ; mikbug 1.0 input 1 character
+01:E2AF CEE5B8          	   406: contb:      ldx #mcl2                   ; print header
+01:E2B2 BDE179          	   407:             jsr pdata1                  ; print data string
+01:E2B5 CEE2EC          	   408:             ldx #nmi                    ; mark monitor workspace valid
+01:E2B8 FFBE06          	   409:             stx nio
                         	   410: ; 
                         	   411: ; main command/control loop 
                         	   412: ; 
@@ -473,151 +494,151 @@ Source: "mikbug2.s"
                         	   414: ; 
                         	   415: ; restore stack pointer register 
                         	   416: ; 
-02:E2BB BEBE08          	   417:             lds sp                      ; sp was initialized earlier
+01:E2BB BEBE08          	   417:             lds sp                      ; sp was initialized earlier
                         	   418: ; 
-02:E2BE B6BE44          	   419:             ldaa aciat                  ; get proper acia init bits
+01:E2BE B6BE44          	   419:             ldaa aciat                  ; get proper acia init bits
                         	   420: ; for user's terminal 
-02:E2C1 B7E010          	   421:             staa acias                  ; inz acia
+01:E2C1 B7E010          	   421:             staa acias                  ; inz acia
                         	   422: ; 
-02:E2C4 7FBE16          	   423:             clr outsw                   ; make sure input is echoed
+01:E2C4 7FBE16          	   423:             clr outsw                   ; make sure input is echoed
                         	   424: ; 
-02:E2C7 CEE5A7          	   425:             ldx #mcloff                 ; terminal init string
-02:E2CA BDE179          	   426:             jsr pdata1                  ; print data string
+01:E2C7 CEE5A7          	   425:             ldx #mcloff                 ; terminal init string
+01:E2CA BDE179          	   426:             jsr pdata1                  ; print data string
                         	   427: ; 
-02:E2CD 8D92            	   428:             bsr inch1                   ; read command character
-02:E2CF 16              	   429:             tab                         ; save character in b
-02:E2D0 2002            	   430:             bra cnta                    ; skip over mikbug 1.0 vector
-02:E2D2 2080            	   431: out2:       bra outch1                  ; mikbug 1.0 " output 1 char routine
-02:E2D4 BDE1C7          	   432: cnta:       jsr outs                    ; print space after command
+01:E2CD 8D92            	   428:             bsr inch1                   ; read command character
+01:E2CF 16              	   429:             tab                         ; save character in b
+01:E2D0 2002            	   430:             bra cnta                    ; skip over mikbug 1.0 vector
+01:E2D2 2080            	   431: out2:       bra outch1                  ; mikbug 1.0 " output 1 char routine
+01:E2D4 BDE1C7          	   432: cnta:       jsr outs                    ; print space after command
                         	   433: ; 
                         	   434: ; b register holds character input by user 
                         	   435: ; use jump table to go to appropriate routine. 
                         	   436: ; 
-02:E2D7 7EFF80          	   437:             jmp flexdispatch            ; handle F, then original command table
-02:E2DA E100            	   438: nxtchr:     cmpb 0,x                    ; does input char match?
-02:E2DC 270A            	   439:             beq goodch                  ; yes, goto apropriate routine
-02:E2DE 08              	   440:             inx                         ; else, update index into table
-02:E2DF 08              	   441:             inx
-02:E2E0 08              	   442:             inx
-02:E2E1 8CE134          	   443:             cpx #fctben                 ; end of table reached?
-02:E2E4 26F4            	   444:             bne nxtchr                  ; no, try next char
-02:E2E6 20D3            	   445:             bra contrl                  ; no match, reprompt user
+01:E2D7 7EFF80          	   437:             jmp flexdispatch            ; handle F, then original command table
+01:E2DA E100            	   438: nxtchr:     cmpb 0,x                    ; does input char match?
+01:E2DC 270A            	   439:             beq goodch                  ; yes, goto apropriate routine
+01:E2DE 08              	   440:             inx                         ; else, update index into table
+01:E2DF 08              	   441:             inx
+01:E2E0 08              	   442:             inx
+01:E2E1 8CE134          	   443:             cpx #fctben                 ; end of table reached?
+01:E2E4 26F4            	   444:             bne nxtchr                  ; no, try next char
+01:E2E6 20D3            	   445:             bra contrl                  ; no match, reprompt user
                         	   446: ; 
                         	   447: ; 
-02:E2E8 EE01            	   448: goodch:     ldx 1,x                     ; get address from j.t.
-02:E2EA 6E00            	   449:             jmp 0,x                     ; goto appropriate routine
+01:E2E8 EE01            	   448: goodch:     ldx 1,x                     ; get address from j.t.
+01:E2EA 6E00            	   449:             jmp 0,x                     ; goto appropriate routine
                         	   450: ; 
                         	   451: ; 
                         	   452: ; nmi entry 
                         	   453: ; 
-02:E2EC FEBE06          	   454: nmi:        ldx nio                     ; monitor workspace still intact?
-02:E2EF 8CE2EC          	   455:             cpx #nmi
-02:E2F2 2703            	   456:             beq nmi_ready
-02:E2F4 7EE276          	   457:             jmp start                   ; FLEX replaced workspace: cold monitor entry
-02:E2F7 BFBE08          	   458: nmi_ready:  sts sp                      ; save stack
-02:E2FA 8601            	   459:             ldaa #1
-02:E2FC B7BE45          	   460:             staa resume_valid
-02:E2FF BDE199          	   461:             jsr pcrlf
-02:E302 8642            	   462:             ldaa #'B'                   ;  print b
-02:E304 8DCC            	   463:             bsr out2
-02:E306 BDE1C7          	   464:             jsr outs
-02:E309 8602            	   465:             ldaa #2                     ; remove breakpoints
-02:E30B BDE390          	   466:             jsr brksub                  ; outside BSR range after context guard
-02:E30E 2072            	   467:             bra pstak1
+01:E2EC FEBE06          	   454: nmi:        ldx nio                     ; monitor workspace still intact?
+01:E2EF 8CE2EC          	   455:             cpx #nmi
+01:E2F2 2703            	   456:             beq nmi_ready
+01:E2F4 7EE276          	   457:             jmp start                   ; FLEX replaced workspace: cold monitor entry
+01:E2F7 BFBE08          	   458: nmi_ready:  sts sp                      ; save stack
+01:E2FA 8601            	   459:             ldaa #1
+01:E2FC B7BE45          	   460:             staa resume_valid
+01:E2FF BDE199          	   461:             jsr pcrlf
+01:E302 8642            	   462:             ldaa #'B'                   ;  print b
+01:E304 8DCC            	   463:             bsr out2
+01:E306 BDE1C7          	   464:             jsr outs
+01:E309 8602            	   465:             ldaa #2                     ; remove breakpoints
+01:E30B BDE390          	   466:             jsr brksub                  ; outside BSR range after context guard
+01:E30E 2072            	   467:             bra pstak1
                         	   468: ; 
                         	   469: ; set speed for user tty 
                         	   470: ; 
-02:E310 8D9B            	   471: spd:        bsr inch2                   ; input char
-02:E312 8131            	   472:             cmpa #'1'
-02:E314 2784            	   473:             beq inz
-02:E316 8615            	   474:             ldaa #0x15
-02:E318 2082            	   475:             bra inz1                    ; set 2 stop bits
+01:E310 8D9B            	   471: spd:        bsr inch2                   ; input char
+01:E312 8131            	   472:             cmpa #'1'
+01:E314 2784            	   473:             beq inz
+01:E316 8615            	   474:             ldaa #0x15
+01:E318 2082            	   475:             bra inz1                    ; set 2 stop bits
                         	   476: ; 
                         	   477: ; 
-02:E31A 7EE142          	   478: baddrj:     jmp baddr                   ; go build address
+01:E31A 7EE142          	   478: baddrj:     jmp baddr                   ; go build address
                         	   479: ; 
                         	   480: ; 
                         	   481: ; reset all breakpoints 
                         	   482: ; 
-02:E31D 8601            	   483: delbrk:     ldaa #1                     ; reset breaks flag
-02:E31F 8D6F            	   484: bsrbrk:     bsr brksub                  ; break handling subr.
-02:E321 206A            	   485:             bra cntrl2                  ; return to command level
+01:E31D 8601            	   483: delbrk:     ldaa #1                     ; reset breaks flag
+01:E31F 8D6F            	   484: bsrbrk:     bsr brksub                  ; break handling subr.
+01:E321 206A            	   485:             bra cntrl2                  ; return to command level
                         	   486: ; 
                         	   487: ; reset 1 breakpoint 
                         	   488: ; 
-02:E323 8DF5            	   489: rstbrk:     bsr baddrj                  ; puts user entered address
+01:E323 8DF5            	   489: rstbrk:     bsr baddrj                  ; puts user entered address
                         	   490: ; into xhi,xlo 
-02:E325 4F              	   491:             clra                        ; reset 1 break flag
-02:E326 20F7            	   492:             bra bsrbrk                  ; go reset 1
+01:E325 4F              	   491:             clra                        ; reset 1 break flag
+01:E326 20F7            	   492:             bra bsrbrk                  ; go reset 1
                         	   493: ; 
                         	   494: ; print out all non-zero break addresses 
                         	   495: ; 
-02:E328 BDE199          	   496: pntbrk:     jsr pcrlf                   ; do cr"lf
-02:E32B 8602            	   497:             ldaa #2                     ; print break addresses flags
-02:E32D 20F0            	   498:             bra bsrbrk                  ; go print
+01:E328 BDE199          	   496: pntbrk:     jsr pcrlf                   ; do cr"lf
+01:E32B 8602            	   497:             ldaa #2                     ; print break addresses flags
+01:E32D 20F0            	   498:             bra bsrbrk                  ; go print
                         	   499: ; 
                         	   500: ; set one break 
                         	   501: ; 
-02:E32F 8DE9            	   502: setbrk:     bsr baddrj                  ; get user entered address (xhi,xlo)
-02:E331 8604            	   503:             ldaa #4                     ; set one break flag
-02:E333 8D5B            	   504:             bsr brksub                  ; go set it
-02:E335 20F1            	   505:             bra pntbrk                  ; print all breakpoints
+01:E32F 8DE9            	   502: setbrk:     bsr baddrj                  ; get user entered address (xhi,xlo)
+01:E331 8604            	   503:             ldaa #4                     ; set one break flag
+01:E333 8D5B            	   504:             bsr brksub                  ; go set it
+01:E335 20F1            	   505:             bra pntbrk                  ; print all breakpoints
                         	   506: ; 
                         	   507: ; go to requested 
                         	   508: ; 
-02:E337 8DE1            	   509: goto:       bsr baddrj                  ; go get address from user
+01:E337 8DE1            	   509: goto:       bsr baddrj                  ; go get address from user
                         	   510: ; xhi,xlow hold address 
-02:E339 86FF            	   511:             ldaa #0xff                  ; flag for putting in breaks
-02:E33B 8D53            	   512:             bsr brksub                  ; go put in breaks
-02:E33D 30              	   513:             tsx
-02:E33E B6BE3E          	   514:             ldaa xhi                    ; save pch on stack
-02:E341 A705            	   515:             staa 5,x
-02:E343 B6BE3F          	   516:             ldaa xlow                   ; push pcl
-02:E346 A706            	   517:             staa 6,x
-02:E348 3B              	   518:             rti                         ; go to user prg
+01:E339 86FF            	   511:             ldaa #0xff                  ; flag for putting in breaks
+01:E33B 8D53            	   512:             bsr brksub                  ; go put in breaks
+01:E33D 30              	   513:             tsx
+01:E33E B6BE3E          	   514:             ldaa xhi                    ; save pch on stack
+01:E341 A705            	   515:             staa 5,x
+01:E343 B6BE3F          	   516:             ldaa xlow                   ; push pcl
+01:E346 A706            	   517:             staa 6,x
+01:E348 3B              	   518:             rti                         ; go to user prg
                         	   519: ; 
                         	   520: ; single instruction trace requested 
                         	   521: ; 
-02:E349 CE0001          	   522: next:       ldx #1                      ; # instructions to trace
-02:E34C 7FBE43          	   523: trace2:     clr brktrc                  ; clear flag indicating trace
+01:E349 CE0001          	   522: next:       ldx #1                      ; # instructions to trace
+01:E34C 7FBE43          	   523: trace2:     clr brktrc                  ; clear flag indicating trace
                         	   524: ; is due to break 
-02:E34F 7DBE45          	   525: trace3:     tst resume_valid
-02:E352 260F            	   526:             bne trace3_ready
-02:E354 7FBE43          	   527:             clr brktrc
-02:E357 BDE199          	   528:             jsr pcrlf
-02:E35A CEE5E6          	   529:             ldx #mcl_noresume
-02:E35D BDE179          	   530:             jsr pdata1
-02:E360 7EE2BB          	   531:             jmp contrl
-02:E363 FFBE1A          	   532: trace3_ready: stx ntrace                ; save # inst's to trace
+01:E34F 7DBE45          	   525: trace3:     tst resume_valid
+01:E352 260F            	   526:             bne trace3_ready
+01:E354 7FBE43          	   527:             clr brktrc
+01:E357 BDE199          	   528:             jsr pcrlf
+01:E35A CEE5E8          	   529:             ldx #mcl_noresume
+01:E35D BDE179          	   530:             jsr pdata1
+01:E360 7EE2BB          	   531:             jmp contrl
+01:E363 FFBE1A          	   532: trace3_ready: stx ntrace                ; save # inst's to trace
                         	   533: ; is due to break 
-02:E366 FEBE08          	   534:             ldx sp                      ; x : = stack pointer
-02:E369 EE06            	   535:             ldx 6,x                     ; x : = address of instr to be ex
-02:E36B FFBE17          	   536:             stx trcadr                  ; save in trace address store
-02:E36E A600            	   537:             ldaa 0,x                    ; get instruction to be traced
-02:E370 B7BE19          	   538:             staa trcins                 ; save in trace instruction store
-02:E373 7EE4F6          	   539:             jmp contrc                  ; go to continue trace part of
+01:E366 FEBE08          	   534:             ldx sp                      ; x : = stack pointer
+01:E369 EE06            	   535:             ldx 6,x                     ; x : = address of instr to be ex
+01:E36B FFBE17          	   536:             stx trcadr                  ; save in trace address store
+01:E36E A600            	   537:             ldaa 0,x                    ; get instruction to be traced
+01:E370 B7BE19          	   538:             staa trcins                 ; save in trace instruction store
+01:E373 7EE4F6          	   539:             jmp contrc                  ; go to continue trace part of
                         	   540: ; 
                         	   541: ; multiple instruction trace 
                         	   542: ; 
-02:E376 8DA2            	   543: trace:      bsr baddrj                  ; get # of instructions to trace
-02:E378 20D2            	   544:             bra trace2                  ; go trace'm
+01:E376 8DA2            	   543: trace:      bsr baddrj                  ; get # of instructions to trace
+01:E378 20D2            	   544:             bra trace2                  ; go trace'm
                         	   545: ; 
                         	   546: ; continue execution 
                         	   547: ; 
-02:E37A 7CBE43          	   548: cont:       inc brktrc                  ; trace 1 to restore swi's
-02:E37D CE0001          	   549:             ldx #1                      ; one trace only
-02:E380 20CD            	   550:             bra trace3
+01:E37A 7CBE43          	   548: cont:       inc brktrc                  ; trace 1 to restore swi's
+01:E37D CE0001          	   549:             ldx #1                      ; one trace only
+01:E380 20CD            	   550:             bra trace3
                         	   551: ; 
                         	   552: ; 
                         	   553: ; r command 
                         	   554: ; 
                         	   555: ; print stack contents 
                         	   556: ; 
-02:E382 BDE199          	   557: pstak1:     jsr pcrlf                   ; print cr lf
-02:E385 CEE5C3          	   558:             ldx #mcl3                   ; print header
-02:E388 BDE179          	   559:             jsr pdata1
-02:E38B 8D7B            	   560: pstak:      bsr print                   ; print stack
-02:E38D 7EE2BB          	   561: cntrl2:     jmp contrl                  ; return to command level
+01:E382 BDE199          	   557: pstak1:     jsr pcrlf                   ; print cr lf
+01:E385 CEE5C5          	   558:             ldx #mcl3                   ; print header
+01:E388 BDE179          	   559:             jsr pdata1
+01:E38B 8D7B            	   560: pstak:      bsr print                   ; print stack
+01:E38D 7EE2BB          	   561: cntrl2:     jmp contrl                  ; return to command level
                         	   562: ; 
                         	   563: ; 
                         	   564: ; brksub 
@@ -643,63 +664,63 @@ Source: "mikbug2.s"
                         	   584: ; 
                         	   585: ; 
                         	   586: brksub:
-02:E390 BFBE40          	   587:             sts ssave                   ; save s so we can use
-02:E393 B7BE3C          	   588:             staa asave                  ; a holds the function #
+01:E390 BFBE40          	   587:             sts ssave                   ; save s so we can use
+01:E393 B7BE3C          	   588:             staa asave                  ; a holds the function #
                         	   589: ; 
-02:E396 CEBE1C          	   590:             ldx #brkadr                 ; init x for loop through breaks
+01:E396 CEBE1C          	   590:             ldx #brkadr                 ; init x for loop through breaks
                         	   591: ; 
                         	   592: ; start of loop through break addresses 
                         	   593: ; 
-02:E399 B6BE3C          	   594: brklp:      ldaa asave                  ; get function #
-02:E39C AE00            	   595:             lds 0,x                     ; s:=next address in brrkpt list
-02:E39E 272D            	   596:             beq ln                      ; if 0, then not a valid break
+01:E399 B6BE3C          	   594: brklp:      ldaa asave                  ; get function #
+01:E39C AE00            	   595:             lds 0,x                     ; s:=next address in brrkpt list
+01:E39E 272D            	   596:             beq ln                      ; if 0, then not a valid break
                         	   597: ; 
-02:E3A0 7DBE42          	   598:             tst brksin                  ; are breaks in user's code?
-02:E3A3 2736            	   599:             beq nobrin                  ; branch, if not
+01:E3A0 7DBE42          	   598:             tst brksin                  ; are breaks in user's code?
+01:E3A3 2736            	   599:             beq nobrin                  ; branch, if not
                         	   600: ; 
                         	   601: ; breaks are in user's code 
                         	   602: ; 
-02:E3A5 4D              	   603:             tsta                        ; should breaks be in?
-02:E3A6 2B21            	   604:             bmi bkdone                  ; yes, return to caller
+01:E3A5 4D              	   603:             tsta                        ; should breaks be in?
+01:E3A6 2B21            	   604:             bmi bkdone                  ; yes, return to caller
                         	   605: ; 
                         	   606: ; breaks are to be taken out of user's 
                         	   607: ; code temporarily 
                         	   608: ; 
-02:E3A8 A610            	   609: brk2:       ldaa 2*nbrbpt,x             ; get instr. belong-
+01:E3A8 A610            	   609: brk2:       ldaa 2*nbrbpt,x             ; get instr. belong-
                         	   610: ; ing in user code 
-02:E3AA 36              	   611:             psha                        ; put it there
+01:E3AA 36              	   611:             psha                        ; put it there
                         	   612: ; 
                         	   613: ; other loop actions to be performed each time through 
                         	   614: ; loop when break address not equal to 0. 
                         	   615: ; 
-02:E3AB B6BE3C          	   616: bkcon1:     ldaa asave                  ; what function is to be done
-02:E3AE 2737            	   617:             beq fndrpl                  ; see if breakpoint needs to
+01:E3AB B6BE3C          	   616: bkcon1:     ldaa asave                  ; what function is to be done
+01:E3AE 2737            	   617:             beq fndrpl                  ; see if breakpoint needs to
                         	   618: ; be replaced 
-02:E3B0 8101            	   619:             cmpa #1                     ; is break address to be reset?
-02:E3B2 2741            	   620:             beq clrbrk                  ; yes, set brkadr to 0
+01:E3B0 8101            	   619:             cmpa #1                     ; is break address to be reset?
+01:E3B2 2741            	   620:             beq clrbrk                  ; yes, set brkadr to 0
                         	   621: ; 
-02:E3B4 8102            	   622:             cmpa #2                     ; is brk addr to be printed?
-02:E3B6 2749            	   623:             beq prntbk                  ; yes, go print address
+01:E3B4 8102            	   622:             cmpa #2                     ; is brk addr to be printed?
+01:E3B6 2749            	   623:             beq prntbk                  ; yes, go print address
                         	   624: ; 
                         	   625: ; update loop index and loop if appropriate 
                         	   626: ; 
-02:E3B8 08              	   627: bkcon2:     inx                         ; make x point to
-02:E3B9 08              	   628:             inx                         ; next break address
-02:E3BA 8CBE2C          	   629: bkcon3:     cpx #brkins                 ; any more breaks?
-02:E3BD 26DA            	   630:             bne brklp                   ; yes,loop
+01:E3B8 08              	   627: bkcon2:     inx                         ; make x point to
+01:E3B9 08              	   628:             inx                         ; next break address
+01:E3BA 8CBE2C          	   629: bkcon3:     cpx #brkins                 ; any more breaks?
+01:E3BD 26DA            	   630:             bne brklp                   ; yes,loop
                         	   631: ; 
                         	   632: ; wrap-up processing and exit 
                         	   633: ; 
-02:E3BF 4F              	   634:             clra                        ; a = breaks in flag
-02:E3C0 7DBE3C          	   635:             tst asave                   ; is function = -1?
-02:E3C3 2A01            	   636:             bpl bkput                   ; no, so brksin = 0
-02:E3C5 4C              	   637:             inca                        ; fctn = -1 => brksin:=1
-02:E3C6 B7BE42          	   638: bkput:      staa brksin                 ; store appropriate flag
+01:E3BF 4F              	   634:             clra                        ; a = breaks in flag
+01:E3C0 7DBE3C          	   635:             tst asave                   ; is function = -1?
+01:E3C3 2A01            	   636:             bpl bkput                   ; no, so brksin = 0
+01:E3C5 4C              	   637:             inca                        ; fctn = -1 => brksin:=1
+01:E3C6 B7BE42          	   638: bkput:      staa brksin                 ; store appropriate flag
                         	   639: ; 
                         	   640: ; restore s-reg and return to caller 
                         	   641: ; 
-02:E3C9 BEBE40          	   642: bkdone:     lds ssave                   ; restore user s-reg
-02:E3CC 39              	   643:             rts                         ; return
+01:E3C9 BEBE40          	   642: bkdone:     lds ssave                   ; restore user s-reg
+01:E3CC 39              	   643:             rts                         ; return
                         	   644: ; 
                         	   645: ; 
                         	   646: ; miscellaneous routines for brksub 
@@ -708,71 +729,71 @@ Source: "mikbug2.s"
                         	   649: ; put breakpoint address in current position 
                         	   650: ; a holds the function #, x holds breakpoint index 
                         	   651: ; 
-02:E3CD 8104            	   652: ln:         cmpa #4                     ; is function = 4
-02:E3CF 26E7            	   653:             bne bkcon2                  ; if not, then continue loop
+01:E3CD 8104            	   652: ln:         cmpa #4                     ; is function = 4
+01:E3CF 26E7            	   653:             bne bkcon2                  ; if not, then continue loop
                         	   654: ; 
-02:E3D1 BEBE3E          	   655:             lds xhi                     ; get new break address
-02:E3D4 AF00            	   656:             sts 0,x                     ; put in current position
+01:E3D1 BEBE3E          	   655:             lds xhi                     ; get new break address
+01:E3D4 AF00            	   656:             sts 0,x                     ; put in current position
                         	   657: ; 
-02:E3D6 7ABE3C          	   658:             dec asave                   ; do not place address more
+01:E3D6 7ABE3C          	   658:             dec asave                   ; do not place address more
                         	   659: ; than once-cont to 
                         	   660: ; take out breakpoints 
-02:E3D9 20DD            	   661:             bra bkcon2                  ; continue loop
+01:E3D9 20DD            	   661:             bra bkcon2                  ; continue loop
                         	   662: ; 
                         	   663: ; breaks are not in and address is non-zero. 
                         	   664: ; if function = -1 then swi's are to be put in. 
                         	   665: ; a holds function number, s holds address 
                         	   666: ; 
-02:E3DB 4D              	   667: nobrin:     tsta                        ; is function = -1
-02:E3DC 2ACD            	   668:             bpl bkcon1                  ; no, continue
+01:E3DB 4D              	   667: nobrin:     tsta                        ; is function = -1
+01:E3DC 2ACD            	   668:             bpl bkcon1                  ; no, continue
                         	   669: ; 
-02:E3DE 34              	   670:             des                         ; make address point to 1 less
-02:E3DF 32              	   671:             pula                        ; get user instruction
-02:E3E0 A710            	   672:             staa 2*nbrbpt,x             ; save
-02:E3E2 863F            	   673:             ldaa #swiop                 ; get swi op code
-02:E3E4 36              	   674:             psha                        ; replace user instruction
-02:E3E5 20D1            	   675:             bra bkcon2                  ; continue loop
+01:E3DE 34              	   670:             des                         ; make address point to 1 less
+01:E3DF 32              	   671:             pula                        ; get user instruction
+01:E3E0 A710            	   672:             staa 2*nbrbpt,x             ; save
+01:E3E2 863F            	   673:             ldaa #swiop                 ; get swi op code
+01:E3E4 36              	   674:             psha                        ; replace user instruction
+01:E3E5 20D1            	   675:             bra bkcon2                  ; continue loop
                         	   676: ; 
                         	   677: ; function=0 brk addr not = 0, user's instr 
                         	   678: ; is in (not swi). 
                         	   679: ; if address = xhi,xlo then set address = 0 
-02:E3E7 A600            	   680: fndrpl:     ldaa 0,x                    ; get top byte of address
-02:E3E9 B1BE3E          	   681:             cmpa xhi                    ; do top bytes compare
-02:E3EC 26CA            	   682:             bne bkcon2                  ; no,continue loop
-02:E3EE E601            	   683:             ldab 1,x                    ; get low byte of addr
-02:E3F0 F1BE3F          	   684:             cmpb xlow                   ; same for low bytes
-02:E3F3 26C3            	   685:             bne bkcon2
+01:E3E7 A600            	   680: fndrpl:     ldaa 0,x                    ; get top byte of address
+01:E3E9 B1BE3E          	   681:             cmpa xhi                    ; do top bytes compare
+01:E3EC 26CA            	   682:             bne bkcon2                  ; no,continue loop
+01:E3EE E601            	   683:             ldab 1,x                    ; get low byte of addr
+01:E3F0 F1BE3F          	   684:             cmpb xlow                   ; same for low bytes
+01:E3F3 26C3            	   685:             bne bkcon2
                         	   686: ; 
-02:E3F5 6F00            	   687: clrbrk:     clr 0,x                     ; clear out break
-02:E3F7 6F01            	   688:             clr 1,x                     ; address field
-02:E3F9 20BD            	   689:             bra bkcon2                  ; continue loop
+01:E3F5 6F00            	   687: clrbrk:     clr 0,x                     ; clear out break
+01:E3F7 6F01            	   688:             clr 1,x                     ; address field
+01:E3F9 20BD            	   689:             bra bkcon2                  ; continue loop
                         	   690: ; 
                         	   691: ; 
-02:E3FB 7EE1C5          	   692: ot2hs:      jmp out2hs
-02:E3FE 7EE1C3          	   693: ot4hs:      jmp out4hs
+01:E3FB 7EE1C5          	   692: ot2hs:      jmp out2hs
+01:E3FE 7EE1C3          	   693: ot4hs:      jmp out4hs
                         	   694: ; 
                         	   695: ; 
                         	   696: ; print out break address 
                         	   697: ; function = 2, break address not = 0, x = address in 
                         	   698: ; 
-02:E401 BEBE40          	   699: prntbk:     lds ssave
-02:E404 8DF8            	   700:             bsr ot4hs                   ; output address and space
-02:E406 20B2            	   701:             bra bkcon3                  ; out4hs increments x,
+01:E401 BEBE40          	   699: prntbk:     lds ssave
+01:E404 8DF8            	   700:             bsr ot4hs                   ; output address and space
+01:E406 20B2            	   701:             bra bkcon3                  ; out4hs increments x,
                         	   702: ; so bypas 2 inx's 
                         	   703: ; 
                         	   704: ; print contents of stack 
                         	   705: ; 
-02:E408 BDE199          	   706: print:      jsr pcrlf                   ; print cr lf
-02:E40B FEBE08          	   707:             ldx sp                      ; print out stack
-02:E40E 08              	   708:             inx
-02:E40F 8DEA            	   709:             bsr ot2hs                   ; condition codes
-02:E411 8DE8            	   710:             bsr ot2hs                   ; acc-b
-02:E413 8DE6            	   711:             bsr ot2hs                   ; acc-a
-02:E415 8DE7            	   712:             bsr ot4hs                   ; x-reg
-02:E417 8DE5            	   713:             bsr ot4hs                   ; p-counter
-02:E419 CEBE08          	   714:             ldx #sp
-02:E41C 8DE0            	   715:             bsr ot4hs                   ; stack pointer
-02:E41E 39              	   716:             rts
+01:E408 BDE199          	   706: print:      jsr pcrlf                   ; print cr lf
+01:E40B FEBE08          	   707:             ldx sp                      ; print out stack
+01:E40E 08              	   708:             inx
+01:E40F 8DEA            	   709:             bsr ot2hs                   ; condition codes
+01:E411 8DE8            	   710:             bsr ot2hs                   ; acc-b
+01:E413 8DE6            	   711:             bsr ot2hs                   ; acc-a
+01:E415 8DE7            	   712:             bsr ot4hs                   ; x-reg
+01:E417 8DE5            	   713:             bsr ot4hs                   ; p-counter
+01:E419 CEBE08          	   714:             ldx #sp
+01:E41C 8DE0            	   715:             bsr ot4hs                   ; stack pointer
+01:E41E 39              	   716:             rts
                         	   717: 
                         	   718: 
                         	   719: ; punch dump 
@@ -780,115 +801,115 @@ Source: "mikbug2.s"
                         	   721: ; address (enda) 
                         	   722: ; 
                         	   723: 
-02:E41F 0D              	   724: mtape1:     .byte 0xd,0xa,0,0,0,0,"S","1",4  ; punch format
-02:E420 0A
-02:E421 00
-02:E422 00
-02:E423 00
-02:E424 00
-02:E425 53
-02:E426 31
-02:E427 04
+01:E41F 0D              	   724: mtape1:     .byte 0xd,0xa,0,0,0,0,"S","1",4  ; punch format
+01:E420 0A
+01:E421 00
+01:E422 00
+01:E423 00
+01:E424 00
+01:E425 53
+01:E426 31
+01:E427 04
                         	   725: 
                         	   726: punch:
                         	   727: 
-02:E428 BDE180          	   728:             jsr getadd                  ; get address
-02:E42B 8612            	   729:             ldaa #0x12                  ; turn tty punch on
-02:E42D BDE170          	   730:             jsr outch                   ; out char
+01:E428 BDE180          	   728:             jsr getadd                  ; get address
+01:E42B 8612            	   729:             ldaa #0x12                  ; turn tty punch on
+01:E42D BDE170          	   730:             jsr outch                   ; out char
                         	   731: ; 
                         	   732: ; punch leader - 25 nulls 
                         	   733: ; 
-02:E430 C619            	   734:             ldab #25                    ; b holds # nulls to punch
-02:E432 4F              	   735: pnull:      clra                        ; a=0 (null char)
-02:E433 BDE170          	   736:             jsr outch                   ; go output null
-02:E436 5A              	   737:             decb                        ; decrement counter
-02:E437 26F9            	   738:             bne pnull                   ; if not done, then loop
+01:E430 C619            	   734:             ldab #25                    ; b holds # nulls to punch
+01:E432 4F              	   735: pnull:      clra                        ; a=0 (null char)
+01:E433 BDE170          	   736:             jsr outch                   ; go output null
+01:E436 5A              	   737:             decb                        ; decrement counter
+01:E437 26F9            	   738:             bne pnull                   ; if not done, then loop
                         	   739: ; 
-02:E439 FEBE02          	   740:             ldx bega
-02:E43C FFBE40          	   741:             stx tw                      ; temp beginning address
-02:E43F B6BE05          	   742: pun11:      ldaa enda+1
-02:E442 B0BE41          	   743:             suba tw+1
-02:E445 F6BE04          	   744:             ldab enda
-02:E448 F2BE40          	   745:             sbcb tw
-02:E44B 2604            	   746:             bne pun22
-02:E44D 8110            	   747:             cmpa #16
-02:E44F 2502            	   748:             bcs pun23
-02:E451 860F            	   749: pun22:      ldaa #15
-02:E453 8B04            	   750: pun23:      adda #4
-02:E455 B7BE3D          	   751:             staa mcont                  ; frame count this record
-02:E458 8003            	   752:             suba #3
-02:E45A B7BE3C          	   753:             staa temp                   ; byte count this record
+01:E439 FEBE02          	   740:             ldx bega
+01:E43C FFBE40          	   741:             stx tw                      ; temp beginning address
+01:E43F B6BE05          	   742: pun11:      ldaa enda+1
+01:E442 B0BE41          	   743:             suba tw+1
+01:E445 F6BE04          	   744:             ldab enda
+01:E448 F2BE40          	   745:             sbcb tw
+01:E44B 2604            	   746:             bne pun22
+01:E44D 8110            	   747:             cmpa #16
+01:E44F 2502            	   748:             bcs pun23
+01:E451 860F            	   749: pun22:      ldaa #15
+01:E453 8B04            	   750: pun23:      adda #4
+01:E455 B7BE3D          	   751:             staa mcont                  ; frame count this record
+01:E458 8003            	   752:             suba #3
+01:E45A B7BE3C          	   753:             staa temp                   ; byte count this record
                         	   754: ; punch c/r,l/f,nulls,s,1 
-02:E45D CEE41F          	   755:             ldx #mtape1
-02:E460 BDE179          	   756:             jsr pdata1
-02:E463 5F              	   757:             clrb                        ; zero checksum
+01:E45D CEE41F          	   755:             ldx #mtape1
+01:E460 BDE179          	   756:             jsr pdata1
+01:E463 5F              	   757:             clrb                        ; zero checksum
                         	   758: ; punch frame count 
-02:E464 CEBE3D          	   759:             ldx #mcont
-02:E467 8D2E            	   760:             bsr punt2                   ; punch 2 hex char
+01:E464 CEBE3D          	   759:             ldx #mcont
+01:E467 8D2E            	   760:             bsr punt2                   ; punch 2 hex char
                         	   761: ; punch address 
-02:E469 CEBE40          	   762:             ldx #tw
-02:E46C 8D29            	   763:             bsr punt2
-02:E46E 8D27            	   764:             bsr punt2
+01:E469 CEBE40          	   762:             ldx #tw
+01:E46C 8D29            	   763:             bsr punt2
+01:E46E 8D27            	   764:             bsr punt2
                         	   765: ; punch data 
-02:E470 FEBE40          	   766:             ldx tw
-02:E473 8D22            	   767: pun32:      bsr punt2                   ; punch one byte (2 frames)
-02:E475 7ABE3C          	   768:             dec temp                    ; dec byte count
-02:E478 26F9            	   769:             bne pun32
-02:E47A FFBE40          	   770:             stx tw
-02:E47D 53              	   771:             comb
-02:E47E 37              	   772:             pshb
-02:E47F 30              	   773:             tsx
-02:E480 8D15            	   774:             bsr punt2                   ; punch checksum
-02:E482 33              	   775:             pulb                        ; restore stack
-02:E483 FEBE40          	   776:             ldx tw
-02:E486 09              	   777:             dex
-02:E487 BCBE04          	   778:             cpx enda
-02:E48A 26B3            	   779:             bne pun11
-02:E48C BDE199          	   780:             jsr pcrlf
-02:E48F CEE59C          	   781:             ldx #meof
-02:E492 BDE179          	   782:             jsr pdata1                  ; output eof
-02:E495 2037            	   783:             bra ctrl                    ; branch to contrl
+01:E470 FEBE40          	   766:             ldx tw
+01:E473 8D22            	   767: pun32:      bsr punt2                   ; punch one byte (2 frames)
+01:E475 7ABE3C          	   768:             dec temp                    ; dec byte count
+01:E478 26F9            	   769:             bne pun32
+01:E47A FFBE40          	   770:             stx tw
+01:E47D 53              	   771:             comb
+01:E47E 37              	   772:             pshb
+01:E47F 30              	   773:             tsx
+01:E480 8D15            	   774:             bsr punt2                   ; punch checksum
+01:E482 33              	   775:             pulb                        ; restore stack
+01:E483 FEBE40          	   776:             ldx tw
+01:E486 09              	   777:             dex
+01:E487 BCBE04          	   778:             cpx enda
+01:E48A 26B3            	   779:             bne pun11
+01:E48C BDE199          	   780:             jsr pcrlf
+01:E48F CEE59C          	   781:             ldx #meof
+01:E492 BDE179          	   782:             jsr pdata1                  ; output eof
+01:E495 2037            	   783:             bra ctrl                    ; branch to contrl
                         	   784: 
                         	   785: ; punch 2 hex char, update checksum 
-02:E497 EB00            	   786: punt2:      addb 0,x                    ; update checksum
-02:E499 7EE1BA          	   787:             jmp out2h                   ; output two hex chars and rts
+01:E497 EB00            	   786: punt2:      addb 0,x                    ; update checksum
+01:E499 7EE1BA          	   787:             jmp out2h                   ; output two hex chars and rts
                         	   788: ; 
                         	   789: ; swi-1 software interrupt level 1 processing 
                         	   790: ; 
                         	   791: swi15:
-02:E49C BFBE08          	   792:             sts sp                      ; save user's sp
-02:E49F 8601            	   793:             ldaa #1
-02:E4A1 B7BE45          	   794:             staa resume_valid
+01:E49C BFBE08          	   792:             sts sp                      ; save user's sp
+01:E49F 8601            	   793:             ldaa #1
+01:E4A1 B7BE45          	   794:             staa resume_valid
                         	   795: ; 
-02:E4A4 8603            	   796:             ldaa #3
-02:E4A6 BDE390          	   797:             jsr brksub                  ; go take out all the breaks
+01:E4A4 8603            	   796:             ldaa #3
+01:E4A6 BDE390          	   797:             jsr brksub                  ; go take out all the breaks
                         	   798: ; 
                         	   799: ; decrement p-counter 
                         	   800: ; 
-02:E4A9 30              	   801:             tsx                         ; x:=stack pointer - 1
-02:E4AA 6D06            	   802:             tst 6,x                     ; if lower byte = 0 => borrow
-02:E4AC 2602            	   803:             bne swi151                  ; branch if borrow not req'd
-02:E4AE 6A05            	   804:             dec 5,x                     ; decrement upper byte
-02:E4B0 6A06            	   805: swi151:     dec 6,x                     ; decrement lower byte
+01:E4A9 30              	   801:             tsx                         ; x:=stack pointer - 1
+01:E4AA 6D06            	   802:             tst 6,x                     ; if lower byte = 0 => borrow
+01:E4AC 2602            	   803:             bne swi151                  ; branch if borrow not req'd
+01:E4AE 6A05            	   804:             dec 5,x                     ; decrement upper byte
+01:E4B0 6A06            	   805: swi151:     dec 6,x                     ; decrement lower byte
                         	   806: ; 
                         	   807: ; test for address trace or break 
                         	   808: ; 
-02:E4B2 EE05            	   809:             ldx 5,x                     ; x:=p counter
-02:E4B4 BCBE17          	   810:             cpx trcadr                  ; is swi for trace?
-02:E4B7 2718            	   811:             beq trcinh                  ; yes, go to trace int handler
+01:E4B2 EE05            	   809:             ldx 5,x                     ; x:=p counter
+01:E4B4 BCBE17          	   810:             cpx trcadr                  ; is swi for trace?
+01:E4B7 2718            	   811:             beq trcinh                  ; yes, go to trace int handler
                         	   812: ; 
-02:E4B9 A600            	   813:             ldaa 0,x                    ; get instruction causing swi
-02:E4BB 813F            	   814:             cmpa #swiop                 ; was it replaced by call to break
-02:E4BD 260C            	   815:             bne brkinh                  ; yes, so must be a break
+01:E4B9 A600            	   813:             ldaa 0,x                    ; get instruction causing swi
+01:E4BB 813F            	   814:             cmpa #swiop                 ; was it replaced by call to break
+01:E4BD 260C            	   815:             bne brkinh                  ; yes, so must be a break
                         	   816: ; 
                         	   817: ; user swi-transfer through level 2 swi 
                         	   818: ; 
-02:E4BF 30              	   819:             tsx                         ; x:=stack pointer
-02:E4C0 6C06            	   820:             inc 6,x                     ; update low byte of p-counter
-02:E4C2 2602            	   821:             bne incnov                  ; branch if no carry
-02:E4C4 6C05            	   822:             inc 5,x                     ; update high byte if necessary
-02:E4C6 FEBE0C          	   823: incnov:     ldx swi2                    ; x:=pointer to level 2 swi handler
-02:E4C9 6E00            	   824:             jmp 0,x                     ; go to level 2 handler
+01:E4BF 30              	   819:             tsx                         ; x:=stack pointer
+01:E4C0 6C06            	   820:             inc 6,x                     ; update low byte of p-counter
+01:E4C2 2602            	   821:             bne incnov                  ; branch if no carry
+01:E4C4 6C05            	   822:             inc 5,x                     ; update high byte if necessary
+01:E4C6 FEBE0C          	   823: incnov:     ldx swi2                    ; x:=pointer to level 2 swi handler
+01:E4C9 6E00            	   824:             jmp 0,x                     ; go to level 2 handler
                         	   825: ; 
                         	   826: ; 
                         	   827: ; 
@@ -896,145 +917,145 @@ Source: "mikbug2.s"
                         	   829: ; break interrupt handler 
                         	   830: ; 
                         	   831: brkinh:
-02:E4CB BDE408          	   832:             jsr print                   ; stop and show regs to user
-02:E4CE 7EE2BB          	   833: ctrl:       jmp contrl                  ; return to control loop
+01:E4CB BDE408          	   832:             jsr print                   ; stop and show regs to user
+01:E4CE 7EE2BB          	   833: ctrl:       jmp contrl                  ; return to control loop
                         	   834: ; 
                         	   835: ; trace interrupt handler 
                         	   836: ; p-counter has been decremented to point at swi 
                         	   837: ; trcins holds op code replaced by swi 
                         	   838: ; x hold address where trace swi is 
                         	   839: ; 
-02:E4D1 B6BE19          	   840: trcinh:     ldaa trcins                 ; get op code of traced instr
-02:E4D4 A700            	   841:             staa 0,x                    ; restore to user's code
+01:E4D1 B6BE19          	   840: trcinh:     ldaa trcins                 ; get op code of traced instr
+01:E4D4 A700            	   841:             staa 0,x                    ; restore to user's code
                         	   842: ; 
-02:E4D6 7DBE43          	   843:             tst brktrc                  ; is processing to be
+01:E4D6 7DBE43          	   843:             tst brktrc                  ; is processing to be
                         	   844: ; immediately continued? 
-02:E4D9 270F            	   845:             beq nbktrc                  ; branch if not
+01:E4D9 270F            	   845:             beq nbktrc                  ; branch if not
                         	   846: ; 
                         	   847: ; processing is to 'CONTINUE' 
                         	   848: ; 
-02:E4DB 7FBE43          	   849:             clr brktrc                  ; reset continue flag
-02:E4DE 86FF            	   850:             ldaa #0xff                  ; flag to set breaks in code
-02:E4E0 BDE390          	   851:             jsr brksub                  ; put breaks in
-02:E4E3 7FBE17          	   852:             clr trcadr                  ; no more trace, so clear address
-02:E4E6 7FBE18          	   853:             clr trcadr+1
-02:E4E9 3B              	   854:             rti                         ; continue
+01:E4DB 7FBE43          	   849:             clr brktrc                  ; reset continue flag
+01:E4DE 86FF            	   850:             ldaa #0xff                  ; flag to set breaks in code
+01:E4E0 BDE390          	   851:             jsr brksub                  ; put breaks in
+01:E4E3 7FBE17          	   852:             clr trcadr                  ; no more trace, so clear address
+01:E4E6 7FBE18          	   853:             clr trcadr+1
+01:E4E9 3B              	   854:             rti                         ; continue
                         	   855: ; 
                         	   856: ; trace is due to n or t trace commands 
                         	   857: ; 
-02:E4EA BDE408          	   858: nbktrc:     jsr print                   ; print stack
-02:E4ED FEBE1A          	   859:             ldx ntrace                  ; get # instructions to trace
-02:E4F0 09              	   860:             dex                         ; decrement count
-02:E4F1 FFBE1A          	   861:             stx ntrace                  ; and restore
-02:E4F4 27D8            	   862:             beq ctrl                    ; branch if all traces done
+01:E4EA BDE408          	   858: nbktrc:     jsr print                   ; print stack
+01:E4ED FEBE1A          	   859:             ldx ntrace                  ; get # instructions to trace
+01:E4F0 09              	   860:             dex                         ; decrement count
+01:E4F1 FFBE1A          	   861:             stx ntrace                  ; and restore
+01:E4F4 27D8            	   862:             beq ctrl                    ; branch if all traces done
                         	   863: ; 
                         	   864: ; trace not done - trace next instruction 
                         	   865: ; 
-02:E4F6 B6BE19          	   866: contrc:     ldaa trcins                 ; get current instruction
-02:E4F9 B7BE0E          	   867:             staa brins                  ; save in case it's a branch
-02:E4FC 8D70            	   868:             bsr opcbyt                  ; go get # bytes"type
-02:E4FE 4D              	   869:             tsta                        ; check for branch
-02:E4FF 2A35            	   870:             bpl ckobra                  ; check for other than branch
+01:E4F6 B6BE19          	   866: contrc:     ldaa trcins                 ; get current instruction
+01:E4F9 B7BE0E          	   867:             staa brins                  ; save in case it's a branch
+01:E4FC 8D70            	   868:             bsr opcbyt                  ; go get # bytes"type
+01:E4FE 4D              	   869:             tsta                        ; check for branch
+01:E4FF 2A35            	   870:             bpl ckobra                  ; check for other than branch
                         	   871: ; 
                         	   872: ; relative branch type instruction 
                         	   873: ; determine where to put swi 
                         	   874: ; s- holds pointer to user stack after swi 
-02:E501 32              	   875:             pula                        ; get condition code
-02:E502 34              	   876:             des                         ; update stack pointer after pull
-02:E503 8A10            	   877:             oraa #0b00010000            ; make int's inhibited
-02:E505 06              	   878:             tap                         ; restore user's c. code reg
-02:E506 7EBE0E          	   879:             jmp brins                   ; go see how relative branch
+01:E501 32              	   875:             pula                        ; get condition code
+01:E502 34              	   876:             des                         ; update stack pointer after pull
+01:E503 8A10            	   877:             oraa #0b00010000            ; make int's inhibited
+01:E505 06              	   878:             tap                         ; restore user's c. code reg
+01:E506 7EBE0E          	   879:             jmp brins                   ; go see how relative branch
                         	   880: ; fares 
                         	   881: ; 
                         	   882: ; branch was nogo - put swi at next instruction 
                         	   883: ; 
-02:E509 8602            	   884: brnogo:     ldaa #2                     ; a = # bytes after current instr
-02:E50B 2029            	   885:             bra ckobra                  ; go put swi appropriately
+01:E509 8602            	   884: brnogo:     ldaa #2                     ; a = # bytes after current instr
+01:E50B 2029            	   885:             bra ckobra                  ; go put swi appropriately
                         	   886: ; 
                         	   887: ; branch was go, put swi at address being 
                         	   888: ; jumped to 
                         	   889: ; 
-02:E50D FEBE17          	   890: brgo:       ldx trcadr                  ; x : = trace address
-02:E510 A601            	   891:             ldaa 1,x                    ; get branch offset
-02:E512 08              	   892:             inx                         ; offset is relative to
-02:E513 08              	   893:             inx                         ; instr following branch
-02:E514 2B12            	   894:             bmi brgodc                  ; branch if offset negative
-02:E516 8D16            	   895: brg1:       bsr incx_                   ; increment x by amount in
+01:E50D FEBE17          	   890: brgo:       ldx trcadr                  ; x : = trace address
+01:E510 A601            	   891:             ldaa 1,x                    ; get branch offset
+01:E512 08              	   892:             inx                         ; offset is relative to
+01:E513 08              	   893:             inx                         ; instr following branch
+01:E514 2B12            	   894:             bmi brgodc                  ; branch if offset negative
+01:E516 8D16            	   895: brg1:       bsr incx_                   ; increment x by amount in
                         	   896: ; a reg 
-02:E518 FFBE17          	   897: brg2:       stx trcadr                  ; save address of next
+01:E518 FFBE17          	   897: brg2:       stx trcadr                  ; save address of next
                         	   898: ; instr to stop on 
-02:E51B A600            	   899:             ldaa 0,x                    ; get instruction to be replaced
-02:E51D B7BE19          	   900:             staa trcins                 ; save
-02:E520 863F            	   901:             ldaa #swiop                 ; get swi op code
-02:E522 A700            	   902:             staa 0,x                    ; replace instr with swi
-02:E524 BEBE08          	   903:             lds sp                      ; get original stack pointer
-02:E527 3B              	   904:             rti                         ; trace another instr
+01:E51B A600            	   899:             ldaa 0,x                    ; get instruction to be replaced
+01:E51D B7BE19          	   900:             staa trcins                 ; save
+01:E520 863F            	   901:             ldaa #swiop                 ; get swi op code
+01:E522 A700            	   902:             staa 0,x                    ; replace instr with swi
+01:E524 BEBE08          	   903:             lds sp                      ; get original stack pointer
+01:E527 3B              	   904:             rti                         ; trace another instr
                         	   905: ; 
                         	   906: ; x needs to be decremented (offset negative) 
                         	   907: ; 
-02:E528 09              	   908: brgodc:     dex                         ; decrement address
-02:E529 4C              	   909:             inca                        ; increment counter
-02:E52A 26FC            	   910:             bne brgodc                  ; if counter not 0, branch
-02:E52C 20EA            	   911:             bra brg2                    ; if done, go return to user prog
+01:E528 09              	   908: brgodc:     dex                         ; decrement address
+01:E529 4C              	   909:             inca                        ; increment counter
+01:E52A 26FC            	   910:             bne brgodc                  ; if counter not 0, branch
+01:E52C 20EA            	   911:             bra brg2                    ; if done, go return to user prog
                         	   912: ; 
                         	   913: ; subroutine to increment x by contents of a 
                         	   914: ; 
-02:E52E 4D              	   915: incx_:      tsta                        ; is a = 0?
-02:E52F 2704            	   916:             beq incxr                   ; if so, inc done
-02:E531 08              	   917: inxlp:      inx                         ; else increment x
-02:E532 4A              	   918:             deca                        ; decrement count
-02:E533 26FC            	   919:             bne inxlp                   ; if count not yet 0, loop
-02:E535 39              	   920: incxr:      rts                         ; return from this subroutine
+01:E52E 4D              	   915: incx_:      tsta                        ; is a = 0?
+01:E52F 2704            	   916:             beq incxr                   ; if so, inc done
+01:E531 08              	   917: inxlp:      inx                         ; else increment x
+01:E532 4A              	   918:             deca                        ; decrement count
+01:E533 26FC            	   919:             bne inxlp                   ; if count not yet 0, loop
+01:E535 39              	   920: incxr:      rts                         ; return from this subroutine
                         	   921: ; 
                         	   922: ; instruction to be traced is not a branch 
                         	   923: ; 
-02:E536 FEBE17          	   924: ckobra:     ldx trcadr                  ; x : = trace address
-02:E539 E600            	   925:             ldab 0,x                    ; get instr to be traced
-02:E53B C16E            	   926:             cmpb #0x6e                  ; is it a jump, indexed?
-02:E53D 271A            	   927:             beq jmpidx                  ; yes, go simulate jump idxed
-02:E53F C17E            	   928:             cmpb #0x7e                  ; jump, extended?
-02:E541 271D            	   929:             beq jmpext
-02:E543 C1AD            	   930:             cmpb #0xad                  ; jsr, indexed?
-02:E545 2712            	   931:             beq jmpidx                  ; (jump idxed is same as
+01:E536 FEBE17          	   924: ckobra:     ldx trcadr                  ; x : = trace address
+01:E539 E600            	   925:             ldab 0,x                    ; get instr to be traced
+01:E53B C16E            	   926:             cmpb #0x6e                  ; is it a jump, indexed?
+01:E53D 271A            	   927:             beq jmpidx                  ; yes, go simulate jump idxed
+01:E53F C17E            	   928:             cmpb #0x7e                  ; jump, extended?
+01:E541 271D            	   929:             beq jmpext
+01:E543 C1AD            	   930:             cmpb #0xad                  ; jsr, indexed?
+01:E545 2712            	   931:             beq jmpidx                  ; (jump idxed is same as
                         	   932: ; transfer of control) 
-02:E547 C1BD            	   933:             cmpb #0xbd                  ; jsr, extended?
-02:E549 2715            	   934:             beq jmpext
-02:E54B C13B            	   935:             cmpb #0x3b                  ; rti?
-02:E54D 2715            	   936:             beq rtisim
-02:E54F C139            	   937:             cmpb #0x39                  ; rts?
-02:E551 2716            	   938:             beq rtssim
-02:E553 C18D            	   939:             cmpb #0x8d                  ; bsr?
-02:E555 27B6            	   940:             beq brgo                    ; (branch processing)
+01:E547 C1BD            	   933:             cmpb #0xbd                  ; jsr, extended?
+01:E549 2715            	   934:             beq jmpext
+01:E54B C13B            	   935:             cmpb #0x3b                  ; rti?
+01:E54D 2715            	   936:             beq rtisim
+01:E54F C139            	   937:             cmpb #0x39                  ; rts?
+01:E551 2716            	   938:             beq rtssim
+01:E553 C18D            	   939:             cmpb #0x8d                  ; bsr?
+01:E555 27B6            	   940:             beq brgo                    ; (branch processing)
                         	   941: ; 
                         	   942: ; not a branch, jump. rti, rts 
                         	   943: ; a register holds # bytes in instruction 
                         	   944: ; 
-02:E557 20BD            	   945:             bra brg1                    ; put in new swi and
+01:E557 20BD            	   945:             bra brg1                    ; put in new swi and
                         	   946: ; trace next instruction 
                         	   947: ; 
                         	   948: ; jump, jsr indexed simulation 
                         	   949: ; 
-02:E559 A601            	   950: jmpidx:     ldaa 1,x                    ; a : = address offset
-02:E55B 30              	   951:             tsx
-02:E55C EE03            	   952:             ldx 3,x                     ; get targets x reg
-02:E55E 20B6            	   953:             bra brg1                    ; update x, trace next instr
+01:E559 A601            	   950: jmpidx:     ldaa 1,x                    ; a : = address offset
+01:E55B 30              	   951:             tsx
+01:E55C EE03            	   952:             ldx 3,x                     ; get targets x reg
+01:E55E 20B6            	   953:             bra brg1                    ; update x, trace next instr
                         	   954: ; 
                         	   955: ; jump, jsr extended 
                         	   956: ; 
-02:E560 EE01            	   957: jmpext:     ldx 1,x                     ; get address to be jumped to
-02:E562 20B4            	   958:             bra brg2                    ; go trace next instr.
+01:E560 EE01            	   957: jmpext:     ldx 1,x                     ; get address to be jumped to
+01:E562 20B4            	   958:             bra brg2                    ; go trace next instr.
                         	   959: ; 
                         	   960: ; rti encountered 
                         	   961: ; 
-02:E564 30              	   962: rtisim:     tsx
-02:E565 EE0C            	   963:             ldx 12,x                    ; get p-counter from stack
-02:E567 20AF            	   964:             bra brg2                    ; go trace next instr.
+01:E564 30              	   962: rtisim:     tsx
+01:E565 EE0C            	   963:             ldx 12,x                    ; get p-counter from stack
+01:E567 20AF            	   964:             bra brg2                    ; go trace next instr.
                         	   965: ; 
                         	   966: ; rts encountered 
                         	   967: ; 
-02:E569 30              	   968: rtssim:     tsx
-02:E56A EE07            	   969:             ldx 7,x                     ; get return p-reg from stack
-02:E56C 20AA            	   970:             bra brg2                    ; go trace next instr
+01:E569 30              	   968: rtssim:     tsx
+01:E56A EE07            	   969:             ldx 7,x                     ; get return p-reg from stack
+01:E56C 20AA            	   970:             bra brg2                    ; go trace next instr
                         	   971: ; 
                         	   972: ; 
                         	   973: ; opbcyt 
@@ -1052,34 +1073,34 @@ Source: "mikbug2.s"
                         	   985: ; 
                         	   986: ; 
                         	   987: opcbyt:
-02:E56E 16              	   988:             tab                         ; b:= op code
-02:E56F 44              	   989:             lsra
-02:E570 44              	   990:             lsra
-02:E571 44              	   991:             lsra                        ; put 4 upper bits of op code in
-02:E572 44              	   992:             lsra                        ; lower 4 bits of a
+01:E56E 16              	   988:             tab                         ; b:= op code
+01:E56F 44              	   989:             lsra
+01:E570 44              	   990:             lsra
+01:E571 44              	   991:             lsra                        ; put 4 upper bits of op code in
+01:E572 44              	   992:             lsra                        ; lower 4 bits of a
                         	   993: ; 
-02:E573 CEE58C          	   994:             ldx #opbttb                 ; x:= address of table
-02:E576 8DB6            	   995:             bsr incx_                   ; increment x to point to correct
+01:E573 CEE58C          	   994:             ldx #opbttb                 ; x:= address of table
+01:E576 8DB6            	   995:             bsr incx_                   ; increment x to point to correct
                         	   996: ; 
-02:E578 A600            	   997:             ldaa 0,x                    ; get table entry
-02:E57A 260F            	   998:             bne opbtrt                  ; if not 0 then no further
+01:E578 A600            	   997:             ldaa 0,x                    ; get table entry
+01:E57A 260F            	   998:             bne opbtrt                  ; if not 0 then no further
                         	   999: ; processing needed 
                         	  1000: ; 
                         	  1001: ; if top 4 bits = 8 or c, then there are two classes 
                         	  1002: ; of instructions: 2 byte instructions and 
                         	  1003: ; ce, 8c and 8e which are 3 byte instructions 
                         	  1004: ; 
-02:E57C 8602            	  1005:             ldaa #2                     ; # bytes in most of 8# instructions
-02:E57E C18C            	  1006:             cmpb #0x8c                  ; 3 byte instruction?
-02:E580 2708            	  1007:             beq opbt3                   ; yes, update a
-02:E582 C1CE            	  1008:             cmpb #0xce                  ; 3 byte instr?
-02:E584 2704            	  1009:             beq opbt3                   ; yes, update a
-02:E586 C18E            	  1010:             cmpb #0x8e                  ; 3 byte instruction?
-02:E588 2601            	  1011:             bne opbtrt                  ; no, return
+01:E57C 8602            	  1005:             ldaa #2                     ; # bytes in most of 8# instructions
+01:E57E C18C            	  1006:             cmpb #0x8c                  ; 3 byte instruction?
+01:E580 2708            	  1007:             beq opbt3                   ; yes, update a
+01:E582 C1CE            	  1008:             cmpb #0xce                  ; 3 byte instr?
+01:E584 2704            	  1009:             beq opbt3                   ; yes, update a
+01:E586 C18E            	  1010:             cmpb #0x8e                  ; 3 byte instruction?
+01:E588 2601            	  1011:             bne opbtrt                  ; no, return
                         	  1012: ; 
-02:E58A 4C              	  1013: opbt3:      inca                        ; # bytes in instruction:=3
+01:E58A 4C              	  1013: opbt3:      inca                        ; # bytes in instruction:=3
                         	  1014: ; 
-02:E58B 39              	  1015: opbtrt:     rts                         ; return to caller
+01:E58B 39              	  1015: opbtrt:     rts                         ; return to caller
                         	  1016: ; 
                         	  1017: ; op code to number of bytes conversion table 
                         	  1018: ; 
@@ -1087,409 +1108,376 @@ Source: "mikbug2.s"
                         	  1020: ; ------- -------------------- 
                         	  1021: ; 
                         	  1022: opbttb:
-02:E58C 01              	  1023:             .byte 1                     ; 0
-02:E58D 01              	  1024:             .byte 1                     ; 1
-02:E58E 82              	  1025:             .byte 2+0b10000000          ; 2 ( minus=> branches )
-02:E58F 01              	  1026:             .byte 1                     ; 3
-02:E590 01              	  1027:             .byte 1                     ; 4
-02:E591 01              	  1028:             .byte 1                     ; 5
-02:E592 02              	  1029:             .byte 2                     ; 6
-02:E593 03              	  1030:             .byte 3                     ; 7
-02:E594 00              	  1031:             .byte 0                     ; 8 # bytes=2 except 8c,8e
-02:E595 02              	  1032:             .byte 2                     ; 9
-02:E596 02              	  1033:             .byte 2                     ; a
-02:E597 03              	  1034:             .byte 3                     ; b
-02:E598 00              	  1035:             .byte 0                     ; c # bytes = 2 except ce
-02:E599 02              	  1036:             .byte 2                     ; d
-02:E59A 02              	  1037:             .byte 2                     ; e
-02:E59B 03              	  1038:             .byte 3                     ; f
+01:E58C 01              	  1023:             .byte 1                     ; 0
+01:E58D 01              	  1024:             .byte 1                     ; 1
+01:E58E 82              	  1025:             .byte 2+0b10000000          ; 2 ( minus=> branches )
+01:E58F 01              	  1026:             .byte 1                     ; 3
+01:E590 01              	  1027:             .byte 1                     ; 4
+01:E591 01              	  1028:             .byte 1                     ; 5
+01:E592 02              	  1029:             .byte 2                     ; 6
+01:E593 03              	  1030:             .byte 3                     ; 7
+01:E594 00              	  1031:             .byte 0                     ; 8 # bytes=2 except 8c,8e
+01:E595 02              	  1032:             .byte 2                     ; 9
+01:E596 02              	  1033:             .byte 2                     ; a
+01:E597 03              	  1034:             .byte 3                     ; b
+01:E598 00              	  1035:             .byte 0                     ; c # bytes = 2 except ce
+01:E599 02              	  1036:             .byte 2                     ; d
+01:E59A 02              	  1037:             .byte 2                     ; e
+01:E59B 03              	  1038:             .byte 3                     ; f
                         	  1039: ; 
                         	  1040: ; constant data 
                         	  1041: ; 
-02:E59C 5339303330303030	  1042: meof:       .byte "S9030000FC"
-02:E5A4 4643
-02:E5A6 04              	  1043:             .byte 4
-02:E5A7 13              	  1044: mcloff:     .byte 0x13                  ; reader off
-02:E5A8 0A              	  1045: mcl:        .byte 0xa,0xd,0x14,0,0,0,0,"*",4  ; lf,cr,punch
-02:E5A9 0D
-02:E5AA 14
-02:E5AB 00
-02:E5AC 00
-02:E5AD 00
-02:E5AE 00
-02:E5AF 2A
-02:E5B0 04
-02:E5B1 0D              	  1046: mcl1:       .byte 0xd,0xa,0,0,0,0,4     ; cr lf
-02:E5B2 0A
-02:E5B3 00
-02:E5B4 00
-02:E5B5 00
-02:E5B6 00
-02:E5B7 04
-02:E5B8 4D494B4255472032	  1047: mcl2:       .byte "MIKBUG 2.0"
-02:E5C0 2E30
-02:E5C2 04              	  1048:             .byte 4
-02:E5C3 4343204220412058	  1049: mcl3:       .byte "CC B A X P S"
-02:E5CB 20502053
-02:E5CF 04              	  1050:             .byte 4
-02:E5D0 4245472041444452	  1051: mcl4:       .byte "BEG ADDR ?"
-02:E5D8 203F
-02:E5DA 04              	  1052:             .byte 4
-02:E5DB 454E442041444452	  1053: mcl5:       .byte "END ADDR ?"
-02:E5E3 203F
-02:E5E5 04              	  1054:             .byte 4
-02:E5E6 4E4F205341564544	  1055: mcl_noresume: .byte "NO SAVED CONTEXT",4
-02:E5EE 20434F4E54455854
-02:E5F6 04
+01:E59C 5339303330303030	  1042: meof:       .byte "S9030000FC"
+01:E5A4 4643
+01:E5A6 04              	  1043:             .byte 4
+01:E5A7 13              	  1044: mcloff:     .byte 0x13                  ; reader off
+01:E5A8 0A              	  1045: mcl:        .byte 0xa,0xd,0x14,0,0,0,0,"*",4  ; lf,cr,punch
+01:E5A9 0D
+01:E5AA 14
+01:E5AB 00
+01:E5AC 00
+01:E5AD 00
+01:E5AE 00
+01:E5AF 2A
+01:E5B0 04
+01:E5B1 0D              	  1046: mcl1:       .byte 0xd,0xa,0,0,0,0,4     ; cr lf
+01:E5B2 0A
+01:E5B3 00
+01:E5B4 00
+01:E5B5 00
+01:E5B6 00
+01:E5B7 04
+01:E5B8 4D494B4255472032	  1047: mcl2:       .byte "MIKBUG 2/C68"
+01:E5C0 2F433638
+01:E5C4 04              	  1048:             .byte 4
+01:E5C5 4343204220412058	  1049: mcl3:       .byte "CC B A X P S"
+01:E5CD 20502053
+01:E5D1 04              	  1050:             .byte 4
+01:E5D2 4245472041444452	  1051: mcl4:       .byte "BEG ADDR ?"
+01:E5DA 203F
+01:E5DC 04              	  1052:             .byte 4
+01:E5DD 454E442041444452	  1053: mcl5:       .byte "END ADDR ?"
+01:E5E5 203F
+01:E5E7 04              	  1054:             .byte 4
+01:E5E8 4E4F205341564544	  1055: mcl_noresume: .byte "NO SAVED CONTEXT",4
+01:E5F0 20434F4E54455854
+01:E5F8 04
                         	  1056: ; 
                         	  1057: ; 
                         	  1058: ; mits used B rather than A
                         	  1059: ; don't use the stack for temporary store, just wipe out A.
-02:E5F7 17              	  1060: outchmits:  tba
-02:E5F8 F6E010          	  1061: outcmits:   ldab acias
-02:E5FB 57              	  1062:             asrb
-02:E5FC 57              	  1063:             asrb
-02:E5FD 24F9            	  1064:             bcc outcmits                   ; xmit not ready
-02:E5FF 16              	  1065:             tab
-02:E600 F7E011          	  1066:             stab aciad                  ; output char
-02:E603 39              	  1067:             rts
+01:E5F9 17              	  1060: outchmits:  tba
+01:E5FA F6E010          	  1061: outcmits:   ldab acias
+01:E5FD 57              	  1062:             asrb
+01:E5FE 57              	  1063:             asrb
+01:E5FF 24F9            	  1064:             bcc outcmits                   ; xmit not ready
+01:E601 16              	  1065:             tab
+01:E602 F7E011          	  1066:             stab aciad                  ; output char
+01:E605 39              	  1067:             rts
                         	  1068: 
                         	  1069: ; apparently MITS 680b mikbug returned the character in B for some reason
                         	  1070: ; trying out switching this to not affect A.
-02:E604 F6E010          	  1071: inchmits:   ldab acias
-02:E607 57              	  1072:             asrb
-02:E608 24FA            	  1073:             bcc inchmits                ; receiver not ready
-02:E60A F6E011          	  1074:             ldab aciad                  ; input char
-02:E60D 39              	  1075:             rts                         ; else,return to caller
+01:E606 F6E010          	  1071: inchmits:   ldab acias
+01:E609 57              	  1072:             asrb
+01:E60A 24FA            	  1073:             bcc inchmits                ; receiver not ready
+01:E60C F6E011          	  1074:             ldab aciad                  ; input char
+01:E60F 39              	  1075:             rts                         ; else,return to caller
                         	  1076: 
                         	  1077: ; Altair-compatible console poll
                         	  1078: ; C set if char available, B clobbered
                         	  1079: polcat_mits:
-02:E60E F6E010          	  1080:         ldab    acias
-02:E611 57              	  1081:         asrb
-02:E612 39              	  1082:         rts
+01:E610 F6E010          	  1080:         ldab    acias
+01:E613 57              	  1081:         asrb
+01:E614 39              	  1082:         rts
                         	  1083: 
                         	  1084: ; Shared SD transport at fixed ROM addresses.
                         	  1085:             .include "sdcard.s"
 
 Source: "sdcard.s"
-                        	     1: ; SD bridge transport, fixed ROM API for FLEX and future boot loaders.
-                        	     2: ; A=track, B=sector, X=256-byte buffer for READ/WRITE.
-                        	     3: ; READY checks protocol/geometry/mount, preserving X. INIT configures the PIA.
-                        	     4: ; Return B=0/Z=1/C=0, or B!=0/Z=0/C=1. Not reentrant.
-                        	     5: ; Scratch $9B00..$9B11 is reserved above FLEX's $7FFF application limit.
-                        	     6: ; Set SD_CPU_MHZ to the host clock (1..4) to scale timeout/settling loops.
-                        	     7: ; Bench timing is still required.
+                        	     1: ; Instore direct-register SD transport, fixed ROM API for FLEX and boot loaders.
+                        	     2: ; A=track, B=sector, X=256-byte buffer for READ/WRITE. READY preserves X.
+                        	     3: ; Return B=0/Z=1/C=0, or B!=0/Z=0/C=1. Not reentrant.
+                        	     4: ; The AVR owns $E080/$E081. Each host access must wait for its sequence ACK:
+                        	     5: ; RX_SEQUENCE toggles after a command/data write, TX_SEQUENCE after a data read.
+                        	     6: ; Scratch $9B00..$9B11 is reserved above FLEX's $7FFF application limit.
+                        	     7: ; Scale the timeout loop for a 1..4 MHz host; hardware timing needs validation.
                         	     8:     .equ SD_CPU_MHZ, 1
-                        	     9:     .equ SDPA, 0xE020
-                        	    10:     .equ SDCRA, 0xE021
-                        	    11:     .equ SDPB, 0xE022
-                        	    12:     .equ SDCRB, 0xE023
-                        	    13:     .org 0xF000
-03:F000 7EF01C          	    14: sd_read_vector: jmp SDREAD
-03:F003 7EF021          	    15: sd_write_vector: jmp SDWRITE
-03:F006 7EF0E6          	    16: sd_ready_vector: jmp SDREADY
-03:F009 7EF00F          	    17: sd_init_vector: jmp SDRESET
-03:F00C 53              	    18: sd_signature: .byte 0x53,0x44,2
-03:F00D 44
-03:F00E 02
-03:F00F 7F9B00          	    19: SDRESET: clr SDINITIALIZED
-03:F012 BDF188          	    20:  jsr SDINIT
-03:F015 5F              	    21: SDOK: clrb
-03:F016 0C              	    22:  clc
-03:F017 39              	    23:  rts
-03:F018 C610            	    24: SDERROR: ldab #0x10
-03:F01A 0D              	    25:  sec
-03:F01B 39              	    26:  rts
-03:F01C 7F9B01          	    27: SDREAD: CLR SDWRITING
-03:F01F 2009            	    28:  BRA SDIO
-03:F021 36              	    29: SDWRITE: PSHA
-03:F022 8601            	    30:  LDAA #1
-03:F024 B79B01          	    31:  STAA SDWRITING
-03:F027 32              	    32:  PULA
-03:F028 2000            	    33:  BRA SDIO
-03:F02A B79B02          	    34: SDIO: STAA SDTRACK
-03:F02D F79B03          	    35:  STAB SDSECTOR
-03:F030 FF9B0C          	    36:  STX SDBUFFER
-03:F033 8180            	    37:  CMPA #128
-03:F035 2503            	    38:  BCS SDTRACKOK
-03:F037 7EF018          	    39:  JMP SDERROR
-03:F03A C101            	    40: SDTRACKOK: CMPB #1
-03:F03C 2504            	    41:  BCS SDBADADDR
-03:F03E C120            	    42:  CMPB #32
-03:F040 2303            	    43:  BLS SDADDRESSOK
-03:F042 7EF018          	    44: SDBADADDR: JMP SDERROR
-03:F045 BDF0F6          	    45: SDADDRESSOK: JSR SDCHECK
-03:F048 2401            	    46:  BCC SDSTARTIO
-03:F04A 39              	    47:  RTS
-03:F04B 7F9B0A          	    48: SDSTARTIO: CLR SDSUM
-03:F04E 7F9B0B          	    49:  CLR SDSUM+1
-03:F051 7F9B07          	    50:  CLR SDCOUNT
-03:F054 8610            	    51:  LDAA #0x10
-03:F056 BB9B01          	    52:  ADDA SDWRITING
-03:F059 BDF152          	    53:  JSR SDHEADER
-03:F05C 2401            	    54:  BCC SDHEADEROK
-03:F05E 39              	    55:  RTS
-03:F05F 7D9B01          	    56: SDHEADEROK: TST SDWRITING
-03:F062 263B            	    57:  BNE SDWRITELOOP
-03:F064 BDF1CE          	    58:  JSR SDGET
-03:F067 256E            	    59:  BCS SDRETURN
-03:F069 4D              	    60:  TSTA
-03:F06A 2668            	    61:  BNE SDFAIL
-03:F06C BDF1CE          	    62: SDREADLOOP: JSR SDGET
-03:F06F 2566            	    63:  BCS SDRETURN
-03:F071 FE9B0C          	    64:  LDX SDBUFFER
-03:F074 A700            	    65:  STAA 0,X
-03:F076 BDF0D8          	    66:  JSR SDADD
-03:F079 08              	    67:  INX
-03:F07A FF9B0C          	    68:  STX SDBUFFER
-03:F07D 7A9B07          	    69:  DEC SDCOUNT
-03:F080 26EA            	    70:  BNE SDREADLOOP
-03:F082 BDF1CE          	    71:  JSR SDGET
-03:F085 2550            	    72:  BCS SDRETURN
-03:F087 B79B09          	    73:  STAA SDREMOTE
-03:F08A BDF1CE          	    74:  JSR SDGET
-03:F08D 2548            	    75:  BCS SDRETURN
-03:F08F B19B0B          	    76:  CMPA SDSUM+1
-03:F092 263C            	    77:  BNE SDCHECKFAIL
-03:F094 B69B09          	    78:  LDAA SDREMOTE
-03:F097 B19B0A          	    79:  CMPA SDSUM
-03:F09A 2634            	    80:  BNE SDCHECKFAIL
-03:F09C 7EF015          	    81:  JMP SDOK
-03:F09F FE9B0C          	    82: SDWRITELOOP: LDX SDBUFFER
-03:F0A2 A600            	    83:  LDAA 0,X
-03:F0A4 BDF0D8          	    84:  JSR SDADD
-03:F0A7 BDF1B2          	    85:  JSR SDPUT
-03:F0AA 252B            	    86:  BCS SDRETURN
-03:F0AC 08              	    87:  INX
-03:F0AD FF9B0C          	    88:  STX SDBUFFER
-03:F0B0 7A9B07          	    89:  DEC SDCOUNT
-03:F0B3 26EA            	    90:  BNE SDWRITELOOP
-03:F0B5 B69B0A          	    91:  LDAA SDSUM
-03:F0B8 BDF1B2          	    92:  JSR SDPUT
-03:F0BB 251A            	    93:  BCS SDRETURN
-03:F0BD B69B0B          	    94:  LDAA SDSUM+1
-03:F0C0 BDF1B2          	    95:  JSR SDPUT
-03:F0C3 2512            	    96:  BCS SDRETURN
-03:F0C5 BDF1CE          	    97:  JSR SDGET
-03:F0C8 250D            	    98:  BCS SDRETURN
-03:F0CA 4D              	    99:  TSTA
-03:F0CB 2607            	   100:  BNE SDFAIL
-03:F0CD 7EF015          	   101:  JMP SDOK
-03:F0D0 C608            	   102: SDCHECKFAIL: LDAB #0x08
-03:F0D2 0D              	   103:  SEC
-03:F0D3 39              	   104:  RTS
-03:F0D4 C610            	   105: SDFAIL: LDAB #0x10
-03:F0D6 0D              	   106:  SEC
-03:F0D7 39              	   107: SDRETURN: RTS
-                        	   108: ; Preserve payload A while accumulating unsigned bytes into a 16-bit sum.
-03:F0D8 36              	   109: SDADD: PSHA
-03:F0D9 BB9B0B          	   110:  ADDA SDSUM+1
-03:F0DC B79B0B          	   111:  STAA SDSUM+1
-03:F0DF 2403            	   112:  BCC SDADDDONE
-03:F0E1 7C9B0A          	   113:  INC SDSUM
-03:F0E4 32              	   114: SDADDDONE: PULA
-03:F0E5 39              	   115:  RTS
-                        	   116: ; READY preserves caller X; selection belongs to the FLEX adapter.
-03:F0E6 FF9B0E          	   117: SDREADY: STX SDREADYX
-03:F0E9 BDF0F6          	   118:  JSR SDCHECK
-03:F0EC FE9B0E          	   119:  LDX SDREADYX
-03:F0EF 5D              	   120:  TSTB
-03:F0F0 2702            	   121:  BEQ SDREADYOK
-03:F0F2 0D              	   122:  SEC
-03:F0F3 39              	   123:  RTS
-03:F0F4 0C              	   124: SDREADYOK: CLC
-03:F0F5 39              	   125:  RTS
-                        	   126: ; Verify INFO version/geometry, then mount status before every sector operation.
-                        	   127: ; INFO/STATUS headers always use zero track/sector, regardless of saved I/O.
-03:F0F6 BDF188          	   128: SDCHECK: JSR SDINIT
-03:F0F9 8600            	   129:  LDAA #0
-03:F0FB BDF14A          	   130:  JSR SDCONTROL
-03:F0FE 2549            	   131:  BCS SDCHECKRETURN
-03:F100 7F9B08          	   132:  CLR SDINDEX
-03:F103 BDF1CE          	   133: SDINFOLOOP: JSR SDGET
-03:F106 2541            	   134:  BCS SDCHECKRETURN
-03:F108 CEF23D          	   135:  LDX #SDINFO
-03:F10B F69B08          	   136:  LDAB SDINDEX
-03:F10E 5D              	   137: SDINFOINDEX: TSTB
-03:F10F 2704            	   138:  BEQ SDINFOCOMPARE
-03:F111 08              	   139:  INX
-03:F112 5A              	   140:  DECB
-03:F113 20F9            	   141:  BRA SDINFOINDEX
-03:F115 A100            	   142: SDINFOCOMPARE: CMPA 0,X
-03:F117 261C            	   143:  BNE SDINFOMISMATCH
-03:F119 7C9B08          	   144:  INC SDINDEX
-03:F11C F69B08          	   145:  LDAB SDINDEX
-03:F11F C106            	   146:  CMPB #6
-03:F121 26E0            	   147:  BNE SDINFOLOOP
-03:F123 8601            	   148:  LDAA #1
-03:F125 BDF14A          	   149:  JSR SDCONTROL
-03:F128 251F            	   150:  BCS SDCHECKRETURN
-03:F12A BDF1CE          	   151:  JSR SDGET
-03:F12D 251A            	   152:  BCS SDCHECKRETURN
-03:F12F 4D              	   153:  TSTA
-03:F130 26A2            	   154:  BNE SDFAIL
-03:F132 7EF015          	   155:  JMP SDOK
-                        	   156: ; Drain the rest of INFO before returning a geometry/version error.
-03:F135 7C9B08          	   157: SDINFOMISMATCH: INC SDINDEX
-03:F138 F69B08          	   158: SDINFODRAIN: LDAB SDINDEX
-03:F13B C106            	   159:  CMPB #6
-03:F13D 2795            	   160:  BEQ SDFAIL
-03:F13F BDF1CE          	   161:  JSR SDGET
-03:F142 2505            	   162:  BCS SDCHECKRETURN
-03:F144 7C9B08          	   163:  INC SDINDEX
-03:F147 20EF            	   164:  BRA SDINFODRAIN
-03:F149 39              	   165: SDCHECKRETURN: RTS
-03:F14A 7F9B04          	   166: SDCONTROL: CLR SDHDRTRACK
-03:F14D 7F9B05          	   167:  CLR SDHDRSECTOR
-03:F150 200E            	   168:  BRA SDPACKET
-03:F152 36              	   169: SDHEADER: PSHA
-03:F153 B69B02          	   170:  LDAA SDTRACK
-03:F156 B79B04          	   171:  STAA SDHDRTRACK
-03:F159 B69B03          	   172:  LDAA SDSECTOR
-03:F15C B79B05          	   173:  STAA SDHDRSECTOR
-03:F15F 32              	   174:  PULA
-03:F160 B79B06          	   175: SDPACKET: STAA SDOP
-03:F163 86A5            	   176:  LDAA #0xA5
-03:F165 BDF1B2          	   177:  JSR SDPUT
-03:F168 251D            	   178:  BCS SDPACKETRETURN
-03:F16A 865A            	   179:  LDAA #0x5A
-03:F16C BDF1B2          	   180:  JSR SDPUT
-03:F16F 2516            	   181:  BCS SDPACKETRETURN
-03:F171 B69B06          	   182:  LDAA SDOP
-03:F174 BDF1B2          	   183:  JSR SDPUT
-03:F177 250E            	   184:  BCS SDPACKETRETURN
-03:F179 B69B04          	   185:  LDAA SDHDRTRACK
-03:F17C BDF1B2          	   186:  JSR SDPUT
-03:F17F 2506            	   187:  BCS SDPACKETRETURN
-03:F181 B69B05          	   188:  LDAA SDHDRSECTOR
-03:F184 7EF1B2          	   189:  JMP SDPUT
-03:F187 39              	   190: SDPACKETRETURN: RTS
-                        	   191: ; Initialize once. Setting manual outputs high can create startup strobes;
-                        	   192: ; allow the AVR parser to time out before the first framed request.
-03:F188 7D9B00          	   193: SDINIT: TST SDINITIALIZED
-03:F18B 2624            	   194:  BNE SDINITDONE
-03:F18D 863A            	   195:  LDAA #0x3A
-03:F18F B7E021          	   196:  STAA SDCRA
-03:F192 B7E023          	   197:  STAA SDCRB
-03:F195 86FF            	   198:  LDAA #0xFF
-03:F197 B7E020          	   199:  STAA SDPA
-03:F19A 7FE022          	   200:  CLR SDPB
-03:F19D 863E            	   201:  LDAA #0x3E
-03:F19F B7E021          	   202:  STAA SDCRA
-03:F1A2 B7E023          	   203:  STAA SDCRB
-03:F1A5 BDF229          	   204:  JSR SDSETTLE
-03:F1A8 B6E020          	   205:  LDAA SDPA
-03:F1AB B6E022          	   206:  LDAA SDPB
-03:F1AE 7C9B00          	   207:  INC SDINITIALIZED
-03:F1B1 39              	   208: SDINITDONE: RTS
-                        	   209: ; Send one byte; do not overwrite U2 until its CA1 ACK has been latched.
-03:F1B2 B7E020          	   210: SDPUT: STAA SDPA
-03:F1B5 8636            	   211:  LDAA #0x36
-03:F1B7 B7E021          	   212:  STAA SDCRA
-03:F1BA BDF1E9          	   213:  JSR SDPULSE
-03:F1BD 863E            	   214:  LDAA #0x3E
-03:F1BF B7E021          	   215:  STAA SDCRA
-03:F1C2 8600            	   216:  LDAA #0
-03:F1C4 BDF1FA          	   217:  JSR SDWAIT
-03:F1C7 2559            	   218:  BCS SDTIMEOUT
-03:F1C9 B6E020          	   219:  LDAA SDPA
-03:F1CC 0C              	   220:  CLC
-03:F1CD 39              	   221:  RTS
-                        	   222: ; Receive one byte and ACK consumption via CB2, including both sum bytes.
-03:F1CE 8602            	   223: SDGET: LDAA #2
-03:F1D0 BDF1FA          	   224:  JSR SDWAIT
-03:F1D3 254D            	   225:  BCS SDTIMEOUT
-03:F1D5 B6E022          	   226:  LDAA SDPB
-03:F1D8 36              	   227:  PSHA
-03:F1D9 8636            	   228:  LDAA #0x36
-03:F1DB B7E023          	   229:  STAA SDCRB
-03:F1DE BDF1E9          	   230:  JSR SDPULSE
-03:F1E1 863E            	   231:  LDAA #0x3E
-03:F1E3 B7E023          	   232:  STAA SDCRB
-03:F1E6 32              	   233:  PULA
-03:F1E7 0C              	   234:  CLC
-03:F1E8 39              	   235:  RTS
-                        	   236: ; At least 10 us low even at 4 MHz; preserve both accumulators.
-                        	   237: SDPULSE:
-03:F1E9 01              	   238:  NOP
-03:F1EA 01              	   239:  NOP
-03:F1EB 01              	   240:  NOP
-03:F1EC 01              	   241:  NOP
-03:F1ED 01              	   242:  NOP
-03:F1EE 01              	   243:  NOP
-03:F1EF 01              	   244:  NOP
-03:F1F0 01              	   245:  NOP
-03:F1F1 01              	   246:  NOP
-03:F1F2 01              	   247:  NOP
-03:F1F3 01              	   248:  NOP
-03:F1F4 01              	   249:  NOP
-03:F1F5 01              	   250:  NOP
-03:F1F6 01              	   251:  NOP
-03:F1F7 01              	   252:  NOP
-03:F1F8 01              	   253:  NOP
-03:F1F9 39              	   254:  RTS
-                        	   255: ; A selects CRA (0) or CRB (2); preserve caller X and B.
-03:F1FA FF9B10          	   256: SDWAIT: STX SDWAITX
-03:F1FD 37              	   257:  PSHB
-03:F1FE C608            	   258: SDWAITSTART: LDAB #8*SD_CPU_MHZ
-03:F200 CE0000          	   259: SDWAITOUTER: LDX #0
-03:F203 4D              	   260: SDWAITLOOP: TSTA
-03:F204 2605            	   261:  BNE SDWAITB
-03:F206 7DE021          	   262:  TST SDCRA
-03:F209 2003            	   263:  BRA SDWAITFLAG
-03:F20B 7DE023          	   264: SDWAITB: TST SDCRB
-03:F20E 2B0C            	   265: SDWAITFLAG: BMI SDWAITOK
-03:F210 09              	   266:  DEX
-03:F211 26F0            	   267:  BNE SDWAITLOOP
-03:F213 5A              	   268:  DECB
-03:F214 26EA            	   269:  BNE SDWAITOUTER
-03:F216 33              	   270:  PULB
-03:F217 FE9B10          	   271:  LDX SDWAITX
-03:F21A 0D              	   272:  SEC
-03:F21B 39              	   273:  RTS
-03:F21C 33              	   274: SDWAITOK: PULB
-03:F21D FE9B10          	   275:  LDX SDWAITX
-03:F220 0C              	   276:  CLC
-03:F221 39              	   277:  RTS
-                        	   278: ; The next initialization waits out any partial AVR transaction and clears flags.
-03:F222 7F9B00          	   279: SDTIMEOUT: CLR SDINITIALIZED
-03:F225 C610            	   280:  LDAB #0x10
-03:F227 0D              	   281:  SEC
-03:F228 39              	   282:  RTS
-03:F229 FF9B10          	   283: SDSETTLE: STX SDWAITX
-03:F22C 37              	   284:  PSHB
-03:F22D C606            	   285:  LDAB #6*SD_CPU_MHZ
-03:F22F CE0000          	   286: SDSETTLEOUTER: LDX #0
-03:F232 09              	   287: SDSETTLELOOP: DEX
-03:F233 26FD            	   288:  BNE SDSETTLELOOP
-03:F235 5A              	   289:  DECB
-03:F236 26F7            	   290:  BNE SDSETTLEOUTER
-03:F238 33              	   291:  PULB
-03:F239 FE9B10          	   292:  LDX SDWAITX
-03:F23C 39              	   293:  RTS
-03:F23D 00              	   294: SDINFO: .byte 0,2,128,32,0,1
-03:F23E 02
-03:F23F 80
-03:F240 20
-03:F241 00
-03:F242 01
-                        	   295:     .equ SDINITIALIZED, 0x9B00
-                        	   296:     .equ SDWRITING, 0x9B01
-                        	   297:     .equ SDTRACK, 0x9B02
-                        	   298:     .equ SDSECTOR, 0x9B03
-                        	   299:     .equ SDHDRTRACK, 0x9B04
-                        	   300:     .equ SDHDRSECTOR, 0x9B05
-                        	   301:     .equ SDOP, 0x9B06
-                        	   302:     .equ SDCOUNT, 0x9B07
-                        	   303:     .equ SDINDEX, 0x9B08
-                        	   304:     .equ SDREMOTE, 0x9B09
-                        	   305:     .equ SDSUM, 0x9B0A
-                        	   306:     .equ SDBUFFER, 0x9B0C
-                        	   307:     .equ SDREADYX, 0x9B0E
-                        	   308:     .equ SDWAITX, 0x9B10
-                        	   309: SDROMEND:
-                        	   310: 
+                        	     9:     .equ SDPORT_COMMAND, 0xE080
+                        	    10:     .equ SDPORT_STATUS, 0xE080
+                        	    11:     .equ SDPORT_DATA, 0xE081
+                        	    12:     .equ SD_RX_SPACE, 0x01
+                        	    13:     .equ SD_TX_VALID, 0x02
+                        	    14:     .equ SD_RX_SEQUENCE, 0x20
+                        	    15:     .equ SD_TX_SEQUENCE, 0x40
+                        	    16:     .org 0xF000
+02:F000 7EF01F          	    17: sd_read_vector: jmp SDREAD
+02:F003 7EF024          	    18: sd_write_vector: jmp SDWRITE
+02:F006 7EF0F9          	    19: sd_ready_vector: jmp SDREADY
+02:F009 7EF00F          	    20: sd_init_vector: jmp SDRESET
+02:F00C 53              	    21: sd_signature: .byte 0x53,0x44,3
+02:F00D 44
+02:F00E 03
+                        	    22: ; No PIA setup is needed. An initial status read may be stale during AVR reset;
+                        	    23: ; the next INFO/STATUS exchange in READY checks that the link actually works.
+02:F00F BDF19F          	    24: SDRESET: JSR SDWAITRX
+02:F012 2401            	    25:  BCC SDRESETOK
+02:F014 39              	    26:  RTS
+02:F015 7EF018          	    27: SDRESETOK: JMP SDOK
+02:F018 5F              	    28: SDOK: CLRB
+02:F019 0C              	    29:  CLC
+02:F01A 39              	    30:  RTS
+02:F01B C610            	    31: SDERROR: LDAB #0x10
+02:F01D 0D              	    32:  SEC
+02:F01E 39              	    33:  RTS
+02:F01F 7F9B00          	    34: SDREAD: CLR SDWRITING
+02:F022 2009            	    35:  BRA SDIO
+02:F024 36              	    36: SDWRITE: PSHA
+02:F025 8601            	    37:  LDAA #1
+02:F027 B79B00          	    38:  STAA SDWRITING
+02:F02A 32              	    39:  PULA
+02:F02B 2000            	    40:  BRA SDIO
+02:F02D B79B01          	    41: SDIO: STAA SDTRACK
+02:F030 F79B02          	    42:  STAB SDSECTOR
+02:F033 FF9B08          	    43:  STX SDBUFFER
+02:F036 8180            	    44:  CMPA #128
+02:F038 2503            	    45:  BCS SDTRACKOK
+02:F03A 7EF01B          	    46:  JMP SDERROR
+02:F03D C101            	    47: SDTRACKOK: CMPB #1
+02:F03F 2504            	    48:  BCS SDBADADDR
+02:F041 C120            	    49:  CMPB #32
+02:F043 2303            	    50:  BLS SDADDRESSOK
+02:F045 7EF01B          	    51: SDBADADDR: JMP SDERROR
+02:F048 BDF109          	    52: SDADDRESSOK: JSR SDCHECK
+02:F04B 2401            	    53:  BCC SDSTARTIO
+02:F04D 39              	    54:  RTS
+02:F04E 7F9B06          	    55: SDSTARTIO: CLR SDSUM
+02:F051 7F9B07          	    56:  CLR SDSUM+1
+02:F054 7F9B03          	    57:  CLR SDCOUNT
+02:F057 8610            	    58:  LDAA #0x10
+02:F059 BB9B00          	    59:  ADDA SDWRITING
+02:F05C BDF15A          	    60:  JSR SDCOMMAND
+02:F05F 2510            	    61:  BCS SDSTARTRETURN
+02:F061 B69B01          	    62:  LDAA SDTRACK
+02:F064 BDF172          	    63:  JSR SDPUT
+02:F067 2508            	    64:  BCS SDSTARTRETURN
+02:F069 B69B02          	    65:  LDAA SDSECTOR
+02:F06C BDF172          	    66:  JSR SDPUT
+02:F06F 2401            	    67:  BCC SDSTARTOK
+02:F071 39              	    68: SDSTARTRETURN: RTS
+02:F072 7D9B00          	    69: SDSTARTOK: TST SDWRITING
+02:F075 263B            	    70:  BNE SDWRITELOOP
+02:F077 BDF18A          	    71:  JSR SDGET
+02:F07A 256E            	    72:  BCS SDRETURN
+02:F07C 4D              	    73:  TSTA
+02:F07D 2668            	    74:  BNE SDFAIL
+02:F07F BDF18A          	    75: SDREADLOOP: JSR SDGET
+02:F082 2566            	    76:  BCS SDRETURN
+02:F084 FE9B08          	    77:  LDX SDBUFFER
+02:F087 A700            	    78:  STAA 0,X
+02:F089 BDF0EB          	    79:  JSR SDADD
+02:F08C 08              	    80:  INX
+02:F08D FF9B08          	    81:  STX SDBUFFER
+02:F090 7A9B03          	    82:  DEC SDCOUNT
+02:F093 26EA            	    83:  BNE SDREADLOOP
+02:F095 BDF18A          	    84:  JSR SDGET
+02:F098 2550            	    85:  BCS SDRETURN
+02:F09A B79B05          	    86:  STAA SDREMOTE
+02:F09D BDF18A          	    87:  JSR SDGET
+02:F0A0 2548            	    88:  BCS SDRETURN
+02:F0A2 B19B07          	    89:  CMPA SDSUM+1
+02:F0A5 263C            	    90:  BNE SDCHECKFAIL
+02:F0A7 B69B05          	    91:  LDAA SDREMOTE
+02:F0AA B19B06          	    92:  CMPA SDSUM
+02:F0AD 2634            	    93:  BNE SDCHECKFAIL
+02:F0AF 7EF018          	    94:  JMP SDOK
+02:F0B2 FE9B08          	    95: SDWRITELOOP: LDX SDBUFFER
+02:F0B5 A600            	    96:  LDAA 0,X
+02:F0B7 BDF0EB          	    97:  JSR SDADD
+02:F0BA BDF172          	    98:  JSR SDPUT
+02:F0BD 252B            	    99:  BCS SDRETURN
+02:F0BF 08              	   100:  INX
+02:F0C0 FF9B08          	   101:  STX SDBUFFER
+02:F0C3 7A9B03          	   102:  DEC SDCOUNT
+02:F0C6 26EA            	   103:  BNE SDWRITELOOP
+02:F0C8 B69B06          	   104:  LDAA SDSUM
+02:F0CB BDF172          	   105:  JSR SDPUT
+02:F0CE 251A            	   106:  BCS SDRETURN
+02:F0D0 B69B07          	   107:  LDAA SDSUM+1
+02:F0D3 BDF172          	   108:  JSR SDPUT
+02:F0D6 2512            	   109:  BCS SDRETURN
+02:F0D8 BDF18A          	   110:  JSR SDGET
+02:F0DB 250D            	   111:  BCS SDRETURN
+02:F0DD 4D              	   112:  TSTA
+02:F0DE 2607            	   113:  BNE SDFAIL
+02:F0E0 7EF018          	   114:  JMP SDOK
+02:F0E3 C608            	   115: SDCHECKFAIL: LDAB #0x08
+02:F0E5 0D              	   116:  SEC
+02:F0E6 39              	   117:  RTS
+02:F0E7 C610            	   118: SDFAIL: LDAB #0x10
+02:F0E9 0D              	   119:  SEC
+02:F0EA 39              	   120: SDRETURN: RTS
+                        	   121: ; Preserve payload A while accumulating unsigned bytes into a 16-bit sum.
+02:F0EB 36              	   122: SDADD: PSHA
+02:F0EC BB9B07          	   123:  ADDA SDSUM+1
+02:F0EF B79B07          	   124:  STAA SDSUM+1
+02:F0F2 2403            	   125:  BCC SDADDDONE
+02:F0F4 7C9B06          	   126:  INC SDSUM
+02:F0F7 32              	   127: SDADDDONE: PULA
+02:F0F8 39              	   128:  RTS
+                        	   129: ; READY checks INFO version/geometry and mounted-media status.
+02:F0F9 FF9B0A          	   130: SDREADY: STX SDREADYX
+02:F0FC BDF109          	   131:  JSR SDCHECK
+02:F0FF FE9B0A          	   132:  LDX SDREADYX
+02:F102 5D              	   133:  TSTB
+02:F103 2702            	   134:  BEQ SDREADYOK
+02:F105 0D              	   135:  SEC
+02:F106 39              	   136:  RTS
+02:F107 0C              	   137: SDREADYOK: CLC
+02:F108 39              	   138:  RTS
+02:F109 8600            	   139: SDCHECK: LDAA #0
+02:F10B BDF15A          	   140:  JSR SDCOMMAND
+02:F10E 2549            	   141:  BCS SDCHECKRETURN
+02:F110 7F9B04          	   142:  CLR SDINDEX
+02:F113 BDF18A          	   143: SDINFOLOOP: JSR SDGET
+02:F116 2541            	   144:  BCS SDCHECKRETURN
+02:F118 CEF214          	   145:  LDX #SDINFO
+02:F11B F69B04          	   146:  LDAB SDINDEX
+02:F11E 5D              	   147: SDINFOINDEX: TSTB
+02:F11F 2704            	   148:  BEQ SDINFOCOMPARE
+02:F121 08              	   149:  INX
+02:F122 5A              	   150:  DECB
+02:F123 20F9            	   151:  BRA SDINFOINDEX
+02:F125 A100            	   152: SDINFOCOMPARE: CMPA 0,X
+02:F127 261C            	   153:  BNE SDINFOMISMATCH
+02:F129 7C9B04          	   154:  INC SDINDEX
+02:F12C F69B04          	   155:  LDAB SDINDEX
+02:F12F C106            	   156:  CMPB #6
+02:F131 26E0            	   157:  BNE SDINFOLOOP
+02:F133 8601            	   158:  LDAA #1
+02:F135 BDF15A          	   159:  JSR SDCOMMAND
+02:F138 251F            	   160:  BCS SDCHECKRETURN
+02:F13A BDF18A          	   161:  JSR SDGET
+02:F13D 251A            	   162:  BCS SDCHECKRETURN
+02:F13F 4D              	   163:  TSTA
+02:F140 26A5            	   164:  BNE SDFAIL
+02:F142 7EF018          	   165:  JMP SDOK
+                        	   166: ; Consume the remaining INFO bytes even when the geometry is wrong.
+02:F145 7C9B04          	   167: SDINFOMISMATCH: INC SDINDEX
+02:F148 F69B04          	   168: SDINFODRAIN: LDAB SDINDEX
+02:F14B C106            	   169:  CMPB #6
+02:F14D 2798            	   170:  BEQ SDFAIL
+02:F14F BDF18A          	   171:  JSR SDGET
+02:F152 2505            	   172:  BCS SDCHECKRETURN
+02:F154 7C9B04          	   173:  INC SDINDEX
+02:F157 20EF            	   174:  BRA SDINFODRAIN
+02:F159 39              	   175: SDCHECKRETURN: RTS
+                        	   176: ; A command is written to $E080; parameters/payload go to $E081.
+02:F15A B79B0E          	   177: SDCOMMAND: STAA SDVALUE
+02:F15D BDF19F          	   178:  JSR SDWAITRX
+02:F160 250F            	   179:  BCS SDPACKETRETURN
+02:F162 B69B0E          	   180:  LDAA SDVALUE
+02:F165 B7E080          	   181:  STAA SDPORT_COMMAND
+02:F168 BDF1B6          	   182:  JSR SDWAITRXACK
+02:F16B 2504            	   183:  BCS SDPACKETRETURN
+02:F16D B69B0E          	   184:  LDAA SDVALUE
+02:F170 0C              	   185:  CLC
+02:F171 39              	   186: SDPACKETRETURN: RTS
+02:F172 B79B0E          	   187: SDPUT: STAA SDVALUE
+02:F175 BDF19F          	   188:  JSR SDWAITRX
+02:F178 250F            	   189:  BCS SDPUTRETURN
+02:F17A B69B0E          	   190:  LDAA SDVALUE
+02:F17D B7E081          	   191:  STAA SDPORT_DATA
+02:F180 BDF1B6          	   192:  JSR SDWAITRXACK
+02:F183 2504            	   193:  BCS SDPUTRETURN
+02:F185 B69B0E          	   194:  LDAA SDVALUE
+02:F188 0C              	   195:  CLC
+02:F189 39              	   196: SDPUTRETURN: RTS
+                        	   197: ; Read one response byte, then wait until the AVR acknowledges consumption.
+02:F18A BDF1C6          	   198: SDGET: JSR SDWAITTX
+02:F18D 250F            	   199:  BCS SDGETRETURN
+02:F18F B6E081          	   200:  LDAA SDPORT_DATA
+02:F192 B79B0E          	   201:  STAA SDVALUE
+02:F195 BDF1DD          	   202:  JSR SDWAITTXACK
+02:F198 2504            	   203:  BCS SDGETRETURN
+02:F19A B69B0E          	   204:  LDAA SDVALUE
+02:F19D 0C              	   205:  CLC
+02:F19E 39              	   206: SDGETRETURN: RTS
+                        	   207: ; Wait for a write slot and remember its current RX_SEQUENCE value.
+02:F19F 8601            	   208: SDWAITRX: LDAA #SD_RX_SPACE
+02:F1A1 B79B0F          	   209:  STAA SDWAITMASK
+02:F1A4 B79B10          	   210:  STAA SDWAITVALUE
+02:F1A7 BDF1ED          	   211:  JSR SDWAIT
+02:F1AA 2509            	   212:  BCS SDWAITRETURN
+02:F1AC B6E080          	   213:  LDAA SDPORT_STATUS
+02:F1AF 8420            	   214:  ANDA #SD_RX_SEQUENCE
+02:F1B1 B79B11          	   215:  STAA SDPREVSEQ
+02:F1B4 0C              	   216:  CLC
+02:F1B5 39              	   217: SDWAITRETURN: RTS
+02:F1B6 8620            	   218: SDWAITRXACK: LDAA #SD_RX_SEQUENCE
+02:F1B8 B79B0F          	   219:  STAA SDWAITMASK
+02:F1BB B69B11          	   220:  LDAA SDPREVSEQ
+02:F1BE 8820            	   221:  EORA #SD_RX_SEQUENCE
+02:F1C0 B79B10          	   222:  STAA SDWAITVALUE
+02:F1C3 7EF1ED          	   223:  JMP SDWAIT
+                        	   224: ; Wait for a response byte and remember its current TX_SEQUENCE value.
+02:F1C6 8602            	   225: SDWAITTX: LDAA #SD_TX_VALID
+02:F1C8 B79B0F          	   226:  STAA SDWAITMASK
+02:F1CB B79B10          	   227:  STAA SDWAITVALUE
+02:F1CE BDF1ED          	   228:  JSR SDWAIT
+02:F1D1 25E2            	   229:  BCS SDWAITRETURN
+02:F1D3 B6E080          	   230:  LDAA SDPORT_STATUS
+02:F1D6 8440            	   231:  ANDA #SD_TX_SEQUENCE
+02:F1D8 B79B11          	   232:  STAA SDPREVSEQ
+02:F1DB 0C              	   233:  CLC
+02:F1DC 39              	   234:  RTS
+02:F1DD 8640            	   235: SDWAITTXACK: LDAA #SD_TX_SEQUENCE
+02:F1DF B79B0F          	   236:  STAA SDWAITMASK
+02:F1E2 B69B11          	   237:  LDAA SDPREVSEQ
+02:F1E5 8840            	   238:  EORA #SD_TX_SEQUENCE
+02:F1E7 B79B10          	   239:  STAA SDWAITVALUE
+02:F1EA 7EF1ED          	   240:  JMP SDWAIT
+                        	   241: ; Bounded status poll. Preserve caller X and B on success.
+02:F1ED FF9B0C          	   242: SDWAIT: STX SDWAITX
+02:F1F0 37              	   243:  PSHB
+02:F1F1 C604            	   244:  LDAB #4*SD_CPU_MHZ
+02:F1F3 CE0000          	   245: SDWAITOUTER: LDX #0
+02:F1F6 B6E080          	   246: SDWAITLOOP: LDAA SDPORT_STATUS
+02:F1F9 B49B0F          	   247:  ANDA SDWAITMASK
+02:F1FC B19B10          	   248:  CMPA SDWAITVALUE
+02:F1FF 270D            	   249:  BEQ SDWAITOK
+02:F201 09              	   250:  DEX
+02:F202 26F2            	   251:  BNE SDWAITLOOP
+02:F204 5A              	   252:  DECB
+02:F205 26EC            	   253:  BNE SDWAITOUTER
+02:F207 33              	   254:  PULB
+02:F208 FE9B0C          	   255:  LDX SDWAITX
+02:F20B 7EF01B          	   256:  JMP SDERROR
+02:F20E 33              	   257: SDWAITOK: PULB
+02:F20F FE9B0C          	   258:  LDX SDWAITX
+02:F212 0C              	   259:  CLC
+02:F213 39              	   260:  RTS
+02:F214 00              	   261: SDINFO: .byte 0,3,128,32,0,1
+02:F215 03
+02:F216 80
+02:F217 20
+02:F218 00
+02:F219 01
+                        	   262:     .equ SDWRITING, 0x9B00
+                        	   263:     .equ SDTRACK, 0x9B01
+                        	   264:     .equ SDSECTOR, 0x9B02
+                        	   265:     .equ SDCOUNT, 0x9B03
+                        	   266:     .equ SDINDEX, 0x9B04
+                        	   267:     .equ SDREMOTE, 0x9B05
+                        	   268:     .equ SDSUM, 0x9B06
+                        	   269:     .equ SDBUFFER, 0x9B08
+                        	   270:     .equ SDREADYX, 0x9B0A
+                        	   271:     .equ SDWAITX, 0x9B0C
+                        	   272:     .equ SDVALUE, 0x9B0E
+                        	   273:     .equ SDWAITMASK, 0x9B0F
+                        	   274:     .equ SDWAITVALUE, 0x9B10
+                        	   275:     .equ SDPREVSEQ, 0x9B11
+                        	   276: SDROMEND:
+                        	   277: 
 
 Source: "mikbug2.s"
                         	  1086: 
@@ -1521,45 +1509,45 @@ Source: "sound.s"
                         	    22:     .org 0xf300
                         	    23: sound_startup:
                         	    24:     ; Establish a known silent state before playing the short tone.
-04:F300 86F9            	    25:     ldaa #SOUND_MUTE1
-04:F302 BDF333          	    26:     jsr sound_write
-04:F305 86FD            	    27:     ldaa #SOUND_MUTE2
-04:F307 BDF333          	    28:     jsr sound_write
-04:F30A 86FB            	    29:     ldaa #SOUND_MUTE3
-04:F30C BDF333          	    30:     jsr sound_write
-04:F30F 86FF            	    31:     ldaa #SOUND_MUTE_NOISE
-04:F311 BDF333          	    32:     jsr sound_write
+03:F300 86F9            	    25:     ldaa #SOUND_MUTE1
+03:F302 BDF333          	    26:     jsr sound_write
+03:F305 86FD            	    27:     ldaa #SOUND_MUTE2
+03:F307 BDF333          	    28:     jsr sound_write
+03:F30A 86FB            	    29:     ldaa #SOUND_MUTE3
+03:F30C BDF333          	    30:     jsr sound_write
+03:F30F 86FF            	    31:     ldaa #SOUND_MUTE_NOISE
+03:F311 BDF333          	    32:     jsr sound_write
                         	    33: 
                         	    34:     ; Divider $11C at 4 MHz gives about 440 Hz.
-04:F314 8631            	    35:     ldaa #SOUND_TONE_LOW
-04:F316 BDF333          	    36:     jsr sound_write
-04:F319 8688            	    37:     ldaa #SOUND_TONE_HIGH
-04:F31B BDF333          	    38:     jsr sound_write
-04:F31E 8649            	    39:     ldaa #SOUND_VOLUME
-04:F320 BDF333          	    40:     jsr sound_write
+03:F314 8631            	    35:     ldaa #SOUND_TONE_LOW
+03:F316 BDF333          	    36:     jsr sound_write
+03:F319 8688            	    37:     ldaa #SOUND_TONE_HIGH
+03:F31B BDF333          	    38:     jsr sound_write
+03:F31E 8649            	    39:     ldaa #SOUND_VOLUME
+03:F320 BDF333          	    40:     jsr sound_write
                         	    41: 
-04:F323 C6C0            	    42:     ldab #0xc0
+03:F323 C6C0            	    42:     ldab #0xc0
                         	    43: sound_duration_outer:
-04:F325 86FF            	    44:     ldaa #0xff
+03:F325 86FF            	    44:     ldaa #0xff
                         	    45: sound_duration_inner:
-04:F327 4A              	    46:     deca
-04:F328 26FD            	    47:     bne sound_duration_inner
-04:F32A 5A              	    48:     decb
-04:F32B 26F8            	    49:     bne sound_duration_outer
+03:F327 4A              	    46:     deca
+03:F328 26FD            	    47:     bne sound_duration_inner
+03:F32A 5A              	    48:     decb
+03:F32B 26F8            	    49:     bne sound_duration_outer
                         	    50: 
-04:F32D 86F9            	    51:     ldaa #SOUND_MUTE1
-04:F32F BDF333          	    52:     jsr sound_write
-04:F332 39              	    53:     rts
+03:F32D 86F9            	    51:     ldaa #SOUND_MUTE1
+03:F32F BDF333          	    52:     jsr sound_write
+03:F332 39              	    53:     rts
                         	    54: 
                         	    55: ; READY is not connected. 20 iterations exceed the chip's 32-clock
                         	    56: ; transfer time even at a 2 MHz CPU clock and 4 MHz sound clock.
                         	    57: sound_write:
-04:F333 B7E060          	    58:     staa 0xe060
-04:F336 C614            	    59:     ldab #20
+03:F333 B7E060          	    58:     staa 0xe060
+03:F336 C614            	    59:     ldab #20
                         	    60: sound_write_wait:
-04:F338 5A              	    61:     decb
-04:F339 26FD            	    62:     bne sound_write_wait
-04:F33B 39              	    63:     rts
+03:F338 5A              	    61:     decb
+03:F339 26FD            	    62:     bne sound_write_wait
+03:F33B 39              	    63:     rts
                         	    64: 
 
 Source: "mikbug2.s"
@@ -1569,64 +1557,64 @@ Source: "help.s"
                         	     1: ; MIKBUG command summary, entered by ? or H/h.
                         	     2:     .org 0xf350
                         	     3: help_command:
-05:F350 BDE199          	     4:     jsr pcrlf
-05:F353 CEF35C          	     5:     ldx #help_text
-05:F356 BDE179          	     6:     jsr pdata1
-05:F359 7EE2BB          	     7:     jmp contrl
+04:F350 BDE199          	     4:     jsr pcrlf
+04:F353 CEF35C          	     5:     ldx #help_text
+04:F356 BDE179          	     6:     jsr pdata1
+04:F359 7EE2BB          	     7:     jmp contrl
                         	     8: 
                         	     9: help_text:
-05:F35C 3F2048202048454C	    10:     .byte "? H  HELP             F  BOOT FLEX",13,10
-05:F364 5020202020202020
-05:F36C 2020202020204620
-05:F374 20424F4F5420464C
-05:F37C 4558
-05:F37E 0D
-05:F37F 0A
-05:F380 42202020204C4953	    11:     .byte "B    LIST BREAKS      C  CONTINUE",13,10
-05:F388 5420425245414B53
-05:F390 2020202020204320
-05:F398 20434F4E54494E55
-05:F3A0 45
-05:F3A1 0D
-05:F3A2 0A
-05:F3A3 442020202044454C	    12:     .byte "D    DELETE BREAKS    G  GO TO ADDRESS",13,10
-05:F3AB 4554452042524541
-05:F3B3 4B53202020204720
-05:F3BB 20474F20544F2041
-05:F3C3 444452455353
-05:F3C9 0D
-05:F3CA 0A
-05:F3CB 4C202020204C4F41	    13:     .byte "L    LOAD S-RECORDS   M  CHANGE MEMORY",13,10
-05:F3D3 4420532D5245434F
-05:F3DB 5244532020204D20
-05:F3E3 204348414E474520
-05:F3EB 4D454D4F5259
-05:F3F1 0D
-05:F3F2 0A
-05:F3F3 4E202020204E4558	    14:     .byte "N    NEXT INSTRUCTION P  PUNCH S-RECORDS",13,10
-05:F3FB 5420494E53545255
-05:F403 4354494F4E205020
-05:F40B 2050554E43482053
-05:F413 2D5245434F524453
-05:F41B 0D
-05:F41C 0A
-05:F41D 5220202020524547	    15:     .byte "R    REGISTERS        S  TTY SPEED",13,10
-05:F425 4953544552532020
-05:F42D 2020202020205320
-05:F435 2054545920535045
-05:F43D 4544
-05:F43F 0D
-05:F440 0A
-05:F441 5420202020545241	    16:     .byte "T    TRACE            U  REMOVE BREAK",13,10
-05:F449 4345202020202020
-05:F451 2020202020205520
-05:F459 2052454D4F564520
-05:F461 425245414B
-05:F466 0D
-05:F467 0A
-05:F468 5620202020534554	    17:     .byte "V    SET BREAK",4
-05:F470 20425245414B
-05:F476 04
+04:F35C 3F2048202048454C	    10:     .byte "? H  HELP             F  BOOT FLEX",13,10
+04:F364 5020202020202020
+04:F36C 2020202020204620
+04:F374 20424F4F5420464C
+04:F37C 4558
+04:F37E 0D
+04:F37F 0A
+04:F380 42202020204C4953	    11:     .byte "B    LIST BREAKS      C  CONTINUE",13,10
+04:F388 5420425245414B53
+04:F390 2020202020204320
+04:F398 20434F4E54494E55
+04:F3A0 45
+04:F3A1 0D
+04:F3A2 0A
+04:F3A3 442020202044454C	    12:     .byte "D    DELETE BREAKS    G  GO TO ADDRESS",13,10
+04:F3AB 4554452042524541
+04:F3B3 4B53202020204720
+04:F3BB 20474F20544F2041
+04:F3C3 444452455353
+04:F3C9 0D
+04:F3CA 0A
+04:F3CB 4C202020204C4F41	    13:     .byte "L    LOAD S-RECORDS   M  CHANGE MEMORY",13,10
+04:F3D3 4420532D5245434F
+04:F3DB 5244532020204D20
+04:F3E3 204348414E474520
+04:F3EB 4D454D4F5259
+04:F3F1 0D
+04:F3F2 0A
+04:F3F3 4E202020204E4558	    14:     .byte "N    NEXT INSTRUCTION P  PUNCH S-RECORDS",13,10
+04:F3FB 5420494E53545255
+04:F403 4354494F4E205020
+04:F40B 2050554E43482053
+04:F413 2D5245434F524453
+04:F41B 0D
+04:F41C 0A
+04:F41D 5220202020524547	    15:     .byte "R    REGISTERS        S  TTY SPEED",13,10
+04:F425 4953544552532020
+04:F42D 2020202020205320
+04:F435 2054545920535045
+04:F43D 4544
+04:F43F 0D
+04:F440 0A
+04:F441 5420202020545241	    16:     .byte "T    TRACE            U  REMOVE BREAK",13,10
+04:F449 4345202020202020
+04:F451 2020202020205520
+04:F459 2052454D4F564520
+04:F461 425245414B
+04:F466 0D
+04:F467 0A
+04:F468 5620202020534554	    17:     .byte "V    SET BREAK",4
+04:F470 20425245414B
+04:F476 04
                         	    18: 
 
 Source: "mikbug2.s"
@@ -1634,124 +1622,124 @@ Source: "mikbug2.s"
                         	  1091: ; Keep existing monitor entry addresses stable by extending dispatch here.
                         	  1092:             .org 0xff80
                         	  1093: flexdispatch:
-06:FF80 C161            	  1094:             cmpb #0x61                  ; fold lowercase command letters
-06:FF82 2506            	  1095:             bcs flexcommand
-06:FF84 C17A            	  1096:             cmpb #0x7a
-06:FF86 2202            	  1097:             bhi flexcommand
-06:FF88 C020            	  1098:             subb #0x20
+05:FF80 C161            	  1094:             cmpb #0x61                  ; fold lowercase command letters
+05:FF82 2506            	  1095:             bcs flexcommand
+05:FF84 C17A            	  1096:             cmpb #0x7a
+05:FF86 2202            	  1097:             bhi flexcommand
+05:FF88 C020            	  1098:             subb #0x20
                         	  1099: flexcommand:
-06:FF8A C13F            	  1100:             cmpb #0x3f                  ; ? - show commands
-06:FF8C 270E            	  1101:             beq flexhelp
-06:FF8E C148            	  1102:             cmpb #0x48                  ; H/h - show commands
-06:FF90 270A            	  1103:             beq flexhelp
-06:FF92 C146            	  1104:             cmpb #0x46                  ; F - boot FLEX
-06:FF94 272A            	  1105:             beq flexboot
-06:FF96 CEE10D          	  1106:             ldx #fctabl
-06:FF99 7EE2DA          	  1107:             jmp nxtchr
-06:FF9C 7EF350          	  1108: flexhelp:   jmp help_command
+05:FF8A C13F            	  1100:             cmpb #0x3f                  ; ? - show commands
+05:FF8C 270E            	  1101:             beq flexhelp
+05:FF8E C148            	  1102:             cmpb #0x48                  ; H/h - show commands
+05:FF90 270A            	  1103:             beq flexhelp
+05:FF92 C146            	  1104:             cmpb #0x46                  ; F - boot FLEX
+05:FF94 272A            	  1105:             beq flexboot
+05:FF96 CEE10D          	  1106:             ldx #fctabl
+05:FF99 7EE2DA          	  1107:             jmp nxtchr
+05:FF9C 7EF350          	  1108: flexhelp:   jmp help_command
                         	  1109: 
                         	  1110: ; FLEX 2 cold boot entry. Fixed address for JMP/JSR callers and G FFC0.
                         	  1111: ; Does not return: FLEX replaces monitor workspace/stack. Requires a
                         	  1112: ; preloaded raw FLEX SRAM disk, as built by src/flex2. A, X and SP clobbered.
                         	  1113: ; The sector loader sets its own stack; no monitor RAM or stack is needed.
                         	  1114:             .org 0xffc0
-07:FFC0 0F              	  1115: flexboot:   sei
-07:FFC1 8603            	  1116:             ldaa #3                     ; reset first MC6850
-07:FFC3 B7E010          	  1117:             staa acias
-07:FFC6 8611            	  1118:             ldaa #0x11                  ; polling, 8 data bits, 2 stop bits
-07:FFC8 B7E010          	  1119:             staa acias
-07:FFCB 7FE002          	  1120:             clr 0xe002                  ; select SRAM page zero
-07:FFCE 8E01FF          	  1121:             lds #0x01ff                 ; copy backwards using stack stores
-07:FFD1 CEC100          	  1122:             ldx #0xc100
-07:FFD4 09              	  1123: flexcopy:   dex
-07:FFD5 A600            	  1124:             ldaa 0,x
-07:FFD7 36              	  1125:             psha
-07:FFD8 8CC000          	  1126:             cpx #0xc000
-07:FFDB 26F7            	  1127:             bne flexcopy
-07:FFDD 7E0100          	  1128:             jmp 0x0100                  ; linked boot sector owns the machine
+06:FFC0 0F              	  1115: flexboot:   sei
+06:FFC1 8603            	  1116:             ldaa #3                     ; reset first MC6850
+06:FFC3 B7E010          	  1117:             staa acias
+06:FFC6 8611            	  1118:             ldaa #0x11                  ; polling, 8 data bits, 2 stop bits
+06:FFC8 B7E010          	  1119:             staa acias
+06:FFCB 7FE002          	  1120:             clr 0xe002                  ; select SRAM page zero
+06:FFCE 8E01FF          	  1121:             lds #0x01ff                 ; copy backwards using stack stores
+06:FFD1 CEC100          	  1122:             ldx #0xc100
+06:FFD4 09              	  1123: flexcopy:   dex
+06:FFD5 A600            	  1124:             ldaa 0,x
+06:FFD7 36              	  1125:             psha
+06:FFD8 8CC000          	  1126:             cpx #0xc000
+06:FFDB 26F7            	  1127:             bne flexcopy
+06:FFDD 7E0100          	  1128:             jmp 0x0100                  ; linked boot sector owns the machine
                         	  1129: 
                         	  1130: ; 
                         	  1131: ; interrupt vectors 
                         	  1132: ; 
                         	  1133:             .org 0xFFF8
                         	  1134: 
-08:FFF8 E100            	  1135:             .word io
-08:FFFA E108            	  1136:             .word sfei
-08:FFFC E105            	  1137:             .word powdwn
-08:FFFE E276            	  1138:             .word start
+07:FFF8 E100            	  1135:             .word io
+07:FFFA E108            	  1136:             .word sfei
+07:FFFC E105            	  1137:             .word powdwn
+07:FFFE E276            	  1138:             .word start
                         	  1139: 
 
 
 Symbols by name:
 RAM_PTR                          S:BE46
-SDADD                            A:F0D8
-SDADDDONE                        A:F0E4
-SDADDRESSOK                      A:F045
-SDBADADDR                        A:F042
-SDBUFFER                         S:9B0C
-SDCHECK                          A:F0F6
-SDCHECKFAIL                      A:F0D0
-SDCHECKRETURN                    A:F149
-SDCONTROL                        A:F14A
-SDCOUNT                          S:9B07
-SDCRA                            S:E021
-SDCRB                            S:E023
-SDERROR                          A:F018
-SDFAIL                           A:F0D4
-SDGET                            A:F1CE
-SDHDRSECTOR                      S:9B05
-SDHDRTRACK                       S:9B04
-SDHEADER                         A:F152
-SDHEADEROK                       A:F05F
-SDINDEX                          S:9B08
-SDINFO                           A:F23D
-SDINFOCOMPARE                    A:F115
-SDINFODRAIN                      A:F138
-SDINFOINDEX                      A:F10E
-SDINFOLOOP                       A:F103
-SDINFOMISMATCH                   A:F135
-SDINIT                           A:F188
-SDINITDONE                       A:F1B1
-SDINITIALIZED                    S:9B00
-SDIO                             A:F02A
-SDOK                             A:F015
-SDOP                             S:9B06
-SDPA                             S:E020
-SDPACKET                         A:F160
-SDPACKETRETURN                   A:F187
-SDPB                             S:E022
-SDPULSE                          A:F1E9
-SDPUT                            A:F1B2
-SDREAD                           A:F01C
-SDREADLOOP                       A:F06C
-SDREADY                          A:F0E6
-SDREADYOK                        A:F0F4
-SDREADYX                         S:9B0E
-SDREMOTE                         S:9B09
+SDADD                            A:F0EB
+SDADDDONE                        A:F0F7
+SDADDRESSOK                      A:F048
+SDBADADDR                        A:F045
+SDBUFFER                         S:9B08
+SDCHECK                          A:F109
+SDCHECKFAIL                      A:F0E3
+SDCHECKRETURN                    A:F159
+SDCOMMAND                        A:F15A
+SDCOUNT                          S:9B03
+SDERROR                          A:F01B
+SDFAIL                           A:F0E7
+SDGET                            A:F18A
+SDGETRETURN                      A:F19E
+SDINDEX                          S:9B04
+SDINFO                           A:F214
+SDINFOCOMPARE                    A:F125
+SDINFODRAIN                      A:F148
+SDINFOINDEX                      A:F11E
+SDINFOLOOP                       A:F113
+SDINFOMISMATCH                   A:F145
+SDIO                             A:F02D
+SDOK                             A:F018
+SDPACKETRETURN                   A:F171
+SDPORT_COMMAND                   S:E080
+SDPORT_DATA                      S:E081
+SDPORT_STATUS                    S:E080
+SDPREVSEQ                        S:9B11
+SDPUT                            A:F172
+SDPUTRETURN                      A:F189
+SDREAD                           A:F01F
+SDREADLOOP                       A:F07F
+SDREADY                          A:F0F9
+SDREADYOK                        A:F107
+SDREADYX                         S:9B0A
+SDREMOTE                         S:9B05
 SDRESET                          A:F00F
-SDRETURN                         A:F0D7
-SDROMEND                         A:F243
-SDSECTOR                         S:9B03
-SDSETTLE                         A:F229
-SDSETTLELOOP                     A:F232
-SDSETTLEOUTER                    A:F22F
-SDSTARTIO                        A:F04B
-SDSUM                            S:9B0A
-SDTIMEOUT                        A:F222
-SDTRACK                          S:9B02
-SDTRACKOK                        A:F03A
-SDWAIT                           A:F1FA
-SDWAITB                          A:F20B
-SDWAITFLAG                       A:F20E
-SDWAITLOOP                       A:F203
-SDWAITOK                         A:F21C
-SDWAITOUTER                      A:F200
-SDWAITSTART                      A:F1FE
-SDWAITX                          S:9B10
-SDWRITE                          A:F021
-SDWRITELOOP                      A:F09F
-SDWRITING                        S:9B01
+SDRESETOK                        A:F015
+SDRETURN                         A:F0EA
+SDROMEND                         A:F21A
+SDSECTOR                         S:9B02
+SDSTARTIO                        A:F04E
+SDSTARTOK                        A:F072
+SDSTARTRETURN                    A:F071
+SDSUM                            S:9B06
+SDTRACK                          S:9B01
+SDTRACKOK                        A:F03D
+SDVALUE                          S:9B0E
+SDWAIT                           A:F1ED
+SDWAITLOOP                       A:F1F6
+SDWAITMASK                       S:9B0F
+SDWAITOK                         A:F20E
+SDWAITOUTER                      A:F1F3
+SDWAITRETURN                     A:F1B5
+SDWAITRX                         A:F19F
+SDWAITRXACK                      A:F1B6
+SDWAITTX                         A:F1C6
+SDWAITTXACK                      A:F1DD
+SDWAITVALUE                      S:9B10
+SDWAITX                          S:9B0C
+SDWRITE                          A:F024
+SDWRITELOOP                      A:F0B2
+SDWRITING                        S:9B00
 SD_CPU_MHZ                       S:0001
+SD_RX_SEQUENCE                   S:0020
+SD_RX_SPACE                      S:0001
+SD_TX_SEQUENCE                   S:0040
+SD_TX_VALID                      S:0002
 SOUND_BOARD_REV                  E:0001
 SOUND_MUTE1                      S:00F9
 SOUND_MUTE2                      S:00FD
@@ -1760,8 +1748,8 @@ SOUND_MUTE_NOISE                 S:00FF
 SOUND_TONE_HIGH                  S:0088
 SOUND_TONE_LOW                   S:0031
 SOUND_VOLUME                     S:0049
-aciad                            A:E011
-acias                            A:E010
+aciad                            S:E011
+acias                            S:E010
 aciat                            S:BE44
 adrstr                           A:E134
 asave                            S:BE3C
@@ -1830,7 +1818,7 @@ in1hg                            A:E1B9
 inch                             A:E173
 inch1                            A:E261
 inch2                            A:E2AD
-inchmits                         A:E604
+inchmits                         A:E606
 incnov                           A:E4C6
 incx_                            A:E52E
 incxr                            A:E535
@@ -1856,10 +1844,10 @@ load4                            A:E1E1
 mcl                              A:E5A8
 mcl1                             A:E5B1
 mcl2                             A:E5B8
-mcl3                             A:E5C3
-mcl4                             A:E5D0
-mcl5                             A:E5DB
-mcl_noresume                     A:E5E6
+mcl3                             A:E5C5
+mcl4                             A:E5D2
+mcl5                             A:E5DD
+mcl_noresume                     A:E5E8
 mcloff                           A:E5A7
 mcont                            S:BE3D
 meof                             A:E59C
@@ -1887,8 +1875,8 @@ out4hs                           A:E1C3
 outc1                            A:E255
 outch                            A:E170
 outch1                           A:E254
-outchmits                        A:E5F7
-outcmits                         A:E5F8
+outchmits                        A:E5F9
+outcmits                         A:E5FA
 outhl                            A:E162
 outhr                            A:E166
 outs                             A:E1C7
@@ -1898,7 +1886,7 @@ pdata1                           A:E179
 pdata2                           A:E176
 pntbrk                           A:E328
 pnull                            A:E432
-polcat_mits                      A:E60E
+polcat_mits                      A:E610
 powdwn                           A:E105
 print                            A:E408
 prntbk                           A:E401
@@ -1911,6 +1899,7 @@ pun32                            A:E473
 punch                            A:E428
 punt2                            A:E497
 resume_valid                     S:BE45
+rom_id                           A:E000
 rstbrk                           A:E323
 rtisim                           A:E564
 rtssim                           A:E569
@@ -1954,29 +1943,33 @@ xlow                             S:BE3F
 Symbols by value:
 0001 SOUND_BOARD_REV
 0001 SD_CPU_MHZ
+0001 SD_RX_SPACE
+0002 SD_TX_VALID
 0008 nbrbpt
+0020 SD_RX_SEQUENCE
 0031 SOUND_TONE_LOW
 003F swiop
+0040 SD_TX_SEQUENCE
 0049 SOUND_VOLUME
 0088 SOUND_TONE_HIGH
 00F9 SOUND_MUTE1
 00FB SOUND_MUTE3
 00FD SOUND_MUTE2
 00FF SOUND_MUTE_NOISE
-9B00 SDINITIALIZED
-9B01 SDWRITING
-9B02 SDTRACK
-9B03 SDSECTOR
-9B04 SDHDRTRACK
-9B05 SDHDRSECTOR
-9B06 SDOP
-9B07 SDCOUNT
-9B08 SDINDEX
-9B09 SDREMOTE
-9B0A SDSUM
-9B0C SDBUFFER
-9B0E SDREADYX
-9B10 SDWAITX
+9B00 SDWRITING
+9B01 SDTRACK
+9B02 SDSECTOR
+9B03 SDCOUNT
+9B04 SDINDEX
+9B05 SDREMOTE
+9B06 SDSUM
+9B08 SDBUFFER
+9B0A SDREADYX
+9B0C SDWAITX
+9B0E SDVALUE
+9B0F SDWAITMASK
+9B10 SDWAITVALUE
+9B11 SDPREVSEQ
 BC00 stackpage
 BCFF stack
 BE00 iov
@@ -1995,33 +1988,33 @@ BE1A ntrace
 BE1C brkadr
 BE2C brkins
 BE3C temp
-BE3C asave
 BE3C cksm
+BE3C asave
 BE3D bytect
 BE3D mcont
 BE3E xhi
 BE3F xlow
-BE40 ssave
 BE40 tw
+BE40 ssave
 BE42 brksin
 BE43 brktrc
-BE44 aciat
 BE44 endin0
+BE44 aciat
 BE45 resume_valid
 BE46 RAM_PTR
+E000 rom_id
 E010 acias
 E011 aciad
-E020 SDPA
-E021 SDCRA
-E022 SDPB
-E023 SDCRB
+E080 SDPORT_STATUS
+E080 SDPORT_COMMAND
+E081 SDPORT_DATA
 E100 baseorg
 E100 io
 E105 powdwn
 E108 sfei
 E10D fctabl
-E134 fctben
 E134 adrstr
+E134 fctben
 E13F brg
 E142 baddr
 E150 byte
@@ -2145,68 +2138,65 @@ E5A7 mcloff
 E5A8 mcl
 E5B1 mcl1
 E5B8 mcl2
-E5C3 mcl3
-E5D0 mcl4
-E5DB mcl5
-E5E6 mcl_noresume
-E5F7 outchmits
-E5F8 outcmits
-E604 inchmits
-E60E polcat_mits
+E5C5 mcl3
+E5D2 mcl4
+E5DD mcl5
+E5E8 mcl_noresume
+E5F9 outchmits
+E5FA outcmits
+E606 inchmits
+E610 polcat_mits
 F000 sd_read_vector
 F003 sd_write_vector
 F006 sd_ready_vector
 F009 sd_init_vector
 F00C sd_signature
 F00F SDRESET
-F015 SDOK
-F018 SDERROR
-F01C SDREAD
-F021 SDWRITE
-F02A SDIO
-F03A SDTRACKOK
-F042 SDBADADDR
-F045 SDADDRESSOK
-F04B SDSTARTIO
-F05F SDHEADEROK
-F06C SDREADLOOP
-F09F SDWRITELOOP
-F0D0 SDCHECKFAIL
-F0D4 SDFAIL
-F0D7 SDRETURN
-F0D8 SDADD
-F0E4 SDADDDONE
-F0E6 SDREADY
-F0F4 SDREADYOK
-F0F6 SDCHECK
-F103 SDINFOLOOP
-F10E SDINFOINDEX
-F115 SDINFOCOMPARE
-F135 SDINFOMISMATCH
-F138 SDINFODRAIN
-F149 SDCHECKRETURN
-F14A SDCONTROL
-F152 SDHEADER
-F160 SDPACKET
-F187 SDPACKETRETURN
-F188 SDINIT
-F1B1 SDINITDONE
-F1B2 SDPUT
-F1CE SDGET
-F1E9 SDPULSE
-F1FA SDWAIT
-F1FE SDWAITSTART
-F200 SDWAITOUTER
-F203 SDWAITLOOP
-F20B SDWAITB
-F20E SDWAITFLAG
-F21C SDWAITOK
-F222 SDTIMEOUT
-F229 SDSETTLE
-F22F SDSETTLEOUTER
-F232 SDSETTLELOOP
-F23D SDINFO
-F243 SDROMEND
+F015 SDRESETOK
+F018 SDOK
+F01B SDERROR
+F01F SDREAD
+F024 SDWRITE
+F02D SDIO
+F03D SDTRACKOK
+F045 SDBADADDR
+F048 SDADDRESSOK
+F04E SDSTARTIO
+F071 SDSTARTRETURN
+F072 SDSTARTOK
+F07F SDREADLOOP
+F0B2 SDWRITELOOP
+F0E3 SDCHECKFAIL
+F0E7 SDFAIL
+F0EA SDRETURN
+F0EB SDADD
+F0F7 SDADDDONE
+F0F9 SDREADY
+F107 SDREADYOK
+F109 SDCHECK
+F113 SDINFOLOOP
+F11E SDINFOINDEX
+F125 SDINFOCOMPARE
+F145 SDINFOMISMATCH
+F148 SDINFODRAIN
+F159 SDCHECKRETURN
+F15A SDCOMMAND
+F171 SDPACKETRETURN
+F172 SDPUT
+F189 SDPUTRETURN
+F18A SDGET
+F19E SDGETRETURN
+F19F SDWAITRX
+F1B5 SDWAITRETURN
+F1B6 SDWAITRXACK
+F1C6 SDWAITTX
+F1DD SDWAITTXACK
+F1ED SDWAIT
+F1F3 SDWAITOUTER
+F1F6 SDWAITLOOP
+F20E SDWAITOK
+F214 SDINFO
+F21A SDROMEND
 F300 sound_startup
 F325 sound_duration_outer
 F327 sound_duration_inner

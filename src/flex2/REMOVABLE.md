@@ -1,23 +1,22 @@
 # Mixed SRAM and removable disks
 
-The buildable AVR project now lives in [../sd](../sd/README.md). Its pin map
-matches the actual SD board's **two HCT574 latches**, with both PIA ports and
-all four control signals. [Protocol v2](../sd/PROTOCOL.md) is the starting
-firmware contract; the earlier single-port/transceiver options below are design
-history, not the current board wiring. FLEX drive-2 dispatch and the MIKBUG
-ROM transport are now implemented; hardware bring-up and SD boot remain.
+The current AVR project is [../instore_sd](../instore_sd/README.md). It uses
+the Instore board's direct registers at `$E080/$E081` and protocol v3. FLEX
+SD dispatch and the MIKBUG ROM transport now use that interface. The old PIA
+board and alternative wiring described below are design history. Hardware
+bring-up and SD boot remain.
 
 ## Current implementation
 
 The 1 MiB image now contains two 512 KiB SRAM volumes, each 128 tracks by
 16 sectors by 256 bytes. Drive 0 contains the former drives 0 and 1; drive 1
 contains the former drives 2 and 3. SRAM page = `drive * 128 + track`.
-Drive 2 uses the SD bridge through MIKBUG ROM; drive 3 remains unavailable.
+Drive 2 uses the direct SD interface through MIKBUG ROM; drive 3 remains unavailable.
 With `DRIVE_LAYOUT=sd-first`, SD becomes drive 0 and SRAM units move to drives
 1 and 2. The selected layout is compiled into FLEX and tested by `make test-sd`.
 The SD volume is 1 MiB (128×32×256); SRAM volumes remain 512 KiB each.
 Install both the rebuilt FLEX image and updated `mikbug2.rom`. An old ROM or
-an absent bridge makes the configured SD drive unavailable, without aliasing an SRAM volume.
+an absent SD interface makes the configured SD drive unavailable, without aliasing an SRAM volume.
 `make test-sd` runs the CPU/protocol and FMS integration tests.
 The original four-volume generated image was backed up in `build/` before
 conversion. This rebuild preserves the factory files, not arbitrary files
@@ -52,7 +51,7 @@ Implemented mapping:
 | ---------- | --------------------- | ------------------------------------- |
 | 0          | SRAM                  | Base page 0                           |
 | 1          | SRAM                  | Base page 128                         |
-| 2          | Removable bridge      | First removable volume/image          |
+| 2          | Direct SD interface   | First removable volume/image          |
 | 3          | Unavailable initially | Future second removable volume/device |
 
 DRVSEL changes the selected backend only after successful readiness validation.
@@ -65,12 +64,11 @@ READY and INIT at `$F000..$F009`. The transport is in ROM and needs 18 bytes of
 scratch at `$9B00..$9B11`, outside FLEX application RAM. Thin adapters fit at
 `$A980..$A9FF`, beyond the full startup FCB. SRAM/console code remains at `$BF00`.
 Both backends return B=0/Z=1/C=0 on success and B!=0/Z=0/C=1 on failure.
-SD checksum errors return B=$08, other bridge errors B=$10. Polling/settling
-loops have a configurable host-clock setting and need physical timing checks.
+SD checksum errors return B=$08, other transport errors B=$10. The polling
+loop has a configurable host-clock setting and needs physical timing checks.
 
-The following interface alternatives are retained as design history. The
-actual board uses two unidirectional PIA ports and HCT574 latches, as described
-in the protocol and pinout above.
+The following PIA interface alternatives are retained as design history. The
+current Instore board uses direct registers and 74HCT573 latches.
 
 ## Intended hardware
 

@@ -10,7 +10,7 @@
 #include "latch.h"
 #include "acia.h"
 #include "pia.h"
-#include "sdBridgePia.h"
+#include "sdDirect.h"
 #include "switches.h"
 
 class MemoryIO : public Mem
@@ -42,9 +42,9 @@ public:
 
     void attachSdImage(const std::string &path)
     {
-        auto bridge = std::make_unique<SdBridgePia>(path);
-        devices_[4] = bridge.get();
-        sd_bridge_ = std::move(bridge);
+        auto direct = std::make_unique<SdDirect>(path);
+        devices_.push_back(direct.get());
+        sd_direct_ = std::move(direct);
     }
 
     virtual uint8_t read(uint16_t addr) const override
@@ -93,5 +93,5 @@ private:
     static const uint16_t EndAddress = 0xE0FF;
 
     std::vector<MemoryIODevice *> devices_;
-    std::unique_ptr<SdBridgePia> sd_bridge_;
+    std::unique_ptr<SdDirect> sd_direct_;
 };

@@ -1,6 +1,12 @@
 # MIKBUG2
 
 `make` builds the 8 KiB `mikbug2.rom` image mapped at `$E000–$FFFF`.
+The first bytes of the image contain a readable chip ID: monitor name, ROM
+version, UTC build date and time, SD ABI version, and sound-board revision.
+These physical bytes correspond to `$E000–$E0FF`, where the CPU selects I/O
+instead of ROM; inspect them in the HEX/binary file or with an EPROM programmer.
+The ID is not a runtime CPU address. Set `ROM_VERSION=...` when building a new
+release. `SOURCE_DATE_EPOCH` can fix the build timestamp for reproducible images.
 
 Type `F` or `f` at the monitor prompt to cold boot FLEX 2 from banked SRAM.
 Type `?`, `H`, or `h` to list the monitor commands.
@@ -36,7 +42,8 @@ Test binaries are temporary; the disk image is read into memory.
 
 ## SD bridge ROM API
 
-`sdcard.s` implements the PIA/AVR protocol-v2 transport in ROM at `$F000`.
+`sdcard.s` implements the Instore direct-register protocol-v3 transport in
+ROM at `$F000`, using `$E080` for command/status and `$E081` for data.
 Existing monitor entry addresses and the SRAM boot entry are unchanged.
 
 | Entry | Address | Inputs |
@@ -44,13 +51,13 @@ Existing monitor entry addresses and the SRAM boot entry are unchanged.
 | READ | `$F000` | A=track 0–127, B=sector 1–32, X=256-byte buffer |
 | WRITE | `$F003` | Same; success requires matching checksum and checked SD sync |
 | READY | `$F006` | No input required; X preserved |
-| INIT | `$F009` | Configure PIA 1; call once before first use after reset |
+| INIT | `$F009` | Wait for a write slot; call once before first use after reset |
 
-`$F00C..$F00E` holds `53 44 02` ("SD", ABI version 2). Callers must check this
-signature before calling an entry; earlier ROMs have no SD services. INIT
-waits roughly three seconds for any partial AVR transaction to expire.
-READ/WRITE also check INFO version/geometry and card status before each sector.
-READY checks availability without selecting a FLEX drive.
+`$F00C..$F00E` holds `53 44 03` ("SD", ABI version 3). Callers must check
+this signature before calling an entry; the old PIA ROM uses ABI version 2.
+READ/WRITE check INFO version/geometry and card status before each sector.
+READY checks availability without selecting a FLEX drive. INIT only waits for
+an AVR write slot; READY's INFO/STATUS exchange verifies the connection.
 
 All entries return B=0, Z=1, C=0 on success; B nonzero, Z=0, C=1 on failure.
 READ checksum errors return B=$08; other failures return B=$10. READ may have
@@ -60,15 +67,15 @@ WRITE does not alter the caller's buffer. VERIFY is not a separate ROM entry:
 FLEX retains its successful no-op after a checked, synchronized WRITE.
 
 The transport reserves **18 bytes at `$9B00..$9B11`**, above FLEX's `$7FFF`
-application limit. It uses the caller's stack, is not reentrant, and polls
-rather than enabling PIA interrupts. PIA 1 is `$E020..$E023`: PA outputs,
-PB inputs, manual CA2/CB2 strobes. `SD_CPU_MHZ` in `sdcard.s` defaults to 1;
-set it to the host clock (1–4 MHz) for the timeout/settling loops. The strobe
-low interval accommodates up to 4 MHz. Hardware timing needs bench validation.
-A timeout forces reinitialization/settling on the next operation.
+application limit. It uses the caller's stack and is not reentrant. Each
+command/data write waits for RX_SEQUENCE to change; each data read waits for
+TX_SEQUENCE to change. `SD_CPU_MHZ` in `sdcard.s` defaults to 1; set it to the
+host clock (1–4 MHz) for the bounded polling loop. Hardware latch timing and
+reset/startup behavior still need bench validation. If the AVR is resetting,
+a first request may time out; a later READY retries the exchange.
 
 `make -C ../../flex2 test-sd` executes the actual FLEX/ROM driver against a
-PIA test fixture connected to the AVR protocol engine. It covers sector
+direct-register fixture connected to the AVR protocol engine. It covers sector
 boundaries, checksums, absent/old ROMs, missing media, timeout, drive isolation,
 and FMS file create/write/read/delete. The interactive emulator SD device and
 booting FLEX from SD are not implemented yet; the ROM API is ready for a

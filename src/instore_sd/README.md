@@ -5,7 +5,7 @@ This is a separate successor to the inactive PIA-based SD daughterboard firmware
 in `../sd/`. It retains that project's FAT32 `/FLEX.DSK` storage behavior,
 256-byte sectors, status codes and additive payload checksum, but uses
 Instore's four 74HCT573 latches and three hardware pending flip-flops. The
-existing MIKBUG/FLEX PIA driver and emulator do **not** speak this protocol.
+current MIKBUG ROM, FLEX driver and emulator speak this direct-register protocol.
 
 The first firmware version supports one existing root-directory `FLEX.DSK`,
 exactly 1,048,576 bytes (128 tracks × 32 sectors × 256 bytes). It does not
@@ -91,6 +91,7 @@ returns to command mode with ERROR set. A new command clears ERROR.
 | PB7 | U17 `/OE`; high during AVR reset, low after safe 595 state is loaded |
 | PC0–PC2 | Command-write, data-write and data-read pending Q inputs |
 | PC3–PC5 | U17 serial data, shift clock and storage clock outputs |
+| U17 QH | Active-low activity LED: on when idle, off during SD read/write/sync and for 50 ms afterward |
 
 U5 and U9 capture C68 writes. U8 and U10 hold status and response bytes for
 C68 reads. U17 selects only one incoming latch at a time, clears each pending

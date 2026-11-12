@@ -1,131 +1,94 @@
 #include "flex_harness.h"
 #include "../build/drive-config.h"
-#include "../../sd/firmware/sd_bridge/src/protocol.h"
+#include "../../instore_sd/firmware/instore_sd/src/protocol.h"
+#include "../../instore_sd/firmware/instore_sd/src/direct_link.h"
 
-// Test fixture: PIA flags/latches connected to the real AVR parser.
+// Test fixture: the direct register latches and pending flags connected to the
+// real AVR protocol engine. Service an event after each status read so the
+// 6800 must observe the sequence acknowledgment instead of stale status bits.
 struct Storage
 {
     std::vector<uint8_t> disk = std::vector<uint8_t>(sdbridge::ImageBytes);
     sdbridge::Status mounted = sdbridge::Status::Ok;
     unsigned writes = 0;
-    sdbridge::Status status() const
-    {
-        return mounted;
-    }
-
+    sdbridge::Status status() const { return mounted; }
     sdbridge::Status read(uint32_t at, uint8_t *buffer)
     {
-        if (mounted != sdbridge::Status::Ok)
-            return mounted;
+        if (mounted != sdbridge::Status::Ok) return mounted;
         std::copy_n(disk.begin() + at, 256, buffer);
         return mounted;
     }
-
     sdbridge::Status write(uint32_t at, const uint8_t *buffer)
     {
-        if (mounted != sdbridge::Status::Ok)
-            return mounted;
+        if (mounted != sdbridge::Status::Ok) return mounted;
         ++writes;
         std::copy_n(buffer, 256, disk.begin() + at);
         return mounted;
     }
-
-    sdbridge::Status sync()
-    {
-        return mounted;
-    }
+    sdbridge::Status sync() { return mounted; }
 };
 
 struct SdBus : Bus
 {
+    static const uint8_t CommandPending = 1, DataWritePending = 2, DataReadPending = 4;
     Storage storage;
     sdbridge::Engine<Storage> bridge{storage};
-    uint8_t cra = 0, crb = 0, pa = 0, pb = 0, ddra = 0, ddrb = 0;
-    bool ack = false, ready = false, published = false, disconnected = false;
-    bool badReadSum = false, badWriteData = false, badInfo = false;
-    unsigned responseIndex = 0, requestIndex = 0, opcode = 0;
+    uint8_t flags = 0, command = 0, input = 0, data = 0, status = 0;
+    uint32_t clock = 0;
+    bool disconnected = false, badReadSum = false, badWriteData = false, badInfo = false;
+    unsigned responseIndex = 0, requestIndex = 0, opcode = 0, commandWrites = 0;
+    sdbridge::DirectLink<sdbridge::Engine<Storage>, SdBus> link{bridge, *this};
+    SdBus() { link.begin(); }
 
-    void publish()
+    uint8_t pending() const { return flags; }
+    uint8_t takeCommand() { flags &= ~CommandPending; return command; }
+    uint8_t takeDataWrite() { flags &= ~DataWritePending; return input; }
+    void clearDataRead() { flags &= ~DataReadPending; ++responseIndex; }
+    void clearAll() { flags = 0; }
+    void stageData(uint8_t value)
     {
-        if (published || !bridge.responseByte(pb))
-            return;
-        if (badReadSum && opcode == 0x10 && responseIndex == 257)
-            pb ^= 1;
-        if (badInfo && opcode == 0 && responseIndex == 1)
-            pb = 1;
-        published = ready = true;
+        data = value;
+        if (badReadSum && opcode == 0x10 && responseIndex == 257) data ^= 1;
+        if (badInfo && opcode == 0 && responseIndex == 1) data = 1;
     }
+    void stageStatus(uint8_t value) { status = value; }
+    uint32_t now() const { return clock; }
 
     uint8_t read8(uint16_t at) override
     {
-        switch (at)
+        if (at == 0xe080)
         {
-        case 0xe020:
-            ack = false;
-            return cra & 4 ? pa : ddra;
-        case 0xe021:
-            return cra | (ack ? 0x80 : 0);
-        case 0xe022:
-            ready = false;
-            return crb & 4 ? pb : ddrb;
-        case 0xe023:
-            return crb | (ready ? 0x80 : 0);
-        default:
-            return Bus::read8(at);
+            const uint8_t value = status;
+            if (!disconnected) { ++clock; link.poll(); }
+            return value;
         }
+        if (at == 0xe081)
+        {
+            flags |= DataReadPending;
+            return data;
+        }
+        return Bus::read8(at);
     }
-
     void write8(uint16_t at, uint8_t value) override
     {
-        switch (at)
+        if (at == 0xe080)
         {
-        case 0xe020:
-            (cra & 4 ? pa : ddra) = value;
-            break;
-        case 0xe022:
-            (crb & 4 ? pb : ddrb) = value;
-            break;
-        case 0xe021:
+            command = value;
+            opcode = value;
+            responseIndex = requestIndex = 0;
+            ++commandWrites;
+            flags |= CommandPending;
+            return;
+        }
+        if (at == 0xe081)
         {
-            const auto previous = cra;
-            cra = value;
-            if (!disconnected && (previous & 0x38) == 0x30 && (value & 0x38) == 0x38)
-            {
-                if (bridge.idle())
-                    requestIndex = 0;
-                uint8_t byte = pa;
-                if (requestIndex == 2)
-                    opcode = byte;
-                if (badWriteData && opcode == 0x11 && requestIndex == 5)
-                    byte ^= 1;
-                require(bridge.receive(byte), "Host sent during an unconsumed response");
-                ++requestIndex;
-                ack = true;
-                responseIndex = 0;
-                publish();
-            }
-
-            break;
+            input = value;
+            if (badWriteData && opcode == 0x11 && requestIndex == 2) input ^= 1;
+            ++requestIndex;
+            flags |= DataWritePending;
+            return;
         }
-
-        case 0xe023:
-        {
-            const auto previous = crb;
-            crb = value;
-            if (!disconnected && (previous & 0x38) == 0x30 && (value & 0x38) == 0x38 && published)
-            {
-                require(bridge.acknowledgeResponse(), "Unexpected consumption ACK");
-                published = ready = false;
-                ++responseIndex;
-                publish();
-            }
-
-            break;
-        }
-
-        default:
-            Bus::write8(at, value);
-        }
+        Bus::write8(at, value);
     }
 };
 
@@ -159,7 +122,7 @@ int main()
         const auto romBefore = std::vector<uint8_t>(bus.ram.begin() + 0xe100, bus.ram.end());
         select(SdDrive);
         success();
-        require(bus.ddra == 255 && bus.ddrb == 0, "PIA direction setup");
+        require(bus.commandWrites >= 2, "Direct-register INFO/STATUS exchange");
         const auto sram = bus.disk;
         for (auto address :
              {std::pair<uint8_t, uint8_t>{0, 1}, {0, 17}, {63, 32}, {64, 1}, {127, 32}})
@@ -193,14 +156,14 @@ int main()
         bus.badReadSum = true;
         call(bus, cpu, 0xbe80, buffer, 1, 1);
         failure();
-        require(cpu.s_.b == 8 && !bus.published, "READ checksum failure/ACK drain");
+        require(cpu.s_.b == 8 && !(bus.status & sdbridge::StatusBit::TxValid), "READ checksum failure/ACK drain");
         bus.badReadSum = false;
         call(bus, cpu, 0xbe80, buffer, 1, 1);
         success();
         bus.badInfo = true;
         select(SdDrive);
         failure();
-        require(!bus.published, "INFO mismatch left unconsumed bytes");
+        require(!(bus.status & sdbridge::StatusBit::TxValid), "INFO mismatch left unconsumed bytes");
         bus.badInfo = false;
         bus.storage.mounted = sdbridge::Status::NoCard;
         select(SdDrive);
@@ -281,7 +244,7 @@ int main()
         failure();
         std::cout
             << "6800 SD driver: sector boundaries, checksums, INFO, missing media, timeout, "
-               "PIA setup, FMS create/read/write/delete and SRAM selection isolation passed.\n";
+               "direct registers, FMS create/read/write/delete and SRAM selection isolation passed.\n";
     }
 
     catch (const std::exception &error)

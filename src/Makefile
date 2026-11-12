@@ -10,7 +10,7 @@ GAL_JEDECS := $(patsubst pld/%.gal,build/pld/%.jed,$(GAL_SOURCES))
 GAL_FUSE_MAPS := $(patsubst pld/%.gal,build/pld/%.fus,$(GAL_SOURCES))
 GAL_PIN_REPORTS := $(patsubst pld/%.gal,build/pld/%.pin,$(GAL_SOURCES))
 
-.PHONY: all system pld fonts test run session program-avr program-avr-dry-run program-avr-isp program-avr-isp-dry-run
+.PHONY: all system pld fonts test run session program-avr program-avr-dry-run
 all: system
 
 $(GALASM): $(GALASM_SOURCES)
@@ -31,7 +31,7 @@ fonts:
 # Keep the nested builds in order: FLEX builds the matching MIKBUG ROM.
 system: pld fonts
 	$(MAKE) -C flex2 all DRIVE_LAYOUT=$(DRIVE_LAYOUT) SOUND_BOARD_REV=$(SOUND_BOARD_REV)
-	$(MAKE) -C sd check
+	$(MAKE) -C instore_sd check
 	$(MAKE) -C emu all
 	$(PYTHON) tools/package-system.py --sd-volume $(SD_VOLUME) --drive-layout $(DRIVE_LAYOUT)
 
@@ -53,13 +53,7 @@ run: session
 
 # Only these explicit targets contact (or display commands for) the programmer.
 program-avr: system
-	$(PYTHON) sd/tools/program_avr.py --fuses build/system/avr-fuses.conf build/system/sd_bridge.hex
+	$(PYTHON) sd/tools/program_avr.py --fuses build/system/avr-fuses.conf build/system/instore_sd.hex
 
 program-avr-dry-run: system
-	$(PYTHON) sd/tools/program_avr.py --dry-run --fuses build/system/avr-fuses.conf build/system/sd_bridge.hex
-
-program-avr-isp: system
-	$(PYTHON) sd/tools/program_avr.py --icsp --fuses build/system/avr-fuses.conf build/system/sd_bridge.hex
-
-program-avr-isp-dry-run: system
-	$(PYTHON) sd/tools/program_avr.py --dry-run --icsp --fuses build/system/avr-fuses.conf build/system/sd_bridge.hex
+	$(PYTHON) sd/tools/program_avr.py --dry-run --fuses build/system/avr-fuses.conf build/system/instore_sd.hex

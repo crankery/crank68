@@ -43,7 +43,7 @@ with tempfile.TemporaryDirectory(prefix='crank68-sd-emu-') as directory:
                     output.extend(os.read(process.stdout.fileno(), 4096))
 
         try:
-            until(b'MIKBUG 2.0')
+            until(b'MIKBUG 2/C68')
             process.stdin.write(b'f\r')
             process.stdin.flush()
             until(b'DATE (MM,DD,YY)?')
@@ -64,4 +64,4 @@ with tempfile.TemporaryDirectory(prefix='crank68-sd-emu-') as directory:
                     process.kill()
                     process.wait()
 
-print(f'Emulator SD bridge: FLEX CAT {drive} opened {disk_name.decode()} through the ROM and PIA.')
+print(f'Emulator direct SD: FLEX CAT {drive} opened {disk_name.decode()} through the ROM and direct registers.')

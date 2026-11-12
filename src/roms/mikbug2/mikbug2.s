@@ -108,11 +108,11 @@
 ; 
             .equ swiop, 0x3f            ; swi op code
 
-            .org 0xe000 ; slot 0
+            .org 0xe000 ; physical ROM bytes shadowed by I/O
+rom_id:     .include "build/rom-id.s"
 
-            .org 0xe010 ; slot 1
-acias:      .space 0x01
-aciad:      .space 0x01
+            .equ acias, 0xe010 ; slot 1 ACIA I/O addresses
+            .equ aciad, 0xe011
 
             .org 0xe100
 baseorg:    
@@ -1044,7 +1044,7 @@ meof:       .byte "S9030000FC"
 mcloff:     .byte 0x13                  ; reader off
 mcl:        .byte 0xa,0xd,0x14,0,0,0,0,"*",4  ; lf,cr,punch
 mcl1:       .byte 0xd,0xa,0,0,0,0,4     ; cr lf
-mcl2:       .byte "MIKBUG 2.0"
+mcl2:       .byte "MIKBUG 2/C68"
             .byte 4
 mcl3:       .byte "CC B A X P S"
             .byte 4

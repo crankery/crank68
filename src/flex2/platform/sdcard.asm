@@ -1,4 +1,4 @@
-; MIKBUG SD bridge ABI v2. The full startup FCB ends at $A97F.
+; MIKBUG direct SD ABI v3. The full startup FCB ends at $A97F.
 ; These adapters fit in the remaining $A980..$A9FF gap before FMEME.
 SDREAD PSHA
  PSHB
@@ -26,7 +26,7 @@ SDENSURE LDAA $F00C
  CMPA #$44
  BNE SDNOROM
  LDAA $F00E
- CMPA #2
+ CMPA #3
  BNE SDNOROM
  TST SDHOSTINIT
  BNE SDHOSTOK

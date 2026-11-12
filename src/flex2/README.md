@@ -59,7 +59,7 @@ the emulator still takes a single `--sram-image` argument.
   the SRAM backend implements this fixed two-drive layout.
 
 At the FLEX prompt, `CAT` catalogs drive 0. Use `CAT 1` for the SRAM data drive
-and `CAT 2` for the 1 MiB SD volume (updated MIKBUG ROM and AVR bridge required).
+and `CAT 2` for the 1 MiB SD volume (updated MIKBUG ROM and Instore AVR required).
 Command and filename lookup accepts lowercase at the FLEX prompt, including
 `cat 1` and `z68 1.zork1.dat`. The input line retains its typed case for
 programs to inspect.
@@ -164,16 +164,16 @@ No emulator startup/reset-vector integration is supplied here.
 
 ## Removable SD media
 
-Drive 2 dispatches through `platform/sdcard.asm` to the SD transport in the
-updated MIKBUG ROM. `make` builds `../roms/mikbug2/mikbug2.rom` alongside FLEX;
+Drive 2 dispatches through `platform/sdcard.asm` to the direct SD transport in
+the updated MIKBUG ROM. `make` builds `../roms/mikbug2/mikbug2.rom` alongside FLEX;
 install that ROM as well as the new FLEX system image. Earlier ROMs are detected
 and drive 2 reports unavailable. Drives 0/1 continue to use SRAM.
 
 The AVR uses one 1 MiB FAT32 file, FLEX.DSK, with 128 tracks × 32 sectors.
 Prepare it using the [SD project's image converter](../sd/README.md).
 `make test-sd` tests the real 6800 driver and FMS file operations against the
-AVR protocol engine through a PIA fixture. This is not the interactive emulator
-SD device; hardware handshakes still need bench tests. The ROM's clock-dependent
+AVR protocol engine through a direct-register fixture. This is not the
+interactive emulator SD device; hardware handshakes still need bench tests. The ROM's clock-dependent
 timeout setting is documented in [the ROM API](../roms/mikbug2/README.md#sd-bridge-rom-api).
 
 [REMOVABLE.md](REMOVABLE.md) records the mapping and remaining boot/media-change
@@ -193,7 +193,7 @@ reset vector at `$FFFE`, without a hard-coded monitor routine address.
 write-only page latch at `$E002` and the `$C000–$CFFF` window. The `$D000` window
 and `$E003` latch are untouched. Drive selection stores a base SRAM page
 (0 or 128); sector access adds a validated track in the range 0–127.
-Drive 2 dispatches to the ROM SD bridge; other drive numbers are rejected.
+Drive 2 dispatches to the ROM SD transport; other drive numbers are rejected.
 Ready checks preserve the selected drive, including when checking the other backend.
 The C000 window belongs to the disk driver; it does not restore its prior page.
 

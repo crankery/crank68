@@ -7,9 +7,10 @@
 #include <unistd.h>
 
 #include "machine/machine.h"
-#include "../../../sd/firmware/sd_bridge/src/protocol.h"
+#include "../../../instore_sd/firmware/instore_sd/src/protocol.h"
+#include "../../../instore_sd/firmware/instore_sd/src/direct_link.h"
 
-TEST(SdBridgeTest, PiaHandshakeReadsAndPersistsSectors)
+TEST(SdBridgeTest, DirectRegistersReadAndPersistSectors)
 {
     char filename[] = "/tmp/crank68-sd-XXXXXX";
     const int fd = mkstemp(filename);
@@ -24,39 +25,37 @@ TEST(SdBridgeTest, PiaHandshakeReadsAndPersistsSectors)
 
     auto machine = Machine::create_default();
     machine.memory_io_->attachSdImage(filename);
-    machine.write8(0xe021, 0x3a);
-    machine.write8(0xe023, 0x3a);
-    machine.write8(0xe020, 0xff);
-    machine.write8(0xe022, 0);
-    machine.write8(0xe021, 0x3e);
-    machine.write8(0xe023, 0x3e);
-    EXPECT_EQ(machine.read8(0xe020), 0);
-    EXPECT_EQ(machine.read8(0xe022), 0);
-
-    const auto put = [&](uint8_t value)
+    auto status = [&]() { return machine.read8(0xe080); };
+    auto wait = [&](uint8_t bit, uint8_t previous)
     {
-        machine.write8(0xe020, value);
-        machine.write8(0xe021, 0x36);
-        machine.write8(0xe021, 0x3e);
-        EXPECT_NE(machine.read8(0xe021) & 0x80, 0);
-        machine.read8(0xe020);
+        for (unsigned n = 0; n < 1000; ++n)
+            if ((status() & bit) != previous) return;
+        FAIL() << "SD sequence acknowledgment timed out";
     };
-    const auto get = [&]()
+    auto put = [&](uint16_t at, uint8_t value)
     {
-        EXPECT_NE(machine.read8(0xe023) & 0x80, 0);
-        const uint8_t value = machine.read8(0xe022);
-        machine.write8(0xe023, 0x36);
-        machine.write8(0xe023, 0x3e);
+        const uint8_t before = status();
+        EXPECT_NE(before & sdbridge::StatusBit::RxSpace, 0);
+        machine.write8(at, value);
+        wait(sdbridge::StatusBit::RxSequence, before & sdbridge::StatusBit::RxSequence);
+    };
+    auto get = [&]()
+    {
+        const uint8_t before = status();
+        EXPECT_NE(before & sdbridge::StatusBit::TxValid, 0);
+        const uint8_t value = machine.read8(0xe081);
+        wait(sdbridge::StatusBit::TxSequence, before & sdbridge::StatusBit::TxSequence);
         return value;
     };
-    const auto request = [&](uint8_t command, uint8_t track, uint8_t sector)
+    auto request = [&](uint8_t command, uint8_t track, uint8_t sector)
     {
-        for (auto byte : {uint8_t(0xa5), uint8_t(0x5a), command, track, sector})
-            put(byte);
+        put(0xe080, command);
+        put(0xe081, track);
+        put(0xe081, sector);
     };
 
-    request(0, 0, 0);
-    for (auto byte : {uint8_t(0), uint8_t(2), uint8_t(128), uint8_t(32), uint8_t(0), uint8_t(1)})
+    put(0xe080, 0);
+    for (auto byte : {uint8_t(0), uint8_t(3), uint8_t(128), uint8_t(32), uint8_t(0), uint8_t(1)})
         EXPECT_EQ(get(), byte);
 
     std::array<uint8_t, sdbridge::SectorBytes> payload{};
@@ -65,30 +64,26 @@ TEST(SdBridgeTest, PiaHandshakeReadsAndPersistsSectors)
     const auto checksum = sdbridge::sectorChecksum(payload.data());
 
     request(0x11, 127, 32);
-    for (auto byte : payload)
-        put(byte);
-    put(uint8_t(checksum >> 8));
-    put(uint8_t(checksum));
+    for (auto byte : payload) put(0xe081, byte);
+    put(0xe081, uint8_t(checksum >> 8));
+    put(0xe081, uint8_t(checksum));
     EXPECT_EQ(get(), 0);
 
     request(0x10, 127, 32);
     EXPECT_EQ(get(), 0);
-    for (auto byte : payload)
-        EXPECT_EQ(get(), byte);
+    for (auto byte : payload) EXPECT_EQ(get(), byte);
     EXPECT_EQ(get(), uint8_t(checksum >> 8));
     EXPECT_EQ(get(), uint8_t(checksum));
 
     request(0x11, 127, 32);
-    for (auto byte : payload)
-        put(byte ^ 0xff);
-    put(0);
-    put(0);
+    for (auto byte : payload) put(0xe081, byte ^ 0xff);
+    put(0xe081, 0);
+    put(0xe081, 0);
     EXPECT_EQ(get(), uint8_t(sdbridge::Status::BadChecksum));
 
     std::ifstream image(filename, std::ios::binary);
     image.seekg(sdbridge::ImageBytes - sdbridge::SectorBytes);
-    for (auto byte : payload)
-        EXPECT_EQ(image.get(), byte);
+    for (auto byte : payload) EXPECT_EQ(image.get(), byte);
 }
 
 TEST(SdBridgeTest, RejectsMissingAndWrongSizedImages)

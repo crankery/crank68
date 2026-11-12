@@ -157,7 +157,7 @@ acceptance: all build/acceptance
 czech: acceptance
 	$(PYTHON) $(Z68_SRC_DIR)/tests/check-czech.py build/acceptance.json
 
-build/sd-driver: tests/sd-driver.cpp tests/flex_harness.h ../sd/firmware/sd_bridge/src/protocol.h build/drive-config.h $(EMU_SRCS) $(EMU_HEADERS)
+build/sd-driver: tests/sd-driver.cpp tests/flex_harness.h ../instore_sd/firmware/instore_sd/src/protocol.h ../instore_sd/firmware/instore_sd/src/direct_link.h build/drive-config.h $(EMU_SRCS) $(EMU_HEADERS)
 	@mkdir -p build
 	$(CXX) -std=c++17 -O2 -I$(EMU_DIR)/src tests/sd-driver.cpp $(EMU_SRCS) -o $@
 

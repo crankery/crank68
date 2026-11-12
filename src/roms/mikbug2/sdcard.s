@@ -1,29 +1,36 @@
-; SD bridge transport, fixed ROM API for FLEX and future boot loaders.
-; A=track, B=sector, X=256-byte buffer for READ/WRITE.
-; READY checks protocol/geometry/mount, preserving X. INIT configures the PIA.
+; Instore direct-register SD transport, fixed ROM API for FLEX and boot loaders.
+; A=track, B=sector, X=256-byte buffer for READ/WRITE. READY preserves X.
 ; Return B=0/Z=1/C=0, or B!=0/Z=0/C=1. Not reentrant.
+; The AVR owns $E080/$E081. Each host access must wait for its sequence ACK:
+; RX_SEQUENCE toggles after a command/data write, TX_SEQUENCE after a data read.
 ; Scratch $9B00..$9B11 is reserved above FLEX's $7FFF application limit.
-; Set SD_CPU_MHZ to the host clock (1..4) to scale timeout/settling loops.
-; Bench timing is still required.
+; Scale the timeout loop for a 1..4 MHz host; hardware timing needs validation.
     .equ SD_CPU_MHZ, 1
-    .equ SDPA, 0xE020
-    .equ SDCRA, 0xE021
-    .equ SDPB, 0xE022
-    .equ SDCRB, 0xE023
+    .equ SDPORT_COMMAND, 0xE080
+    .equ SDPORT_STATUS, 0xE080
+    .equ SDPORT_DATA, 0xE081
+    .equ SD_RX_SPACE, 0x01
+    .equ SD_TX_VALID, 0x02
+    .equ SD_RX_SEQUENCE, 0x20
+    .equ SD_TX_SEQUENCE, 0x40
     .org 0xF000
 sd_read_vector: jmp SDREAD
 sd_write_vector: jmp SDWRITE
 sd_ready_vector: jmp SDREADY
 sd_init_vector: jmp SDRESET
-sd_signature: .byte 0x53,0x44,2
-SDRESET: clr SDINITIALIZED
- jsr SDINIT
-SDOK: clrb
- clc
- rts
-SDERROR: ldab #0x10
- sec
- rts
+sd_signature: .byte 0x53,0x44,3
+; No PIA setup is needed. An initial status read may be stale during AVR reset;
+; the next INFO/STATUS exchange in READY checks that the link actually works.
+SDRESET: JSR SDWAITRX
+ BCC SDRESETOK
+ RTS
+SDRESETOK: JMP SDOK
+SDOK: CLRB
+ CLC
+ RTS
+SDERROR: LDAB #0x10
+ SEC
+ RTS
 SDREAD: CLR SDWRITING
  BRA SDIO
 SDWRITE: PSHA
@@ -50,10 +57,16 @@ SDSTARTIO: CLR SDSUM
  CLR SDCOUNT
  LDAA #0x10
  ADDA SDWRITING
- JSR SDHEADER
- BCC SDHEADEROK
- RTS
-SDHEADEROK: TST SDWRITING
+ JSR SDCOMMAND
+ BCS SDSTARTRETURN
+ LDAA SDTRACK
+ JSR SDPUT
+ BCS SDSTARTRETURN
+ LDAA SDSECTOR
+ JSR SDPUT
+ BCC SDSTARTOK
+SDSTARTRETURN: RTS
+SDSTARTOK: TST SDWRITING
  BNE SDWRITELOOP
  JSR SDGET
  BCS SDRETURN
@@ -113,7 +126,7 @@ SDADD: PSHA
  INC SDSUM
 SDADDDONE: PULA
  RTS
-; READY preserves caller X; selection belongs to the FLEX adapter.
+; READY checks INFO version/geometry and mounted-media status.
 SDREADY: STX SDREADYX
  JSR SDCHECK
  LDX SDREADYX
@@ -123,11 +136,8 @@ SDREADY: STX SDREADYX
  RTS
 SDREADYOK: CLC
  RTS
-; Verify INFO version/geometry, then mount status before every sector operation.
-; INFO/STATUS headers always use zero track/sector, regardless of saved I/O.
-SDCHECK: JSR SDINIT
- LDAA #0
- JSR SDCONTROL
+SDCHECK: LDAA #0
+ JSR SDCOMMAND
  BCS SDCHECKRETURN
  CLR SDINDEX
 SDINFOLOOP: JSR SDGET
@@ -146,14 +156,14 @@ SDINFOCOMPARE: CMPA 0,X
  CMPB #6
  BNE SDINFOLOOP
  LDAA #1
- JSR SDCONTROL
+ JSR SDCOMMAND
  BCS SDCHECKRETURN
  JSR SDGET
  BCS SDCHECKRETURN
  TSTA
  BNE SDFAIL
  JMP SDOK
-; Drain the rest of INFO before returning a geometry/version error.
+; Consume the remaining INFO bytes even when the geometry is wrong.
 SDINFOMISMATCH: INC SDINDEX
 SDINFODRAIN: LDAB SDINDEX
  CMPB #6
@@ -163,147 +173,104 @@ SDINFODRAIN: LDAB SDINDEX
  INC SDINDEX
  BRA SDINFODRAIN
 SDCHECKRETURN: RTS
-SDCONTROL: CLR SDHDRTRACK
- CLR SDHDRSECTOR
- BRA SDPACKET
-SDHEADER: PSHA
- LDAA SDTRACK
- STAA SDHDRTRACK
- LDAA SDSECTOR
- STAA SDHDRSECTOR
- PULA
-SDPACKET: STAA SDOP
- LDAA #0xA5
- JSR SDPUT
+; A command is written to $E080; parameters/payload go to $E081.
+SDCOMMAND: STAA SDVALUE
+ JSR SDWAITRX
  BCS SDPACKETRETURN
- LDAA #0x5A
- JSR SDPUT
+ LDAA SDVALUE
+ STAA SDPORT_COMMAND
+ JSR SDWAITRXACK
  BCS SDPACKETRETURN
- LDAA SDOP
- JSR SDPUT
- BCS SDPACKETRETURN
- LDAA SDHDRTRACK
- JSR SDPUT
- BCS SDPACKETRETURN
- LDAA SDHDRSECTOR
- JMP SDPUT
+ LDAA SDVALUE
+ CLC
 SDPACKETRETURN: RTS
-; Initialize once. Setting manual outputs high can create startup strobes;
-; allow the AVR parser to time out before the first framed request.
-SDINIT: TST SDINITIALIZED
- BNE SDINITDONE
- LDAA #0x3A
- STAA SDCRA
- STAA SDCRB
- LDAA #0xFF
- STAA SDPA
- CLR SDPB
- LDAA #0x3E
- STAA SDCRA
- STAA SDCRB
- JSR SDSETTLE
- LDAA SDPA
- LDAA SDPB
- INC SDINITIALIZED
-SDINITDONE: RTS
-; Send one byte; do not overwrite U2 until its CA1 ACK has been latched.
-SDPUT: STAA SDPA
- LDAA #0x36
- STAA SDCRA
- JSR SDPULSE
- LDAA #0x3E
- STAA SDCRA
- LDAA #0
+SDPUT: STAA SDVALUE
+ JSR SDWAITRX
+ BCS SDPUTRETURN
+ LDAA SDVALUE
+ STAA SDPORT_DATA
+ JSR SDWAITRXACK
+ BCS SDPUTRETURN
+ LDAA SDVALUE
+ CLC
+SDPUTRETURN: RTS
+; Read one response byte, then wait until the AVR acknowledges consumption.
+SDGET: JSR SDWAITTX
+ BCS SDGETRETURN
+ LDAA SDPORT_DATA
+ STAA SDVALUE
+ JSR SDWAITTXACK
+ BCS SDGETRETURN
+ LDAA SDVALUE
+ CLC
+SDGETRETURN: RTS
+; Wait for a write slot and remember its current RX_SEQUENCE value.
+SDWAITRX: LDAA #SD_RX_SPACE
+ STAA SDWAITMASK
+ STAA SDWAITVALUE
  JSR SDWAIT
- BCS SDTIMEOUT
- LDAA SDPA
+ BCS SDWAITRETURN
+ LDAA SDPORT_STATUS
+ ANDA #SD_RX_SEQUENCE
+ STAA SDPREVSEQ
+ CLC
+SDWAITRETURN: RTS
+SDWAITRXACK: LDAA #SD_RX_SEQUENCE
+ STAA SDWAITMASK
+ LDAA SDPREVSEQ
+ EORA #SD_RX_SEQUENCE
+ STAA SDWAITVALUE
+ JMP SDWAIT
+; Wait for a response byte and remember its current TX_SEQUENCE value.
+SDWAITTX: LDAA #SD_TX_VALID
+ STAA SDWAITMASK
+ STAA SDWAITVALUE
+ JSR SDWAIT
+ BCS SDWAITRETURN
+ LDAA SDPORT_STATUS
+ ANDA #SD_TX_SEQUENCE
+ STAA SDPREVSEQ
  CLC
  RTS
-; Receive one byte and ACK consumption via CB2, including both sum bytes.
-SDGET: LDAA #2
- JSR SDWAIT
- BCS SDTIMEOUT
- LDAA SDPB
- PSHA
- LDAA #0x36
- STAA SDCRB
- JSR SDPULSE
- LDAA #0x3E
- STAA SDCRB
- PULA
- CLC
- RTS
-; At least 10 us low even at 4 MHz; preserve both accumulators.
-SDPULSE:
- NOP
- NOP
- NOP
- NOP
- NOP
- NOP
- NOP
- NOP
- NOP
- NOP
- NOP
- NOP
- NOP
- NOP
- NOP
- NOP
- RTS
-; A selects CRA (0) or CRB (2); preserve caller X and B.
+SDWAITTXACK: LDAA #SD_TX_SEQUENCE
+ STAA SDWAITMASK
+ LDAA SDPREVSEQ
+ EORA #SD_TX_SEQUENCE
+ STAA SDWAITVALUE
+ JMP SDWAIT
+; Bounded status poll. Preserve caller X and B on success.
 SDWAIT: STX SDWAITX
  PSHB
-SDWAITSTART: LDAB #8*SD_CPU_MHZ
+ LDAB #4*SD_CPU_MHZ
 SDWAITOUTER: LDX #0
-SDWAITLOOP: TSTA
- BNE SDWAITB
- TST SDCRA
- BRA SDWAITFLAG
-SDWAITB: TST SDCRB
-SDWAITFLAG: BMI SDWAITOK
+SDWAITLOOP: LDAA SDPORT_STATUS
+ ANDA SDWAITMASK
+ CMPA SDWAITVALUE
+ BEQ SDWAITOK
  DEX
  BNE SDWAITLOOP
  DECB
  BNE SDWAITOUTER
  PULB
  LDX SDWAITX
- SEC
- RTS
+ JMP SDERROR
 SDWAITOK: PULB
  LDX SDWAITX
  CLC
  RTS
-; The next initialization waits out any partial AVR transaction and clears flags.
-SDTIMEOUT: CLR SDINITIALIZED
- LDAB #0x10
- SEC
- RTS
-SDSETTLE: STX SDWAITX
- PSHB
- LDAB #6*SD_CPU_MHZ
-SDSETTLEOUTER: LDX #0
-SDSETTLELOOP: DEX
- BNE SDSETTLELOOP
- DECB
- BNE SDSETTLEOUTER
- PULB
- LDX SDWAITX
- RTS
-SDINFO: .byte 0,2,128,32,0,1
-    .equ SDINITIALIZED, 0x9B00
-    .equ SDWRITING, 0x9B01
-    .equ SDTRACK, 0x9B02
-    .equ SDSECTOR, 0x9B03
-    .equ SDHDRTRACK, 0x9B04
-    .equ SDHDRSECTOR, 0x9B05
-    .equ SDOP, 0x9B06
-    .equ SDCOUNT, 0x9B07
-    .equ SDINDEX, 0x9B08
-    .equ SDREMOTE, 0x9B09
-    .equ SDSUM, 0x9B0A
-    .equ SDBUFFER, 0x9B0C
-    .equ SDREADYX, 0x9B0E
-    .equ SDWAITX, 0x9B10
+SDINFO: .byte 0,3,128,32,0,1
+    .equ SDWRITING, 0x9B00
+    .equ SDTRACK, 0x9B01
+    .equ SDSECTOR, 0x9B02
+    .equ SDCOUNT, 0x9B03
+    .equ SDINDEX, 0x9B04
+    .equ SDREMOTE, 0x9B05
+    .equ SDSUM, 0x9B06
+    .equ SDBUFFER, 0x9B08
+    .equ SDREADYX, 0x9B0A
+    .equ SDWAITX, 0x9B0C
+    .equ SDVALUE, 0x9B0E
+    .equ SDWAITMASK, 0x9B0F
+    .equ SDWAITVALUE, 0x9B10
+    .equ SDPREVSEQ, 0x9B11
 SDROMEND:
