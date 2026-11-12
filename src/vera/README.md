@@ -1,5 +1,10 @@
 # C68 VERA text display experiment
 
+> **Inactive legacy add-on:** the VERA adapter is paused in favor of the
+> [Instore board](../../Instore/). This driver and its `$E080` keyboard protocol
+> are retained for reference; the current keyboard AVR firmware targets
+> Instore's `$E082/$E083` status/data registers.
+
 `make` builds a FLEX command named `VERA.CMD` on SRAM drive 0. Set the VERA
 adapter's A5–A7 slot switches to select `$E040–$E05F` (the two slots starting
 at `$E040`), then run `VERA` at the FLEX prompt. The command initializes a
@@ -19,9 +24,9 @@ The VERA board connects the matrix keyboard to its ATmega328P. Bridge the
 keyboard address jumpers for `$E080`, independent of the VERA register slot.
 `keyboard.s` reads this one byte until it gets nonzero ASCII. Each read
 consumes a character; the AVR handles scanning, debounce, modifiers, Caps
-LED, Ctrl+backslash NMI, and Ctrl+Backspace reset. See
-`../keyboard_avr/README.md` for the firmware and required bus latch/read
-strobe circuit. The older PIA 2 keyboard connection is unused.
+LED, Ctrl+backslash NMI, and Ctrl+Backspace reset. The original VERA
+keyboard firmware has been superseded by the Instore version in `../keyboard_avr/`; it cannot be used with this `$E080` driver.
+The older PIA 2 keyboard connection is unused.
 
 The base address is one constant, `vera_base`, near the top of `terminal.s`.
 The adapter carries A0–A4 to VERA, so the window must be 32-byte aligned. Do

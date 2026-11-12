@@ -1,5 +1,9 @@
 # Proposed direct-bus SD board
 
+This was a design proposal for replacing the PIA SD bridge. The current
+hardware work is the [Instore schematic](../../Instore/SD.kicad_sch); its
+actual wiring and address map take precedence over this proposal.
+
 This is a hardware proposal, not the interface implemented by the current SD
 board. [PROTOCOL.md](PROTOCOL.md) specifies that board's PIA transport. This
 proposal gives a **separate ATmega328P-PU** its own two-byte memory-mapped

@@ -1,5 +1,11 @@
 # C68 SD bridge firmware
 
+> **Inactive legacy add-on:** this firmware targets the separate PIA 1 SD
+> daughterboard in [`../../SD`](../../SD/), which is paused in favor of the
+> [Instore board](../../Instore/). The code and tests remain for the existing
+> emulator, ROM and FLEX path. This firmware does not run on Instore's
+> direct-bus SD AVR; use [the Instore firmware](../instore_sd/) for that board.
+
 AVR project for the daughterboard in `../../SD`, connected to IO board PIA 1
 through J2. Target: **ATmega328P-PU, 5 V, internal 8 MHz**, with two HCT574
 latches and a level-shifted SPI SD card. This implements the proposed byte/sector

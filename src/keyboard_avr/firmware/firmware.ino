@@ -1,69 +1,95 @@
 #include <Arduino.h>
 #include <avr/interrupt.h>
-#include <util/atomic.h>
 #include "key_logic.h"
 
 #if !defined(__AVR_ATmega328P__) || F_CPU != 8000000UL
 #error "Build for an ATmega328P clocked at 8 MHz"
 #endif
 
-// U4 on ../Vera: PD0..7 go to an external HCT573 bus latch.
-// PB0=QS, PB1=/PL, PB2=CP, PB3..5=A0..2.
-// PC0=BUS_OK, PC1=/KEY_READ (qualified read strobe), PC2=R/W,
-// PC3=Caps LED cathode, PC4=/NMI, PC5=/RESET (open-drain style).
-// /KEY_READ must be low only for a selected $E080 read with BUS_OK true.
+// Instore U4. The two HCT573s isolate PD0..7 from the C68 data bus.
+// PB0=/KBD_STATUS, PB1=/KBD_DATA, PB2=Caps LED cathode, PB3=read ACK,
+// PB4=status latch LE, PB5=data latch LE, PB6=/NMI, PB7=system /RESET.
+// PC0=QS, PC1=/PL, PC2=CP, PC3..5=row A0..2.
 namespace
 {
-    constexpr uint8_t Qs = _BV(PB0);
-    constexpr uint8_t ParallelLoad = _BV(PB1);
-    constexpr uint8_t Clock = _BV(PB2);
-    constexpr uint8_t RowMask = _BV(PB3) | _BV(PB4) | _BV(PB5);
-    constexpr uint8_t ReadStrobe = _BV(PC1);
-    constexpr uint8_t CapsLed = _BV(PC3);
-    constexpr uint8_t Nmi = _BV(PC4);
-    constexpr uint8_t Reset = _BV(PC5);
+    constexpr uint8_t Qs = _BV(PC0);
+    constexpr uint8_t ParallelLoad = _BV(PC1);
+    constexpr uint8_t Clock = _BV(PC2);
+    constexpr uint8_t RowMask = _BV(PC3) | _BV(PC4) | _BV(PC5);
+    constexpr uint8_t CapsLed = _BV(PB2);
+    constexpr uint8_t ReadAck = _BV(PB3); // U7 Q rises when a data read ends.
+    constexpr uint8_t StatusLoad = _BV(PB4);
+    constexpr uint8_t DataLoad = _BV(PB5);
+    constexpr uint8_t Nmi = _BV(PB6);
+    constexpr uint8_t Reset = _BV(PB7);
+    constexpr uint8_t Ready = _BV(0);
+    constexpr uint8_t Sequence = _BV(1);
     constexpr uint8_t ScanPeriodMs = 5;
 
     keyboard::State keys;
-    volatile uint8_t staged = 0;
-    volatile bool pendingRead = false;
+    volatile bool externalReset = false;
+    bool stagedReady = false;
+    bool sequence = false;
     uint32_t lastScan = 0;
 
-    void publish()
+    void loadLatch(uint8_t enable)
     {
-        const uint8_t value = keys.front();
-        PORTD = value;
-        staged = value;
+        PORTB |= enable;
+        asm volatile("nop\n\tnop\n\t");
+        PORTB &= uint8_t(~enable);
     }
 
-    void finishRead()
+    void publish(bool advanceSequence)
     {
-        // Called only after the read strobe has ended; the CPU has sampled PORTD.
-        if (staged)
+        // U12 holds the byte throughout the C68 read. Its load pulse also
+        // clears U7's read acknowledgment before the next byte is offered.
+        const uint8_t value = keys.front();
+        PORTD = value;
+        loadLatch(DataLoad);
+        stagedReady = value != 0;
+
+        if (advanceSequence)
         {
-            keys.consume();
+            sequence = !sequence;
         }
 
-        publish();
-        pendingRead = false;
-        PCIFR = _BV(PCIF1);
-        PCMSK1 |= ReadStrobe;
+        // U11 is a separate status latch. Publish status only after data.
+        PORTD = uint8_t((stagedReady ? Ready : 0) |
+                        (sequence ? Sequence : 0));
+        loadLatch(StatusLoad);
+    }
+
+    void serviceRead()
+    {
+        if (PINB & ReadAck)
+        {
+            if (stagedReady)
+            {
+                keys.consume();
+            }
+            publish(true);
+        }
+        else if (!stagedReady && keys.front())
+        {
+            publish(true);
+        }
     }
 
     uint16_t scanRow(uint8_t row)
     {
-        const uint8_t base = uint8_t((PORTB & ~RowMask) | (row << PB3) | ParallelLoad);
-        PORTB = uint8_t(base & ~Clock);
-        PORTB = uint8_t(base & ~ParallelLoad);
+        const uint8_t base = uint8_t((PORTC & ~RowMask) |
+                                     (row << PC3) | ParallelLoad);
+        PORTC = uint8_t(base & ~Clock);
+        PORTC = uint8_t(base & ~ParallelLoad);
         asm volatile("nop\n\tnop\n\t");
-        PORTB = base;
+        PORTC = base;
 
         uint16_t value = 0;
         for (uint8_t bit = 0; bit < 16; ++bit)
         {
-            value = uint16_t((value << 1) | ((PINB & Qs) ? 1 : 0));
-            PORTB = uint8_t(base | Clock);
-            PORTB = base;
+            value = uint16_t((value << 1) | ((PINC & Qs) ? 1 : 0));
+            PORTC = uint8_t(base | Clock);
+            PORTC = base;
         }
 
         return uint16_t(~value & 0x07ff);
@@ -71,68 +97,72 @@ namespace
 
     void pulseNmi()
     {
-        PORTC &= uint8_t(~Nmi); // Never drive the shared /NMI line high.
-        DDRC |= Nmi;
+        PORTB &= uint8_t(~Nmi);
+        DDRB |= Nmi; // Sink the shared line; never drive it high.
         delayMicroseconds(100);
-        DDRC &= uint8_t(~Nmi);
+        DDRB &= uint8_t(~Nmi);
     }
 
     void pulseReset()
     {
-        PORTC &= uint8_t(~Reset); // Never drive the shared /RESET line high.
-        DDRC |= Reset;
+        // Do not mistake our own pulse for an externally requested reset.
+        PCMSK0 &= uint8_t(~Reset);
+        PORTB &= uint8_t(~Reset);
+        DDRB |= Reset;
         delayMicroseconds(100);
-        DDRC &= uint8_t(~Reset);
+        DDRB &= uint8_t(~Reset);
+        PCIFR = _BV(PCIF0);
+        PCMSK0 |= Reset;
+    }
+
+    void clearOnExternalReset()
+    {
+        keys = keyboard::State();
+        PORTB |= CapsLed;
+        stagedReady = false;
+        sequence = false;
+        publish(false);
     }
 }
 
-ISR(PCINT1_vect)
+ISR(PCINT0_vect)
 {
-    // PCINT latches even if this short bus pulse ends before ISR entry.
-    // Mask both edges so one CPU read can consume at most one character.
-    PCMSK1 &= uint8_t(~ReadStrobe);
-    for (uint8_t tries = 0; tries < 64; ++tries)
+    if (!(PINB & Reset))
     {
-        if (PINC & ReadStrobe)
-        {
-            finishRead();
-            return;
-        }
+        externalReset = true;
     }
-
-    // A held-low strobe cannot trap the AVR in an interrupt forever.
-    pendingRead = true;
 }
 
 void setup()
 {
     cli();
     PORTD = 0;
-    DDRD = 0xff; // HCT573 isolates these outputs from the C68 data bus.
+    DDRD = 0xff;
 
-    PORTB = ParallelLoad;
-    DDRB = uint8_t(ParallelLoad | Clock | RowMask);
+    // Load pins start low, the LED starts off, and NMI/RESET float.
+    PORTB = CapsLed;
+    DDRB = uint8_t(CapsLed | StatusLoad | DataLoad);
+    PORTC = ParallelLoad;
+    DDRC = uint8_t(ParallelLoad | Clock | RowMask);
+    publish(false);
 
-    PORTC |= uint8_t(ReadStrobe | CapsLed);
-    PORTC &= uint8_t(~(Nmi | Reset));
-    DDRC = CapsLed; // NMI/RESET released; PC0/1/2 are inputs.
-
-    PCMSK1 = ReadStrobe;
-    PCIFR = _BV(PCIF1);
-    PCICR |= _BV(PCIE1);
+    externalReset = !(PINB & Reset);
+    PCMSK0 = Reset;
+    PCIFR = _BV(PCIF0);
+    PCICR |= _BV(PCIE0);
     lastScan = millis();
     sei();
 }
 
 void loop()
 {
-    if (pendingRead && (PINC & ReadStrobe))
+    if (externalReset)
     {
-        ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-        {
-            finishRead();
-        }
+        externalReset = false;
+        clearOnExternalReset();
     }
+
+    serviceRead();
 
     const uint32_t now = millis();
     if (uint32_t(now - lastScan) < ScanPeriodMs)
@@ -152,24 +182,19 @@ void loop()
     {
         if (keys.caps())
         {
-            PORTC &= uint8_t(~CapsLed);
+            PORTB &= uint8_t(~CapsLed);
         }
         else
         {
-            PORTC |= CapsLed;
+            PORTB |= CapsLed;
         }
     }
 
-    ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-    {
-        publish();
-    }
-
+    serviceRead();
     if (events.breakPressed)
     {
         pulseNmi();
     }
-
     if (events.resetPressed)
     {
         pulseReset();

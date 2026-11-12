@@ -4,6 +4,13 @@ One day I thought to myself I want to build a computer with the simplest 8 bit C
 
 It's going to be pretty useless but it's fun to play around with all of this.
 
+## Current add-on direction
+
+The [Instore board](Instore/) is the current keyboard and microSD add-on design.
+The earlier [VERA adapter](Vera/) and [PIA-based SD daughterboard](SD/) are
+inactive legacy experiments. Their schematics, firmware and tests remain here
+for reference; new work targets Instore.
+
 ## Hardware
 
 So, this isn't intended to be historically accurate or anything. It's a 1970s CPU but I'll use modern components where it makes things simpler. So, for whatever reason I thought it'd be nice to use things like the MC6850, MC6821 and other components that would have been available when the M6800 was being used in the industry. But really, I'm just trying to avoid using microcontrollers that would render the actual CPU hopelessly redundant.

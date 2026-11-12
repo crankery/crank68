@@ -1,5 +1,12 @@
 # C68 system build
 
+> **Legacy build path:** the VERA adapter and PIA-based SD daughterboard are
+> inactive add-on designs, superseded for new hardware work by
+> [Instore](../Instore/). This build still packages and tests the PIA SD bridge
+> so existing emulator, ROM and FLEX work continues to run. Its output is not
+> firmware for Instore's direct-bus SD AVR; that firmware lives in
+> [instore_sd](instore_sd/). The VERA experiment remains as historical source.
+
 From this directory (`src`), run `make`. It builds and verifies FLEX, MIKBUG2,
 every `pld/*.gal`, the AVR SD bridge and the emulator, then gathers matching outputs in
 `build/system/`:
