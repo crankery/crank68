@@ -24,5 +24,6 @@ IOSELN = /PHI2 + /VMA + /A15 + /A14 + /A13 + A12 + A11 + A10 + A9 + A8
 ROMSELN = /PHI2 + /VMA + /A15 + /A14 + /A13 + /A12 * /A11 * /A10 * /A9 * /A8
 
 DESCRIPTION
-C68 processor address decoder. Pin 2 is the unused R/W input; output pins
-19-23 drive BUS_OK, /IO_SEL, /BANK_SEL, /ROM_SEL and /RAM_SEL respectively.
+C68 processor address decoder. Pin 2 is the unused R/W input; pin 18 is
+unused. Pins 19-23 drive BUS_OK, /IO_SEL, /BANK_SEL,
+/ROM_SEL and /RAM_SEL respectively.

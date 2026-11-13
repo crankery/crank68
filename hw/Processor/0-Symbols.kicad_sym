@@ -11506,7 +11506,7 @@
 			(pin passive line
 				(at -19.05 -34.29 0)
 				(length 2.54)
-				(name "~{TSC}"
+				(name "TSC"
 					(effects
 						(font
 							(size 1.27 1.27)

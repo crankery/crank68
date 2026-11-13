@@ -1,0 +1,34 @@
+GAL22V10
+C68R1CPU
+
+; Processor PCB U7 pins 1-12. Pin 12 is ground, not R/W.
+PHI2 RW VMA A15 A14 A13 A12 A11 A10 A9 A8 GND
+; Pins 13-24. The select outputs are physically active low.
+NC NC NC NC NC PHI2N BUSOK IOSELN BANKSELN ROMSELN RAMSELN VCC
+
+; Valid bus cycle: both phase 2 and VMA are high.
+BUSOK = PHI2 * VMA
+
+; Rev 1 ONLY: GAL pin 18 must be lifted clear of its grounded socket contact
+; and wired to U4 pin 19 before this image is fitted.
+PHI2N = /PHI2
+
+; Express the inactive-high selects directly. This keeps GALasm's
+; output polarity unambiguous and matches the board net names.
+; RAM       $0000-$BFFF
+RAMSELN = /PHI2 + /VMA + A15 * A14
+
+; Banked RAM $C000-$DFFF
+BANKSELN = /PHI2 + /VMA + /A15 + /A14 + A13
+
+; I/O       $E000-$E0FF
+IOSELN = /PHI2 + /VMA + /A15 + /A14 + /A13 + A12 + A11 + A10 + A9 + A8
+
+; ROM       $E100-$FFFF
+ROMSELN = /PHI2 + /VMA + /A15 + /A14 + /A13 + /A12 * /A11 * /A10 * /A9 * /A8
+
+DESCRIPTION
+C68 rev 1 processor decoder with GAL pin 18 as the data transceiver clock
+inverter. Fit only with pin 18 lifted from its grounded socket contact and
+wired to U4 pin 19. Pins 19-23 drive BUS_OK, /IO_SEL, /BANK_SEL,
+/ROM_SEL and /RAM_SEL respectively.

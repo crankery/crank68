@@ -20,3 +20,5 @@ ROMSELN = /PHI2 + /VMA + /A15 + /A14 + /A13 + /A12 * /A11 * /A10 * /A9 * /A8
 DESCRIPTION
 C68 processor decoder for use with the video board. Pin 21 /BANK_SEL is
 always high impedance. The video GAL generates /BANK_SEL or selects VRAM.
+Pin 18 is unused; the processor board requires a separate inverter to drive
+/PHI2 for the data transceiver.
