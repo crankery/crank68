@@ -20,6 +20,7 @@ make test
 | `build/flex2.dsk` | Complete SRAM disk image, ready to preload into banked SRAM |
 | `build/FLEX2.SYS` | FLEX binary load records, entry `$AD00` |
 | `build/Z68.CMD` | V3 story interpreter, load/entry `$0300`; source in `../z68` |
+| `build/ROGUE.CMD` | Rogue-inspired dungeon proof of concept, load/entry `$0300`; source in `../rogue` |
 | `build/MSBASIC.CMD` | BASIC binary load records, load/entry `$0000` |
 | `build/boot.bin` | Boot code assembled for `$0100`; the image contains its linked copy |
 | `build/image.json` | Geometry, file locations, sector counts, free-space count |

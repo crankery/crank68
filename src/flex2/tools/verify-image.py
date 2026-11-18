@@ -67,6 +67,7 @@ def verify(path):
         ('Z68.CMD', 'z68.bin', 0x0300, 0x0300),
         ('VERA.CMD', 'vera.bin', 0x0300, 0x0300),
         ('BOOP.CMD', 'boop.bin', 0x0300, 0x0300),
+        ('ROGUE.CMD', 'rogue.bin', 0x0300, 0x0300),
     ]:
         payload = disks[file_drive(name)][name][1]
         loaded = {}
@@ -93,7 +94,7 @@ def verify(path):
                 address += 1
             pos += count
         binary = Path('build', binary_name).read_bytes()
-        if name in ('Z68.CMD', 'VERA.CMD', 'BOOP.CMD'):
+        if name in ('Z68.CMD', 'VERA.CMD', 'BOOP.CMD', 'ROGUE.CMD'):
             assert loaded and min(loaded) == 0x0300 and max(loaded) < 0x7E00, f'{name} exceeds application RAM'
         assert entry == entrypoint
         assert loaded == dict(enumerate(binary, base)), name

@@ -11,6 +11,7 @@ from stories import story_files
 from disk_layout import DRIVES, TRACKS, SECTORS, DRIVE_BYTES, LABELS, file_drive
 
 distribution_files = runpy.run_path(str(Path(__file__).with_name("source-disk.py")))["distribution_files"]
+floor_files = runpy.run_path(str(Path(__file__).resolve().parents[2] / "rogue" / "generate_floors.py"))["floor_files"]
 
 SECTOR = 256
 SECTORS_PER_TRACK = 16
@@ -69,14 +70,18 @@ def make_image():
     assert 0 < len(vera) <= 0x7E00 - 0x0300, 'VERA exceeds FLEX application RAM'
     boop = (root / 'boop.bin').read_bytes()
     assert 0 < len(boop) <= 0x7E00 - 0x0300, 'BOOP exceeds FLEX application RAM'
+    rogue = (root / 'rogue.bin').read_bytes()
+    assert 0 < len(rogue) <= 0x7E00 - 0x0300, 'ROGUE exceeds FLEX application RAM'
     files = [
         ('Z68.CMD', binary_records(z68, 0x0300, 0x0300)),
         ('VERA.CMD', binary_records(vera, 0x0300, 0x0300)),
         ('BOOP.CMD', binary_records(boop, 0x0300, 0x0300)),
+        ('ROGUE.CMD', binary_records(rogue, 0x0300, 0x0300)),
         ('FLEX2.SYS', binary_records((root / 'c68flex.bin').read_bytes(), 0xA100, 0xAD00)),
         ('MSBASIC.CMD', binary_records((root / 'msbasic.bin').read_bytes(), 0, 0)),
     ]
     files.extend(distribution_files())
+    files.extend(floor_files())
     stories = story_files()
     fixtures = [(name, (root / name).read_bytes()) for name in
                 ('CZECH.DAT', 'VMBOOT.DAT', 'VMFAIL.DAT', 'VMLIMIT.DAT')]

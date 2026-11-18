@@ -17,8 +17,8 @@ RAMSELN = /PHI2 + /VMA + A15 * A14
 ; Banked RAM $C000-$DFFF
 BANKSELN = /PHI2 + /VMA + /A15 + /A14 + A13
 
-; I/O       $E000-$E0FF
-IOSELN = /PHI2 + /VMA + /A15 + /A14 + /A13 + A12 + A11 + A10 + A9 + A8
+; I/O       $E000-$E0FF. Assert before PHI2 so peripheral selects settle before E.
+IOSELN = /VMA + /A15 + /A14 + /A13 + A12 + A11 + A10 + A9 + A8
 
 ; ROM       $E100-$FFFF
 ROMSELN = /PHI2 + /VMA + /A15 + /A14 + /A13 + /A12 * /A11 * /A10 * /A9 * /A8

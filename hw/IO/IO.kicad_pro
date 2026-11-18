@@ -526,7 +526,7 @@
       "gencad": "",
       "idf": "",
       "netlist": "",
-      "plot": "C68COMS_01_gerbers",
+      "plot": "C68IO02_gerbers",
       "pos_files": "",
       "specctra_dsn": "",
       "step": "../3D/IO.step",
@@ -685,7 +685,7 @@
         "uuid": "845ae80b-1c1c-40d6-828e-c16ba70c418b"
       }
     ],
-    "used_designators": "JP3-6",
+    "used_designators": "",
     "variants": []
   },
   "sheets": [

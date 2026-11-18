@@ -21,6 +21,12 @@ asserts `/BANK_SEL` during valid `$C000–$DFFF` accesses by default. MIKBUG2
 and the serial SRAM loader can therefore boot and load the disk without
 writing the video mode latch first.
 
+All four processor GAL variants assert `/IO_SEL` for `$E000–$E0FF` when
+VMA and the address are valid, without waiting for Φ2. The 6850 and 6821
+chip selects need to settle before their E inputs see BUS Φ2. Other selects
+and `BUS_OK` remain qualified by Φ2; review any other `/IO_SEL` consumers
+before relying on its earlier assertion.
+
 Assemble the variant with GALasm before programming the GAL22V10. The
 generated `cpu-video.jed` is included here; regenerate it after changing
 the equations.
