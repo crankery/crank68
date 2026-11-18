@@ -16,3 +16,6 @@
 [submodule "src/tools/GALasm"]
 	path = src/tools/GALasm
 	url = git@github.com:daveho/GALasm.git
+[submodule "src/ladder/Ladder"]
+	path = src/ladder/Ladder
+	url = git@github.com:mecparts/Ladder.git

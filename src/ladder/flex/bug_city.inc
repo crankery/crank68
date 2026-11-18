@@ -1,0 +1,26 @@
+; Generated from Ladder/src/ladicons.pas by tools/make_levels.py
+; Bug City: initial bonus 37, rocks 6
+        .ascii "        Bug City             HHHHHHHH                          V               "
+        .ascii "                           HHH      HHH                                        "
+        .ascii "   H                                          >mmmmmmmm                        "
+        .ascii "   H===============                   ====================          H          "
+        .ascii "   H              |=====       "
+        .byte 92
+        .ascii "  /         V                  =====H=========="
+        .ascii "   H                            "
+        .byte 92
+        .ascii "/                                  H          "
+        .ascii "   H                                        | $                     H          "
+        .ascii "   H           H                            | H                     H          "
+        .ascii "   H       ====H=======          p          |&H    H                H          "
+        .ascii "   H           H             ======================H           ======          "
+        .ascii "   H           H      &|                           H                    H      "
+        .ascii "   H           H      &|                    H      H     }{        =====H====  "
+        .ascii "===H===&       H       =====================H      H                    H      "
+        .ascii "               H                            H      H                    H      "
+        .ascii "               H                            H      &                    H      "
+        .ascii "         ======H===   =======    H    <>    &                           H      "
+        .ascii "                                 H==========       =====     =     ============"
+        .ascii "     }i{                         H                                             "
+        .ascii "*                                H                                            *"
+        .ascii "==============================================================================="

@@ -1,0 +1,994 @@
+Sections:
+00: "org0001:300" (300-DBA)
+
+
+Source: "ladder.s"
+                        	     1: ; Easy Street prototype for C68 FLEX and an ANSI/VT100 terminal.
+                        	     2: ; Map and movement rules come from the Turbo Pascal Ladder rewrite.
+                        	     3: ; SPDX-License-Identifier: GPL-2.0-or-later
+                        	     4:         .equ outch, 0xad0f
+                        	     5:         .equ warms, 0xad03
+                        	     6:         .equ getc, 0xbf00
+                        	     7:         .equ poll, 0xbf2a
+                        	     8: 
+                        	     9:         .org 0x0300
+                        	    10: start:
+00:0300 BF0753          	    11:         sts saved_sp
+00:0303 8606            	    12:         ldaa #6
+00:0305 B70755          	    13:         staa player_x
+00:0308 8613            	    14:         ldaa #19
+00:030A B70756          	    15:         staa player_y
+00:030D 7F075B          	    16:         clr direction
+00:0310 7F075C          	    17:         clr jump_step
+00:0313 7F075E          	    18:         clr won_level
+00:0316 CE06C5          	    19:         ldx #clear_text
+00:0319 BD06BA          	    20:         jsr print
+00:031C BD05FD          	    21:         jsr draw_level
+00:031F BD0658          	    22:         jsr draw_player
+                        	    23: game_loop:
+00:0322 BDBF2A          	    24:         jsr poll
+00:0325 2406            	    25:         bcc no_key
+00:0327 BDBF00          	    26:         jsr getc
+00:032A BD0338          	    27:         jsr handle_key
+                        	    28: no_key:
+00:032D CE2EE0          	    29:         ldx #12000             ; approximate game tick; tune on hardware
+                        	    30: tick_wait:
+00:0330 09              	    31:         dex
+00:0331 26FD            	    32:         bne tick_wait
+00:0333 BD03BB          	    33:         jsr move_player
+00:0336 20EA            	    34:         bra game_loop
+                        	    35: 
+                        	    36: handle_key:
+00:0338 8171            	    37:         cmpa #'q'
+00:033A 2773            	    38:         beq quit
+00:033C 8151            	    39:         cmpa #'Q'
+00:033E 276F            	    40:         beq quit
+00:0340 8168            	    41:         cmpa #'h'
+00:0342 2724            	    42:         beq key_left
+00:0344 8161            	    43:         cmpa #'a'
+00:0346 2720            	    44:         beq key_left
+00:0348 816C            	    45:         cmpa #'l'
+00:034A 2722            	    46:         beq key_right
+00:034C 8164            	    47:         cmpa #'d'
+00:034E 271E            	    48:         beq key_right
+00:0350 816B            	    49:         cmpa #'k'
+00:0352 2720            	    50:         beq key_up
+00:0354 8177            	    51:         cmpa #'w'
+00:0356 271C            	    52:         beq key_up
+00:0358 816A            	    53:         cmpa #'j'
+00:035A 271E            	    54:         beq key_down
+00:035C 8173            	    55:         cmpa #'s'
+00:035E 271A            	    56:         beq key_down
+00:0360 8120            	    57:         cmpa #' '
+00:0362 271C            	    58:         beq key_jump
+00:0364 7F075B          	    59:         clr direction
+00:0367 39              	    60:         rts
+                        	    61: key_left:
+00:0368 8601            	    62:         ldaa #1
+00:036A B7075B          	    63:         staa direction
+00:036D 39              	    64:         rts
+                        	    65: key_right:
+00:036E 8602            	    66:         ldaa #2
+00:0370 B7075B          	    67:         staa direction
+00:0373 39              	    68:         rts
+                        	    69: key_up:
+00:0374 8603            	    70:         ldaa #3
+00:0376 B7075B          	    71:         staa direction
+00:0379 39              	    72:         rts
+                        	    73: key_down:
+00:037A 8604            	    74:         ldaa #4
+00:037C B7075B          	    75:         staa direction
+00:037F 39              	    76:         rts
+                        	    77: key_jump:
+00:0380 7D075C          	    78:         tst jump_step
+00:0383 2629            	    79:         bne jump_key_done
+00:0385 BD0595          	    80:         jsr is_solid
+00:0388 7D075F          	    81:         tst solid_flag
+00:038B 2721            	    82:         beq jump_key_done
+00:038D B6075B          	    83:         ldaa direction
+00:0390 8101            	    84:         cmpa #1
+00:0392 2709            	    85:         beq jump_left
+00:0394 8102            	    86:         cmpa #2
+00:0396 270C            	    87:         beq jump_right
+00:0398 7F075D          	    88:         clr jump_dir
+00:039B 200C            	    89:         bra jump_begin
+                        	    90: jump_left:
+00:039D 8601            	    91:         ldaa #1
+00:039F B7075D          	    92:         staa jump_dir
+00:03A2 2005            	    93:         bra jump_begin
+                        	    94: jump_right:
+00:03A4 8602            	    95:         ldaa #2
+00:03A6 B7075D          	    96:         staa jump_dir
+                        	    97: jump_begin:
+00:03A9 8601            	    98:         ldaa #1
+00:03AB B7075C          	    99:         staa jump_step
+                        	   100: jump_key_done:
+00:03AE 39              	   101:         rts
+                        	   102: quit:
+00:03AF CE0743          	   103:         ldx #exit_text
+00:03B2 BD06BA          	   104:         jsr print
+00:03B5 BE0753          	   105:         lds saved_sp
+00:03B8 7EAD03          	   106:         jmp warms
+                        	   107: 
+                        	   108: move_player:
+00:03BB 7D075E          	   109:         tst won_level
+00:03BE 2701            	   110:         beq active_level
+00:03C0 39              	   111:         rts
+                        	   112: active_level:
+00:03C1 B60755          	   113:         ldaa player_x
+00:03C4 B70757          	   114:         staa old_x
+00:03C7 B60756          	   115:         ldaa player_y
+00:03CA B70758          	   116:         staa old_y
+00:03CD 7D075C          	   117:         tst jump_step
+00:03D0 2706            	   118:         beq move_regular
+00:03D2 BD051A          	   119:         jsr move_jump
+00:03D5 7E04B6          	   120:         jmp move_done
+                        	   121: move_regular:
+00:03D8 B6075B          	   122:         ldaa direction
+00:03DB 8101            	   123:         cmpa #1
+00:03DD 2715            	   124:         beq move_left
+00:03DF 8102            	   125:         cmpa #2
+00:03E1 2732            	   126:         beq move_right
+00:03E3 8103            	   127:         cmpa #3
+00:03E5 275D            	   128:         beq move_up
+00:03E7 8104            	   129:         cmpa #4
+00:03E9 2603            	   130:         bne move_still
+00:03EB 7E0476          	   131:         jmp move_down
+                        	   132: move_still:
+00:03EE BD0507          	   133:         jsr fall_if_needed
+00:03F1 7E04B6          	   134:         jmp move_done
+                        	   135: move_left:
+00:03F4 BD0595          	   136:         jsr is_solid
+00:03F7 7D075F          	   137:         tst solid_flag
+00:03FA 2603            	   138:         bne left_supported
+00:03FC 7E04AE          	   139:         jmp fall_only
+                        	   140: left_supported:
+00:03FF B60755          	   141:         ldaa player_x
+00:0402 8101            	   142:         cmpa #1
+00:0404 2603            	   143:         bne left_in_bounds
+00:0406 7E04B3          	   144:         jmp stop_move
+                        	   145: left_in_bounds:
+00:0409 4A              	   146:         deca
+00:040A B70759          	   147:         staa target_x
+00:040D B60756          	   148:         ldaa player_y
+00:0410 B7075A          	   149:         staa target_y
+00:0413 201F            	   150:         bra move_horizontal
+                        	   151: move_right:
+00:0415 BD0595          	   152:         jsr is_solid
+00:0418 7D075F          	   153:         tst solid_flag
+00:041B 2603            	   154:         bne right_supported
+00:041D 7E04AE          	   155:         jmp fall_only
+                        	   156: right_supported:
+00:0420 B60755          	   157:         ldaa player_x
+00:0423 814F            	   158:         cmpa #79
+00:0425 2603            	   159:         bne right_in_bounds
+00:0427 7E04B3          	   160:         jmp stop_move
+                        	   161: right_in_bounds:
+00:042A 4C              	   162:         inca
+00:042B B70759          	   163:         staa target_x
+00:042E B60756          	   164:         ldaa player_y
+00:0431 B7075A          	   165:         staa target_y
+                        	   166: move_horizontal:
+00:0434 BD05DE          	   167:         jsr target_tile
+00:0437 BD05CE          	   168:         jsr is_wall
+00:043A 2577            	   169:         bcs stop_move
+00:043C B60759          	   170:         ldaa target_x
+00:043F B70755          	   171:         staa player_x
+00:0442 2072            	   172:         bra move_done
+                        	   173: move_up:
+00:0444 B60755          	   174:         ldaa player_x
+00:0447 B70759          	   175:         staa target_x
+00:044A B60756          	   176:         ldaa player_y
+00:044D B7075A          	   177:         staa target_y
+00:0450 BD05DE          	   178:         jsr target_tile
+00:0453 8148            	   179:         cmpa #'H'
+00:0455 265C            	   180:         bne stop_move
+00:0457 B60756          	   181:         ldaa player_y
+00:045A 8101            	   182:         cmpa #1
+00:045C 2755            	   183:         beq stop_move
+00:045E 4A              	   184:         deca
+00:045F B7075A          	   185:         staa target_y
+00:0462 BD05DE          	   186:         jsr target_tile
+00:0465 8148            	   187:         cmpa #'H'
+00:0467 2708            	   188:         beq climb_up
+00:0469 8126            	   189:         cmpa #'&'
+00:046B 2704            	   190:         beq climb_up
+00:046D 8124            	   191:         cmpa #'$'
+00:046F 2642            	   192:         bne stop_move
+                        	   193: climb_up:
+00:0471 7A0756          	   194:         dec player_y
+00:0474 2040            	   195:         bra move_done
+                        	   196: move_down:
+00:0476 B60756          	   197:         ldaa player_y
+00:0479 8113            	   198:         cmpa #19
+00:047B 2736            	   199:         beq stop_move
+00:047D B60755          	   200:         ldaa player_x
+00:0480 B70759          	   201:         staa target_x
+00:0483 B60756          	   202:         ldaa player_y
+00:0486 B7075A          	   203:         staa target_y
+00:0489 BD05DE          	   204:         jsr target_tile
+00:048C 8148            	   205:         cmpa #'H'
+00:048E 270A            	   206:         beq down_allowed
+00:0490 7C075A          	   207:         inc target_y
+00:0493 BD05DE          	   208:         jsr target_tile
+00:0496 8148            	   209:         cmpa #'H'
+00:0498 2619            	   210:         bne stop_move
+                        	   211: down_allowed:
+00:049A B60756          	   212:         ldaa player_y
+00:049D 4C              	   213:         inca
+00:049E B7075A          	   214:         staa target_y
+00:04A1 BD05DE          	   215:         jsr target_tile
+00:04A4 BD05CE          	   216:         jsr is_wall
+00:04A7 250A            	   217:         bcs stop_move
+00:04A9 7C0756          	   218:         inc player_y
+00:04AC 2008            	   219:         bra move_done
+                        	   220: fall_only:
+00:04AE BD0507          	   221:         jsr fall_if_needed
+00:04B1 2003            	   222:         bra move_done
+                        	   223: stop_move:
+00:04B3 7F075B          	   224:         clr direction
+                        	   225: move_done:
+00:04B6 B60755          	   226:         ldaa player_x
+00:04B9 B10757          	   227:         cmpa old_x
+00:04BC 2609            	   228:         bne moved
+00:04BE B60756          	   229:         ldaa player_y
+00:04C1 B10758          	   230:         cmpa old_y
+00:04C4 2601            	   231:         bne moved
+00:04C6 39              	   232:         rts
+                        	   233: moved:
+00:04C7 BD0631          	   234:         jsr restore_old
+00:04CA BD0658          	   235:         jsr draw_player
+00:04CD B60755          	   236:         ldaa player_x
+00:04D0 B70759          	   237:         staa target_x
+00:04D3 B60756          	   238:         ldaa player_y
+00:04D6 B7075A          	   239:         staa target_y
+00:04D9 BD05DE          	   240:         jsr target_tile
+00:04DC 8124            	   241:         cmpa #'$'
+00:04DE 2705            	   242:         beq level_done
+00:04E0 815E            	   243:         cmpa #'^'
+00:04E2 2710            	   244:         beq fire_reset
+00:04E4 39              	   245:         rts
+                        	   246: level_done:
+00:04E5 7F075B          	   247:         clr direction
+00:04E8 8601            	   248:         ldaa #1
+00:04EA B7075E          	   249:         staa won_level
+00:04ED CE070C          	   250:         ldx #win_text
+00:04F0 BD066C          	   251:         jsr print_at_prompt
+00:04F3 39              	   252:         rts
+                        	   253: fire_reset:
+00:04F4 8606            	   254:         ldaa #6
+00:04F6 B70755          	   255:         staa player_x
+00:04F9 8613            	   256:         ldaa #19
+00:04FB B70756          	   257:         staa player_y
+00:04FE 7F075B          	   258:         clr direction
+00:0501 7F075C          	   259:         clr jump_step
+00:0504 7E0658          	   260:         jmp draw_player
+                        	   261: 
+                        	   262: fall_if_needed:
+00:0507 BD0595          	   263:         jsr is_solid
+00:050A 7D075F          	   264:         tst solid_flag
+00:050D 260A            	   265:         bne fall_done
+00:050F B60756          	   266:         ldaa player_y
+00:0512 8113            	   267:         cmpa #19
+00:0514 2403            	   268:         bcc fall_done
+00:0516 7C0756          	   269:         inc player_y
+                        	   270: fall_done:
+00:0519 39              	   271:         rts
+                        	   272: 
+                        	   273: ; Pascal's moving jump: up/up, across/across, down/down.
+                        	   274: ; A standing jump is up/up, pause, down/down.
+                        	   275: move_jump:
+00:051A B60755          	   276:         ldaa player_x
+00:051D B70759          	   277:         staa target_x
+00:0520 B60756          	   278:         ldaa player_y
+00:0523 B7075A          	   279:         staa target_y
+00:0526 B6075C          	   280:         ldaa jump_step
+00:0529 8103            	   281:         cmpa #3
+00:052B 2405            	   282:         bcc jump_not_up
+00:052D 7A075A          	   283:         dec target_y
+00:0530 2007            	   284:         bra jump_vertical_done
+                        	   285: jump_not_up:
+00:0532 8105            	   286:         cmpa #5
+00:0534 2503            	   287:         bcs jump_vertical_done
+00:0536 7C075A          	   288:         inc target_y
+                        	   289: jump_vertical_done:
+00:0539 7D075D          	   290:         tst jump_dir
+00:053C 270F            	   291:         beq jump_target_ready
+00:053E B6075D          	   292:         ldaa jump_dir
+00:0541 8101            	   293:         cmpa #1
+00:0543 2605            	   294:         bne jump_to_right
+00:0545 7A0759          	   295:         dec target_x
+00:0548 2003            	   296:         bra jump_target_ready
+                        	   297: jump_to_right:
+00:054A 7C0759          	   298:         inc target_x
+                        	   299: jump_target_ready:
+00:054D B60759          	   300:         ldaa target_x
+00:0550 273D            	   301:         beq jump_blocked
+00:0552 8150            	   302:         cmpa #80
+00:0554 2439            	   303:         bcc jump_blocked
+00:0556 B6075A          	   304:         ldaa target_y
+00:0559 2734            	   305:         beq jump_blocked
+00:055B 8114            	   306:         cmpa #20
+00:055D 2430            	   307:         bcc jump_blocked
+00:055F BD05DE          	   308:         jsr target_tile
+00:0562 BD05CE          	   309:         jsr is_wall
+00:0565 2528            	   310:         bcs jump_blocked
+00:0567 B60759          	   311:         ldaa target_x
+00:056A B70755          	   312:         staa player_x
+00:056D B6075A          	   313:         ldaa target_y
+00:0570 B70756          	   314:         staa player_y
+00:0573 7C075C          	   315:         inc jump_step
+00:0576 B6075D          	   316:         ldaa jump_dir
+00:0579 2609            	   317:         bne jump_six_step
+00:057B B6075C          	   318:         ldaa jump_step
+00:057E 8106            	   319:         cmpa #6
+00:0580 250C            	   320:         bcs jump_return
+00:0582 2007            	   321:         bra jump_finished
+                        	   322: jump_six_step:
+00:0584 B6075C          	   323:         ldaa jump_step
+00:0587 8107            	   324:         cmpa #7
+00:0589 2503            	   325:         bcs jump_return
+                        	   326: jump_finished:
+00:058B 7F075C          	   327:         clr jump_step
+                        	   328: jump_return:
+00:058E 39              	   329:         rts
+                        	   330: jump_blocked:
+00:058F 7F075C          	   331:         clr jump_step
+00:0592 7E0507          	   332:         jmp fall_if_needed
+                        	   333: 
+                        	   334: ; Return solid_flag=1 if on a ladder or standing on a supporting tile.
+                        	   335: is_solid:
+00:0595 7F075F          	   336:         clr solid_flag
+00:0598 B60755          	   337:         ldaa player_x
+00:059B B70759          	   338:         staa target_x
+00:059E B60756          	   339:         ldaa player_y
+00:05A1 B7075A          	   340:         staa target_y
+00:05A4 BD05DE          	   341:         jsr target_tile
+00:05A7 8148            	   342:         cmpa #'H'
+00:05A9 271D            	   343:         beq solid_yes
+00:05AB B60756          	   344:         ldaa player_y
+00:05AE 8113            	   345:         cmpa #19
+00:05B0 2416            	   346:         bcc solid_yes
+00:05B2 7C075A          	   347:         inc target_y
+00:05B5 BD05DE          	   348:         jsr target_tile
+00:05B8 813D            	   349:         cmpa #'='
+00:05BA 270C            	   350:         beq solid_yes
+00:05BC 812D            	   351:         cmpa #'-'
+00:05BE 2708            	   352:         beq solid_yes
+00:05C0 8148            	   353:         cmpa #'H'
+00:05C2 2704            	   354:         beq solid_yes
+00:05C4 817C            	   355:         cmpa #'|'
+00:05C6 2605            	   356:         bne solid_done
+                        	   357: solid_yes:
+00:05C8 8601            	   358:         ldaa #1
+00:05CA B7075F          	   359:         staa solid_flag
+                        	   360: solid_done:
+00:05CD 39              	   361:         rts
+                        	   362: 
+                        	   363: ; A contains tile; carry means it blocks Lad movement.
+                        	   364: is_wall:
+00:05CE 813D            	   365:         cmpa #'='
+00:05D0 270A            	   366:         beq wall_yes
+00:05D2 817C            	   367:         cmpa #'|'
+00:05D4 2706            	   368:         beq wall_yes
+00:05D6 812D            	   369:         cmpa #'-'
+00:05D8 2702            	   370:         beq wall_yes
+00:05DA 0C              	   371:         clc
+00:05DB 39              	   372:         rts
+                        	   373: wall_yes:
+00:05DC 0D              	   374:         sec
+00:05DD 39              	   375:         rts
+                        	   376: 
+                        	   377: ; Look up target_x,target_y (1-based). Return character in A.
+                        	   378: target_tile:
+00:05DE CE0766          	   379:         ldx #row_pointers
+00:05E1 F6075A          	   380:         ldab target_y
+00:05E4 5A              	   381:         decb
+                        	   382: target_row:
+00:05E5 5D              	   383:         tstb
+00:05E6 2705            	   384:         beq row_found
+00:05E8 08              	   385:         inx
+00:05E9 08              	   386:         inx
+00:05EA 5A              	   387:         decb
+00:05EB 20F8            	   388:         bra target_row
+                        	   389: row_found:
+00:05ED EE00            	   390:         ldx 0,x
+00:05EF F60759          	   391:         ldab target_x
+00:05F2 5A              	   392:         decb
+                        	   393: target_col:
+00:05F3 5D              	   394:         tstb
+00:05F4 2704            	   395:         beq col_found
+00:05F6 08              	   396:         inx
+00:05F7 5A              	   397:         decb
+00:05F8 20F9            	   398:         bra target_col
+                        	   399: col_found:
+00:05FA A600            	   400:         ldaa 0,x
+00:05FC 39              	   401:         rts
+                        	   402: 
+                        	   403: draw_level:
+00:05FD CE078E          	   404:         ldx #level_map
+00:0600 8614            	   405:         ldaa #20
+00:0602 B70764          	   406:         staa rows_left
+                        	   407: draw_row:
+00:0605 864F            	   408:         ldaa #79
+00:0607 B70765          	   409:         staa cols_left
+                        	   410: draw_col:
+00:060A A600            	   411:         ldaa 0,x
+00:060C 8170            	   412:         cmpa #'p'
+00:060E 2602            	   413:         bne draw_literal
+00:0610 8620            	   414:         ldaa #' '
+                        	   415: draw_literal:
+00:0612 BDAD0F          	   416:         jsr outch
+00:0615 08              	   417:         inx
+00:0616 7A0765          	   418:         dec cols_left
+00:0619 26EF            	   419:         bne draw_col
+00:061B 860D            	   420:         ldaa #13
+00:061D BDAD0F          	   421:         jsr outch
+00:0620 860A            	   422:         ldaa #10
+00:0622 BDAD0F          	   423:         jsr outch
+00:0625 7A0764          	   424:         dec rows_left
+00:0628 26DB            	   425:         bne draw_row
+00:062A CE06D3          	   426:         ldx #status_text
+00:062D BD06BA          	   427:         jsr print
+00:0630 39              	   428:         rts
+                        	   429: 
+                        	   430: restore_old:
+00:0631 B60757          	   431:         ldaa old_x
+00:0634 B70759          	   432:         staa target_x
+00:0637 B70760          	   433:         staa cursor_col
+00:063A B60758          	   434:         ldaa old_y
+00:063D B7075A          	   435:         staa target_y
+00:0640 B70761          	   436:         staa cursor_row
+00:0643 BD05DE          	   437:         jsr target_tile
+00:0646 8170            	   438:         cmpa #'p'
+00:0648 2602            	   439:         bne restore_literal
+00:064A 8620            	   440:         ldaa #' '
+                        	   441: restore_literal:
+00:064C B70763          	   442:         staa draw_char
+00:064F BD067C          	   443:         jsr cursor_to
+00:0652 B60763          	   444:         ldaa draw_char
+00:0655 7EAD0F          	   445:         jmp outch
+                        	   446: draw_player:
+00:0658 B60756          	   447:         ldaa player_y
+00:065B B70761          	   448:         staa cursor_row
+00:065E B60755          	   449:         ldaa player_x
+00:0661 B70760          	   450:         staa cursor_col
+00:0664 BD067C          	   451:         jsr cursor_to
+00:0667 8667            	   452:         ldaa #'g'
+00:0669 7EAD0F          	   453:         jmp outch
+                        	   454: print_at_prompt:
+00:066C 8617            	   455:         ldaa #23
+00:066E B70761          	   456:         staa cursor_row
+00:0671 8601            	   457:         ldaa #1
+00:0673 B70760          	   458:         staa cursor_col
+00:0676 BD067C          	   459:         jsr cursor_to
+00:0679 7E06BA          	   460:         jmp print
+                        	   461: cursor_to:
+00:067C 861B            	   462:         ldaa #27
+00:067E BDAD0F          	   463:         jsr outch
+00:0681 865B            	   464:         ldaa #'['
+00:0683 BDAD0F          	   465:         jsr outch
+00:0686 B60761          	   466:         ldaa cursor_row
+00:0689 BD069C          	   467:         jsr decimal
+00:068C 863B            	   468:         ldaa #';'
+00:068E BDAD0F          	   469:         jsr outch
+00:0691 B60760          	   470:         ldaa cursor_col
+00:0694 BD069C          	   471:         jsr decimal
+00:0697 8648            	   472:         ldaa #'H'
+00:0699 7EAD0F          	   473:         jmp outch
+                        	   474: decimal:
+00:069C 5F              	   475:         clrb
+                        	   476: decimal_tens:
+00:069D 810A            	   477:         cmpa #10
+00:069F 2505            	   478:         bcs decimal_ones
+00:06A1 800A            	   479:         suba #10
+00:06A3 5C              	   480:         incb
+00:06A4 20F7            	   481:         bra decimal_tens
+                        	   482: decimal_ones:
+00:06A6 B70762          	   483:         staa digit
+00:06A9 5D              	   484:         tstb
+00:06AA 2706            	   485:         beq decimal_last
+00:06AC 17              	   486:         tba
+00:06AD 8B30            	   487:         adda #'0'
+00:06AF BDAD0F          	   488:         jsr outch
+                        	   489: decimal_last:
+00:06B2 B60762          	   490:         ldaa digit
+00:06B5 8B30            	   491:         adda #'0'
+00:06B7 7EAD0F          	   492:         jmp outch
+                        	   493: print:
+00:06BA A600            	   494:         ldaa 0,x
+00:06BC 2706            	   495:         beq print_done
+00:06BE BDAD0F          	   496:         jsr outch
+00:06C1 08              	   497:         inx
+00:06C2 20F6            	   498:         bra print
+                        	   499: print_done:
+00:06C4 39              	   500:         rts
+                        	   501: 
+00:06C5 1B              	   502: clear_text: .byte 27
+00:06C6 5B3F32356C      	   503:         .ascii "[?25l"
+00:06CB 1B              	   504:         .byte 27
+00:06CC 5B324A          	   505:         .ascii "[2J"
+00:06CF 1B              	   506:         .byte 27
+00:06D0 5B48            	   507:         .ascii "[H"
+00:06D2 00              	   508:         .byte 0
+                        	   509: status_text:
+00:06D3 4561737920537472	   510:         .ascii "Easy Street   h/j/k/l or WASD move   SPACE jump   Q quit"
+00:06DB 656574202020682F
+00:06E3 6A2F6B2F6C206F72
+00:06EB 2057415344206D6F
+00:06F3 7665202020535041
+00:06FB 4345206A756D7020
+00:0703 2020512071756974
+00:070B 00              	   511:         .byte 0
+                        	   512: win_text:
+00:070C 596F7520666F756E	   513:         .ascii "You found the treasure! Press Q to leave.             "
+00:0714 6420746865207472
+00:071C 6561737572652120
+00:0724 5072657373205120
+00:072C 746F206C65617665
+00:0734 2E20202020202020
+00:073C 202020202020
+00:0742 00              	   514:         .byte 0
+                        	   515: exit_text:
+00:0743 1B              	   516:         .byte 27
+00:0744 5B32333B3148    	   517:         .ascii "[23;1H"
+00:074A 1B              	   518:         .byte 27
+00:074B 5B3F323568      	   519:         .ascii "[?25h"
+00:0750 0D              	   520:         .byte 13,10,0
+00:0751 0A
+00:0752 00
+                        	   521: 
+00:0753 0000            	   522: saved_sp:     .word 0
+00:0755 00              	   523: player_x:     .byte 0
+00:0756 00              	   524: player_y:     .byte 0
+00:0757 00              	   525: old_x:        .byte 0
+00:0758 00              	   526: old_y:        .byte 0
+00:0759 00              	   527: target_x:     .byte 0
+00:075A 00              	   528: target_y:     .byte 0
+00:075B 00              	   529: direction:    .byte 0
+00:075C 00              	   530: jump_step:    .byte 0
+00:075D 00              	   531: jump_dir:     .byte 0
+00:075E 00              	   532: won_level:    .byte 0
+00:075F 00              	   533: solid_flag:   .byte 0
+00:0760 00              	   534: cursor_col:   .byte 0
+00:0761 00              	   535: cursor_row:   .byte 0
+00:0762 00              	   536: digit:        .byte 0
+00:0763 00              	   537: draw_char:    .byte 0
+00:0764 00              	   538: rows_left:    .byte 0
+00:0765 00              	   539: cols_left:    .byte 0
+                        	   540: 
+                        	   541: row_pointers:
+00:0766 078E            	   542:         .word level_map+0,level_map+79,level_map+158,level_map+237
+00:0768 07DD
+00:076A 082C
+00:076C 087B
+00:076E 08CA            	   543:         .word level_map+316,level_map+395,level_map+474,level_map+553
+00:0770 0919
+00:0772 0968
+00:0774 09B7
+00:0776 0A06            	   544:         .word level_map+632,level_map+711,level_map+790,level_map+869
+00:0778 0A55
+00:077A 0AA4
+00:077C 0AF3
+00:077E 0B42            	   545:         .word level_map+948,level_map+1027,level_map+1106,level_map+1185
+00:0780 0B91
+00:0782 0BE0
+00:0784 0C2F
+00:0786 0C7E            	   546:         .word level_map+1264,level_map+1343,level_map+1422,level_map+1501
+00:0788 0CCD
+00:078A 0D1C
+00:078C 0D6B
+                        	   547: level_map:
+                        	   548:         .include "easy_street.inc"
+
+Source: "easy_street.inc"
+                        	     1: ; Generated from Ladder/src/ladicons.pas by make_easy_street.py
+00:078E 2020202020202020	     2:         .ascii "                                       V                 $                     "
+00:0796 2020202020202020
+00:079E 2020202020202020
+00:07A6 2020202020202020
+00:07AE 2020202020202056
+00:07B6 2020202020202020
+00:07BE 2020202020202020
+00:07C6 2024202020202020
+00:07CE 2020202020202020
+00:07D6 20202020202020
+00:07DD 2020202020202020	     3:         .ascii "                                                         H                     "
+00:07E5 2020202020202020
+00:07ED 2020202020202020
+00:07F5 2020202020202020
+00:07FD 2020202020202020
+00:0805 2020202020202020
+00:080D 2020202020202020
+00:0815 2048202020202020
+00:081D 2020202020202020
+00:0825 20202020202020
+00:082C 2020202020202020	     4:         .ascii "                H                                        H                     "
+00:0834 2020202020202020
+00:083C 4820202020202020
+00:0844 2020202020202020
+00:084C 2020202020202020
+00:0854 2020202020202020
+00:085C 2020202020202020
+00:0864 2048202020202020
+00:086C 2020202020202020
+00:0874 20202020202020
+00:087B 202020202020203D	     5:         .ascii "       =========H==================================================            "
+00:0883 3D3D3D3D3D3D3D3D
+00:088B 483D3D3D3D3D3D3D
+00:0893 3D3D3D3D3D3D3D3D
+00:089B 3D3D3D3D3D3D3D3D
+00:08A3 3D3D3D3D3D3D3D3D
+00:08AB 3D3D3D3D3D3D3D3D
+00:08B3 3D3D3D3D3D3D3D3D
+00:08BB 3D3D3D2020202020
+00:08C3 20202020202020
+00:08CA 2020202020202020	     6:         .ascii "                H                                                              "
+00:08D2 2020202020202020
+00:08DA 4820202020202020
+00:08E2 2020202020202020
+00:08EA 2020202020202020
+00:08F2 2020202020202020
+00:08FA 2020202020202020
+00:0902 2020202020202020
+00:090A 2020202020202020
+00:0912 20202020202020
+00:0919 2020202020202020	     7:         .ascii "                H                                                              "
+00:0921 2020202020202020
+00:0929 4820202020202020
+00:0931 2020202020202020
+00:0939 2020202020202020
+00:0941 2020202020202020
+00:0949 2020202020202020
+00:0951 2020202020202020
+00:0959 2020202020202020
+00:0961 20202020202020
+00:0968 2020202020202020	     8:         .ascii "                H          H                             H                     "
+00:0970 2020202020202020
+00:0978 4820202020202020
+00:0980 2020204820202020
+00:0988 2020202020202020
+00:0990 2020202020202020
+00:0998 2020202020202020
+00:09A0 2048202020202020
+00:09A8 2020202020202020
+00:09B0 20202020202020
+00:09B7 3D3D3D3D3D3D3D3D	     9:         .ascii "================H==========H==================   ========H====================="
+00:09BF 3D3D3D3D3D3D3D3D
+00:09C7 483D3D3D3D3D3D3D
+00:09CF 3D3D3D483D3D3D3D
+00:09D7 3D3D3D3D3D3D3D3D
+00:09DF 3D3D3D3D3D3D2020
+00:09E7 203D3D3D3D3D3D3D
+00:09EF 3D483D3D3D3D3D3D
+00:09F7 3D3D3D3D3D3D3D3D
+00:09FF 3D3D3D3D3D3D3D
+00:0A06 2020202020202020	    10:         .ascii "                &          H                             H          |       |  "
+00:0A0E 2020202020202020
+00:0A16 2620202020202020
+00:0A1E 2020204820202020
+00:0A26 2020202020202020
+00:0A2E 2020202020202020
+00:0A36 2020202020202020
+00:0A3E 2048202020202020
+00:0A46 202020207C202020
+00:0A4E 202020207C2020
+00:0A55 2020202020202020	    11:         .ascii "                                                         H         Easy Street "
+00:0A5D 2020202020202020
+00:0A65 2020202020202020
+00:0A6D 2020202020202020
+00:0A75 2020202020202020
+00:0A7D 2020202020202020
+00:0A85 2020202020202020
+00:0A8D 2048202020202020
+00:0A95 2020204561737920
+00:0A9D 53747265657420
+00:0AA4 2020202020202020	    12:         .ascii "                H                                        H                     "
+00:0AAC 2020202020202020
+00:0AB4 4820202020202020
+00:0ABC 2020202020202020
+00:0AC4 2020202020202020
+00:0ACC 2020202020202020
+00:0AD4 2020202020202020
+00:0ADC 2048202020202020
+00:0AE4 2020202020202020
+00:0AEC 20202020202020
+00:0AF3 202020202020203D	    13:         .ascii "       =========H==========H=========  =======================                 "
+00:0AFB 3D3D3D3D3D3D3D3D
+00:0B03 483D3D3D3D3D3D3D
+00:0B0B 3D3D3D483D3D3D3D
+00:0B13 3D3D3D3D3D20203D
+00:0B1B 3D3D3D3D3D3D3D3D
+00:0B23 3D3D3D3D3D3D3D3D
+00:0B2B 3D3D3D3D3D3D2020
+00:0B33 2020202020202020
+00:0B3B 20202020202020
+00:0B42 2020202020202020	    14:         .ascii "                H                                                              "
+00:0B4A 2020202020202020
+00:0B52 4820202020202020
+00:0B5A 2020202020202020
+00:0B62 2020202020202020
+00:0B6A 2020202020202020
+00:0B72 2020202020202020
+00:0B7A 2020202020202020
+00:0B82 2020202020202020
+00:0B8A 20202020202020
+00:0B91 2020202020202020	    15:         .ascii "                H                                                              "
+00:0B99 2020202020202020
+00:0BA1 4820202020202020
+00:0BA9 2020202020202020
+00:0BB1 2020202020202020
+00:0BB9 2020202020202020
+00:0BC1 2020202020202020
+00:0BC9 2020202020202020
+00:0BD1 2020202020202020
+00:0BD9 20202020202020
+00:0BE0 2020202020202020	    16:         .ascii "                H                                        H                     "
+00:0BE8 2020202020202020
+00:0BF0 4820202020202020
+00:0BF8 2020202020202020
+00:0C00 2020202020202020
+00:0C08 2020202020202020
+00:0C10 2020202020202020
+00:0C18 2048202020202020
+00:0C20 2020202020202020
+00:0C28 20202020202020
+00:0C2F 3D3D3D3D3D3D3D3D	    17:         .ascii "======================== ====================== =========H==============       "
+00:0C37 3D3D3D3D3D3D3D3D
+00:0C3F 3D3D3D3D3D3D3D3D
+00:0C47 203D3D3D3D3D3D3D
+00:0C4F 3D3D3D3D3D3D3D3D
+00:0C57 3D3D3D3D3D3D3D20
+00:0C5F 3D3D3D3D3D3D3D3D
+00:0C67 3D483D3D3D3D3D3D
+00:0C6F 3D3D3D3D3D3D3D3D
+00:0C77 20202020202020
+00:0C7E 2020202020202020	    18:         .ascii "                                                         H                     "
+00:0C86 2020202020202020
+00:0C8E 2020202020202020
+00:0C96 2020202020202020
+00:0C9E 2020202020202020
+00:0CA6 2020202020202020
+00:0CAE 2020202020202020
+00:0CB6 2048202020202020
+00:0CBE 2020202020202020
+00:0CC6 20202020202020
+00:0CCD 2020202020202020	    19:         .ascii "                                                         H                     "
+00:0CD5 2020202020202020
+00:0CDD 2020202020202020
+00:0CE5 2020202020202020
+00:0CED 2020202020202020
+00:0CF5 2020202020202020
+00:0CFD 2020202020202020
+00:0D05 2048202020202020
+00:0D0D 2020202020202020
+00:0D15 20202020202020
+00:0D1C 2A20202020702020	    20:         .ascii "*    p                                                   H                    *"
+00:0D24 2020202020202020
+00:0D2C 2020202020202020
+00:0D34 2020202020202020
+00:0D3C 2020202020202020
+00:0D44 2020202020202020
+00:0D4C 2020202020202020
+00:0D54 2048202020202020
+00:0D5C 2020202020202020
+00:0D64 2020202020202A
+00:0D6B 3D3D3D3D3D3D3D3D	    21:         .ascii "==============================================================================="
+00:0D73 3D3D3D3D3D3D3D3D
+00:0D7B 3D3D3D3D3D3D3D3D
+00:0D83 3D3D3D3D3D3D3D3D
+00:0D8B 3D3D3D3D3D3D3D3D
+00:0D93 3D3D3D3D3D3D3D3D
+00:0D9B 3D3D3D3D3D3D3D3D
+00:0DA3 3D3D3D3D3D3D3D3D
+00:0DAB 3D3D3D3D3D3D3D3D
+00:0DB3 3D3D3D3D3D3D3D
+                        	    22: 
+
+Source: "ladder.s"
+                        	   549: 
+
+
+Symbols by name:
+active_level                     A:03C1
+clear_text                       A:06C5
+climb_up                         A:0471
+col_found                        A:05FA
+cols_left                        A:0765
+cursor_col                       A:0760
+cursor_row                       A:0761
+cursor_to                        A:067C
+decimal                          A:069C
+decimal_last                     A:06B2
+decimal_ones                     A:06A6
+decimal_tens                     A:069D
+digit                            A:0762
+direction                        A:075B
+down_allowed                     A:049A
+draw_char                        A:0763
+draw_col                         A:060A
+draw_level                       A:05FD
+draw_literal                     A:0612
+draw_player                      A:0658
+draw_row                         A:0605
+exit_text                        A:0743
+fall_done                        A:0519
+fall_if_needed                   A:0507
+fall_only                        A:04AE
+fire_reset                       A:04F4
+game_loop                        A:0322
+getc                             S:BF00
+handle_key                       A:0338
+is_solid                         A:0595
+is_wall                          A:05CE
+jump_begin                       A:03A9
+jump_blocked                     A:058F
+jump_dir                         A:075D
+jump_finished                    A:058B
+jump_key_done                    A:03AE
+jump_left                        A:039D
+jump_not_up                      A:0532
+jump_return                      A:058E
+jump_right                       A:03A4
+jump_six_step                    A:0584
+jump_step                        A:075C
+jump_target_ready                A:054D
+jump_to_right                    A:054A
+jump_vertical_done               A:0539
+key_down                         A:037A
+key_jump                         A:0380
+key_left                         A:0368
+key_right                        A:036E
+key_up                           A:0374
+left_in_bounds                   A:0409
+left_supported                   A:03FF
+level_done                       A:04E5
+level_map                        A:078E
+move_done                        A:04B6
+move_down                        A:0476
+move_horizontal                  A:0434
+move_jump                        A:051A
+move_left                        A:03F4
+move_player                      A:03BB
+move_regular                     A:03D8
+move_right                       A:0415
+move_still                       A:03EE
+move_up                          A:0444
+moved                            A:04C7
+no_key                           A:032D
+old_x                            A:0757
+old_y                            A:0758
+outch                            S:AD0F
+player_x                         A:0755
+player_y                         A:0756
+poll                             S:BF2A
+print                            A:06BA
+print_at_prompt                  A:066C
+print_done                       A:06C4
+quit                             A:03AF
+restore_literal                  A:064C
+restore_old                      A:0631
+right_in_bounds                  A:042A
+right_supported                  A:0420
+row_found                        A:05ED
+row_pointers                     A:0766
+rows_left                        A:0764
+saved_sp                         A:0753
+solid_done                       A:05CD
+solid_flag                       A:075F
+solid_yes                        A:05C8
+start                            A:0300
+status_text                      A:06D3
+stop_move                        A:04B3
+target_col                       A:05F3
+target_row                       A:05E5
+target_tile                      A:05DE
+target_x                         A:0759
+target_y                         A:075A
+tick_wait                        A:0330
+wall_yes                         A:05DC
+warms                            S:AD03
+win_text                         A:070C
+won_level                        A:075E
+
+Symbols by value:
+0300 start
+0322 game_loop
+032D no_key
+0330 tick_wait
+0338 handle_key
+0368 key_left
+036E key_right
+0374 key_up
+037A key_down
+0380 key_jump
+039D jump_left
+03A4 jump_right
+03A9 jump_begin
+03AE jump_key_done
+03AF quit
+03BB move_player
+03C1 active_level
+03D8 move_regular
+03EE move_still
+03F4 move_left
+03FF left_supported
+0409 left_in_bounds
+0415 move_right
+0420 right_supported
+042A right_in_bounds
+0434 move_horizontal
+0444 move_up
+0471 climb_up
+0476 move_down
+049A down_allowed
+04AE fall_only
+04B3 stop_move
+04B6 move_done
+04C7 moved
+04E5 level_done
+04F4 fire_reset
+0507 fall_if_needed
+0519 fall_done
+051A move_jump
+0532 jump_not_up
+0539 jump_vertical_done
+054A jump_to_right
+054D jump_target_ready
+0584 jump_six_step
+058B jump_finished
+058E jump_return
+058F jump_blocked
+0595 is_solid
+05C8 solid_yes
+05CD solid_done
+05CE is_wall
+05DC wall_yes
+05DE target_tile
+05E5 target_row
+05ED row_found
+05F3 target_col
+05FA col_found
+05FD draw_level
+0605 draw_row
+060A draw_col
+0612 draw_literal
+0631 restore_old
+064C restore_literal
+0658 draw_player
+066C print_at_prompt
+067C cursor_to
+069C decimal
+069D decimal_tens
+06A6 decimal_ones
+06B2 decimal_last
+06BA print
+06C4 print_done
+06C5 clear_text
+06D3 status_text
+070C win_text
+0743 exit_text
+0753 saved_sp
+0755 player_x
+0756 player_y
+0757 old_x
+0758 old_y
+0759 target_x
+075A target_y
+075B direction
+075C jump_step
+075D jump_dir
+075E won_level
+075F solid_flag
+0760 cursor_col
+0761 cursor_row
+0762 digit
+0763 draw_char
+0764 rows_left
+0765 cols_left
+0766 row_pointers
+078E level_map
+AD03 warms
+AD0F outch
+BF00 getc
+BF2A poll

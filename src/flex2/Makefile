@@ -117,17 +117,24 @@ build/rogue.bin: ../rogue/rogue.s Makefile
 	@mkdir -p build
 	$(VASM_STD_BIN) -Fbin -L build/rogue.lst -o $@ $<
 
+../ladder/flex/easy_street.inc: ../ladder/tools/make_levels.py ../ladder/Ladder/src/ladicons.pas
+	$(PYTHON) ../ladder/tools/make_levels.py
+
+build/ladder.bin: ../ladder/flex/ladder.s ../ladder/flex/easy_street.inc Makefile
+	@mkdir -p build
+	$(VASM_STD_BIN) -I../ladder/flex -Fbin -L build/ladder.lst -o $@ $<
+
 build/video_demo.bin: platform/video_demo.s Makefile
 	@mkdir -p build
 	$(VASM_STD_BIN) -Fbin -L build/video_demo.lst -o $@ $<
 
 z68: image
 
-build/flex2.dsk: build/c68flex.bin build/msbasic.bin build/boot.bin build/z68.bin build/vera.bin build/boop.bin build/rogue.bin build/CZECH.DAT build/VMBOOT.DAT build/VMFAIL.DAT build/VMLIMIT.DAT tools/mkimage.py ../rogue/generate_floors.py tools/stories.py $(STORY_INPUTS) tools/disk_layout.py tools/source-disk.py 6800Flex/6800FLEX.DSK 6800Flex/6800UTL1.DSK 6800Flex/6800UTL2.DSK 6800Flex/GAMES_5.DSK 6800Flex/MYGAMES.DSK 6800Flex/XBASIC_1.DSK
+build/flex2.dsk: build/c68flex.bin build/msbasic.bin build/boot.bin build/z68.bin build/vera.bin build/boop.bin build/rogue.bin build/ladder.bin build/CZECH.DAT build/VMBOOT.DAT build/VMFAIL.DAT build/VMLIMIT.DAT tools/mkimage.py ../rogue/generate_floors.py tools/stories.py $(STORY_INPUTS) tools/disk_layout.py tools/source-disk.py 6800Flex/6800FLEX.DSK 6800Flex/6800UTL1.DSK 6800Flex/6800UTL2.DSK 6800Flex/GAMES_5.DSK 6800Flex/MYGAMES.DSK 6800Flex/XBASIC_1.DSK
 	$(PYTHON) tools/mkimage.py
 
 # Explicitly discard generated disk contents even if an emulator saved a newer file.
-rebuild-image: build/c68flex.bin build/msbasic.bin build/boot.bin build/z68.bin build/vera.bin build/boop.bin build/rogue.bin build/CZECH.DAT build/VMBOOT.DAT build/VMFAIL.DAT build/VMLIMIT.DAT
+rebuild-image: build/c68flex.bin build/msbasic.bin build/boot.bin build/z68.bin build/vera.bin build/boop.bin build/rogue.bin build/ladder.bin build/CZECH.DAT build/VMBOOT.DAT build/VMFAIL.DAT build/VMLIMIT.DAT
 	$(PYTHON) tools/mkimage.py
 	$(PYTHON) tools/verify-image.py
 
@@ -147,6 +154,13 @@ build/story-runner: tests/story-runner.cpp tests/flex_harness.h $(EMU_SRCS) $(EM
 
 build/rogue-test: tests/rogue.cpp tests/flex_harness.h $(EMU_SRCS) $(EMU_HEADERS)
 	$(CXX) -std=c++17 -O2 -I$(EMU_DIR)/src tests/rogue.cpp $(EMU_SRCS) -o $@
+
+build/ladder-test: tests/ladder.cpp tests/flex_harness.h $(EMU_SRCS) $(EMU_HEADERS)
+	$(CXX) -std=c++17 -O2 -I$(EMU_DIR)/src tests/ladder.cpp $(EMU_SRCS) -o $@
+
+.PHONY: ladder-test
+ladder-test: image build/ladder-test
+	./build/ladder-test build/ladder.bin build/ladder.lst
 
 .PHONY: rogue-test
 rogue-test: image build/rogue-test
@@ -179,11 +193,12 @@ build/sd-test.dsk: build/flex2.dsk build/drive-config.asm ../sd/tools/extract_im
 test-sd: all build/sd-driver build/sd-test.dsk
 	./build/sd-driver
 
-test: all build/smoke build/acceptance build/sd-driver build/sd-test.dsk build/rogue-test
+test: all build/smoke build/acceptance build/sd-driver build/sd-test.dsk build/rogue-test build/ladder-test
 	./build/sd-driver
 	./build/smoke
 	./build/acceptance
 	./build/rogue-test
+	./build/ladder-test build/ladder.bin build/ladder.lst
 	$(PYTHON) tools/verify-image.py build/smoke.dsk
 
 clean:

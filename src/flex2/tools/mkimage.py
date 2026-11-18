@@ -72,11 +72,14 @@ def make_image():
     assert 0 < len(boop) <= 0x7E00 - 0x0300, 'BOOP exceeds FLEX application RAM'
     rogue = (root / 'rogue.bin').read_bytes()
     assert 0 < len(rogue) <= 0x7E00 - 0x0300, 'ROGUE exceeds FLEX application RAM'
+    ladder = (root / 'ladder.bin').read_bytes()
+    assert 0 < len(ladder) <= 0x7E00 - 0x0300, 'LADDER exceeds FLEX application RAM'
     files = [
         ('Z68.CMD', binary_records(z68, 0x0300, 0x0300)),
         ('VERA.CMD', binary_records(vera, 0x0300, 0x0300)),
         ('BOOP.CMD', binary_records(boop, 0x0300, 0x0300)),
         ('ROGUE.CMD', binary_records(rogue, 0x0300, 0x0300)),
+        ('LADDER.CMD', binary_records(ladder, 0x0300, 0x0300)),
         ('FLEX2.SYS', binary_records((root / 'c68flex.bin').read_bytes(), 0xA100, 0xAD00)),
         ('MSBASIC.CMD', binary_records((root / 'msbasic.bin').read_bytes(), 0, 0)),
     ]

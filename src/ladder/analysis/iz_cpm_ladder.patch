@@ -1,0 +1,234 @@
+diff --git a/src/bios.rs b/src/bios.rs
+index fe71438..e5daa26 100644
+--- a/src/bios.rs
++++ b/src/bios.rs
+@@ -8,7 +8,11 @@ use crate::terminal::TerminalEmulator;
+ 
+ pub struct Bios {
+     terminal: Box<dyn TerminalEmulator>,
+-    ctrl_c_count: u8
++    ctrl_c_count: u8,
++    ladder_next_char_at_base: bool,
++    ladder_player_at_base: bool,
++    ladder_next_char_at_top: bool,
++    ladder_player_at_top: bool,
+ }
+ 
+ const BIOS_COMMAND_NAMES: [&str; 17] = [
+@@ -24,7 +28,11 @@ impl Bios {
+     pub fn new(terminal: Box<dyn TerminalEmulator>) -> Bios {
+         Bios {
+             terminal,
+-            ctrl_c_count: 0
++            ctrl_c_count: 0,
++            ladder_next_char_at_base: false,
++            ladder_player_at_base: false,
++            ladder_next_char_at_top: false,
++            ladder_player_at_top: false,
+         }
+     }
+ 
+@@ -65,9 +73,38 @@ impl Bios {
+ 
+     pub fn write(&mut self, console: &mut dyn ConsoleEmulator, ch: u8) {
+         let stream = self.terminal.translate(ch);
++        if let Some(ref output) = stream {
++            if output == "\x1b[19;58H" {
++                self.ladder_next_char_at_base = true;
++                self.ladder_next_char_at_top = false;
++            } else if output == "\x1b[15;58H" {
++                self.ladder_next_char_at_top = true;
++                self.ladder_next_char_at_base = false;
++            } else if output.starts_with("\x1b[") {
++                self.ladder_next_char_at_base = false;
++                self.ladder_next_char_at_top = false;
++            } else if output.len() == 1 {
++                if self.ladder_next_char_at_base && output == "p" {
++                    self.ladder_player_at_base = true;
++                }
++                if self.ladder_next_char_at_top && output == "p" {
++                    self.ladder_player_at_top = true;
++                }
++                self.ladder_next_char_at_base = false;
++                self.ladder_next_char_at_top = false;
++            }
++        }
+         console.put(stream);
+     }
+ 
++    pub fn ladder_player_at_base(&self) -> bool {
++        self.ladder_player_at_base
++    }
++
++    pub fn ladder_player_at_top(&self) -> bool {
++        self.ladder_player_at_top
++    }
++
+     pub fn write_string(&mut self, console: &mut dyn ConsoleEmulator, text: &str) {
+         for ch in text.chars() {
+             self.write(console, ch as u8);
+diff --git a/src/run.rs b/src/run.rs
+index 798f52a..ba64a0b 100644
+--- a/src/run.rs
++++ b/src/run.rs
+@@ -1,6 +1,7 @@
+ use std::fs;
+ use std::fs::File;
+ use std::io::prelude::*;
++use std::io::BufWriter;
+ use std::thread;
+ use std::time::Duration;
+ 
+@@ -50,6 +51,22 @@ pub fn run<'a>(command_line: Option<Vec<&str>>, console: &mut dyn ConsoleEmulato
+         .short("z")
+         .long("cpu-trace")
+         .help("Traces CPU instructions execution"))
++    .arg(Arg::with_name("ladder_calls")
++        .long("ladder-calls")
++        .value_name("csv")
++        .takes_value(true)
++        .help("Log executed LADDER.COM game-to-runtime transfers to CSV"))
++    .arg(Arg::with_name("ladder_inject_key")
++        .long("ladder-inject-key")
++        .value_name("ASCII character")
++        .takes_value(true)
++        .help("Inject one character at Ladder's first level-one keyboard poll"))
++    .arg(Arg::with_name("ladder_inject_up_at_58")
++        .long("ladder-inject-up-at-58")
++        .help("Inject 8 after the lad is drawn at row 19, column 58"))
++    .arg(Arg::with_name("ladder_inject_left_at_top")
++        .long("ladder-inject-left-at-top")
++        .help("Inject 4 after the lad is drawn at row 15, column 58"))
+     .arg(Arg::with_name("cpm3")
+         .long("cpm3")
+         .help("Report CP/M version 3.1 instead of 2.2 (enables some CP/M Plus features)"))
+@@ -107,6 +124,16 @@ pub fn run<'a>(command_line: Option<Vec<&str>>, console: &mut dyn ConsoleEmulato
+     let filename = matches.value_of("CMD");
+     let params = matches.value_of("ARGS");
+     let cpu_trace = matches.is_present("cpu_trace");
++    let ladder_calls = matches.value_of("ladder_calls");
++    let ladder_inject_key = matches.value_of("ladder_inject_key").map(|value| {
++        let bytes = value.as_bytes();
++        if bytes.len() != 1 || !bytes[0].is_ascii() {
++            panic!("--ladder-inject-key needs one ASCII character");
++        }
++        bytes[0]
++    });
++    let ladder_inject_up_at_58 = matches.is_present("ladder_inject_up_at_58");
++    let ladder_inject_left_at_top = matches.is_present("ladder_inject_left_at_top");
+     let call_trace = matches.is_present("call_trace") || matches.is_present("call_trace_all");
+     let call_trace_all = matches.is_present("call_trace_all");
+     let cpm3 = matches.is_present("cpm3");
+@@ -307,8 +334,43 @@ pub fn run<'a>(command_line: Option<Vec<&str>>, console: &mut dyn ConsoleEmulato
+     cpu.registers().set_pc(binary_address);
+     cpu.set_trace(cpu_trace);
+     let mut n = 0;
++    let mut ladder_log = ladder_calls.map(|path| {
++        let mut file = BufWriter::new(File::create(path).expect("create Ladder call log"));
++        writeln!(file, "seq,source,kind,target,af,bc,de,hl,sp").unwrap();
++        file
++    });
++    let mut ladder_events: u64 = 0;
++    let mut ladder_steps: u64 = 0;
++    let mut ladder_injected = false;
++    let mut ladder_up_injected = false;
++    let mut ladder_left_injected = false;
+     loop {
++        let pc = cpu.registers().pc();
++        let mut edge = None;
++        if ladder_log.is_some() && (0x0100..0x58DF).contains(&pc) && pc <= 0x58DB {
++            let op = machine.peek(pc);
++            let is_call = matches!(op, 0xCD | 0xC4 | 0xCC | 0xD4 | 0xDC | 0xE4 | 0xEC | 0xF4 | 0xFC);
++            let is_jump = matches!(op, 0xC3 | 0xC2 | 0xCA | 0xD2 | 0xDA | 0xE2 | 0xEA | 0xF2 | 0xFA);
++            if is_call || is_jump {
++                let target = (machine.peek(pc + 1) as u16) | ((machine.peek(pc + 2) as u16) << 8);
++                if (0x617D..=0x9CFF).contains(&target) {
++                    let reg = cpu.registers();
++                    edge = Some((target, if is_call { "CALL" } else { "JP" },
++                        reg.get16(Reg16::AF), reg.get16(Reg16::BC),
++                        reg.get16(Reg16::DE), reg.get16(Reg16::HL),
++                        reg.get16(Reg16::SP)));
++                }
++            }
++        }
+         cpu.execute_instruction(&mut machine);
++        ladder_steps += 1;
++        if let (Some(log), Some((target, kind, af, bc, de, hl, sp))) = (&mut ladder_log, edge) {
++            if cpu.registers().pc() == target {
++                ladder_events += 1;
++                writeln!(log, "{},{:04X},{},{:04X},{:04X},{:04X},{:04X},{:04X},{:04X}",
++                    ladder_events, pc, kind, target, af, bc, de, hl, sp).unwrap();
++            }
++        }
+ 
+         if cpu.is_halted() {
+             println!("HALT instruction");
+@@ -317,8 +379,45 @@ pub fn run<'a>(command_line: Option<Vec<&str>>, console: &mut dyn ConsoleEmulato
+ 
+         let mut er = bios.execute(console, cpu.registers(), call_trace_all);
+         if er == ExecutionResult::Continue {
+-            er = execute_bdos(&mut bdos, &mut bios, console, &mut machine,
+-                cpu.registers(), call_trace || call_trace_all, call_trace && !call_trace_all);
++            // At BDOS entry, the stack contains the return into $617D's
++            // keyboard helper, its saved HL, then the game's return PC.
++            // Supply one deterministic key only for the level-one poll at
++            // $47ED. BDOS's three-instruction return stub will copy HL to A.
++            let sp = cpu.registers().get16(Reg16::SP);
++            let word_at = |addr: u16| -> u16 {
++                (machine.peek(addr) as u16)
++                    | ((machine.peek(addr.wrapping_add(1)) as u16) << 8)
++            };
++            let game_poll = cpu.registers().pc() == BDOS_BASE_ADDRESS
++                && cpu.registers().get8(Reg8::C) == 6
++                && cpu.registers().get8(Reg8::E) == 0xFF
++                && word_at(sp) == 0x6185
++                && word_at(sp.wrapping_add(4)) == 0x47F0;
++            let key = if game_poll && !ladder_injected {
++                ladder_inject_key
++            } else if game_poll && ladder_inject_up_at_58
++                && !ladder_up_injected && bios.ladder_player_at_base() {
++                Some(b'8')
++            } else if game_poll && ladder_inject_left_at_top
++                && ladder_up_injected && !ladder_left_injected && bios.ladder_player_at_top() {
++                Some(b'4')
++            } else {
++                None
++            };
++            if let Some(key) = key {
++                cpu.registers().set16(Reg16::HL, key as u16);
++                if !ladder_injected {
++                    ladder_injected = true;
++                } else if key == b'8' {
++                    ladder_up_injected = true;
++                } else if key == b'4' {
++                    ladder_left_injected = true;
++                }
++                eprintln!("Ladder injected key '{}' at $47ED after {} instructions", key as char, ladder_steps);
++            } else {
++                er = execute_bdos(&mut bdos, &mut bios, console, &mut machine,
++                    cpu.registers(), call_trace || call_trace_all, call_trace && !call_trace_all);
++            }
+         }
+ 
+         match er {
+@@ -381,6 +480,13 @@ pub fn run<'a>(command_line: Option<Vec<&str>>, console: &mut dyn ConsoleEmulato
+             }
+         }
+     }
++    if let Some(mut log) = ladder_log {
++        log.flush().expect("flush Ladder call log");
++        eprintln!("Ladder trace: {} transfers in {} instructions", ladder_events, ladder_steps);
++    }
++    if ladder_inject_key.is_some() && !ladder_injected {
++        eprintln!("Ladder key was not injected: level-one poll was not reached");
++    }
+ 
+     match bdos.p_code() {
+         None | Some(0) => 0,
+@@ -391,4 +497,4 @@ pub fn run<'a>(command_line: Option<Vec<&str>>, console: &mut dyn ConsoleEmulato
+             if lo != 0 { lo as i32 } else { 0xFF }
+         }
+     }
+-}
+\ No newline at end of file
++}
