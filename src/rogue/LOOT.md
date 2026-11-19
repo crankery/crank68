@@ -3,7 +3,8 @@
 The bundled Rogue 3.6 source defines the item classes and magic effects in
 `3.6-unix-source/init.c`, weapon names in `weapons.c`, and glyphs in `rogue.h`.
 These are the original options; the smaller C68 selection below is a proposal,
-not implemented game content. The current game only has gold (`*`).
+not implemented game content. The current game has gold (`*`) and an inert
+starter pocket-lint item in the inventory view.
 
 ## Original item classes
 

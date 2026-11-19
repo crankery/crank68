@@ -27,7 +27,7 @@ updated only the **temporary copy** of `LADDER.DAT`.
 | Target | Executions | Executed sites | Reading |
 | --- | ---: | ---: | --- |
 | `$617D` | 1,078,305 | 4 | Keyboard poll via BDOS function 6 |
-| `$768E` | 24,592 | 20 | Runtime role not yet identified |
+| `$768E` | 24,592 | 20 | [Multiply HL by inline 16-bit factor](MULTIPLY_INLINE.md) |
 | `$6FEA` | 9,476 | 70 | PRINT/output setup |
 | `$6E6E` | 9,437 | 46 | String output path |
 | `$626B` | 9,387 | 18 | Runtime role not yet identified |

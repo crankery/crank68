@@ -1,0 +1,22 @@
+; CP/M COM entry
+cpm_entry: equ 0x0100
+; BASCOM startup transfers control through $66B0
+startup: equ 0x0ffa
+; Compiled game main code
+main_code: equ 0x100e
+; HUD state words (runtime memory)
+score_word: equ 0x0f05
+lads_word: equ 0x0f67
+level_word: equ 0x0f69
+bonus_word: equ 0x0f77
+actor_index_word: equ 0x0fb2
+; Runtime entry: BASCOM $WID, WIDTH setting
+width_setting: equ 0x705e
+; Runtime entry: nonblocking keyboard poll through BDOS function 6
+keyboard_poll: equ 0x617d
+; Runtime entry: BASCOM $PR0A, PRINT setup
+print_setup: equ 0x6fea
+; Runtime entry: BASCOM $SASA, string assignment
+string_assign: equ 0x74db
+; Runtime entry: BASCOM $IMUG, HL multiplied by inline 16-bit operand
+integer_mul_inline: equ 0x768e

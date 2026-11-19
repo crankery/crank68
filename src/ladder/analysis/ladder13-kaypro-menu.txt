@@ -1,0 +1,24 @@
+               LL                     dd       dd
+               LL                     dd       dd                      tm
+               LL         aaaa     ddddd    ddddd    eeee   rrrrrrr
+               LL        aa  aa   dd  dd   dd  dd   ee  ee  rr    rr
+               LL        aa  aa   dd  dd   dd  dd   eeeeee  rr
+               LL        aa  aa   dd  dd   dd  dd   ee      rr
+               LLLLLLLL   aaa aa   ddd dd   ddd dd   eeee   rr
+
+                                       Version : 1.30
+(c) 1982, 1983 Yahoo Software          Terminal: KayPro II
+10970 Ashton Ave.  Suite 312           Difficulty level: 1
+Los Angeles, Ca  90024                 Up = U  Down = D  Left = L  Right = R
+                                       Jump = Space   Stop = Other
+
+P = Play game                          High Scores
+L = Change level of difficulty         1)
+C = Configure Ladder                   2)
+I = Instructions                       3)
+E = Exit Ladder                        4)
+                                       5)
+
+Enter one of the above:
+
+

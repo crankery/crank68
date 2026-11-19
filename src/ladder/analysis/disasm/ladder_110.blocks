@@ -1,0 +1,38 @@
+baslib_banner: start 0x6678 unlabeled end 0x66ab type bytedata
+startup_record: start 0x1000 unlabeled end 0x100e type bytedata
+header: start 0x0103 unlabeled end 0x0137 type bytedata
+game_data: start 0x58df unlabeled end 0x617d type bytedata
+imug_operand_3cf2: unlabeled start 0x3cf5 unlabeled end 0x3cf7 type worddata
+imug_operand_3d22: unlabeled start 0x3d25 unlabeled end 0x3d27 type worddata
+imug_operand_40a0: unlabeled start 0x40a3 unlabeled end 0x40a5 type worddata
+imug_operand_443e: unlabeled start 0x4441 unlabeled end 0x4443 type worddata
+imug_operand_44af: unlabeled start 0x44b2 unlabeled end 0x44b4 type worddata
+imug_operand_452a: unlabeled start 0x452d unlabeled end 0x452f type worddata
+imug_operand_45ee: unlabeled start 0x45f1 unlabeled end 0x45f3 type worddata
+imug_operand_4850: unlabeled start 0x4853 unlabeled end 0x4855 type worddata
+imug_operand_48f1: unlabeled start 0x48f4 unlabeled end 0x48f6 type worddata
+imug_operand_493b: unlabeled start 0x493e unlabeled end 0x4940 type worddata
+imug_operand_49ad: unlabeled start 0x49b0 unlabeled end 0x49b2 type worddata
+imug_operand_4a0d: unlabeled start 0x4a10 unlabeled end 0x4a12 type worddata
+imug_operand_4a91: unlabeled start 0x4a94 unlabeled end 0x4a96 type worddata
+imug_operand_4b03: unlabeled start 0x4b06 unlabeled end 0x4b08 type worddata
+imug_operand_4ba2: unlabeled start 0x4ba5 unlabeled end 0x4ba7 type worddata
+imug_operand_4c5a: unlabeled start 0x4c5d unlabeled end 0x4c5f type worddata
+imug_operand_4c75: unlabeled start 0x4c78 unlabeled end 0x4c7a type worddata
+imug_operand_4cd8: unlabeled start 0x4cdb unlabeled end 0x4cdd type worddata
+imug_operand_4d44: unlabeled start 0x4d47 unlabeled end 0x4d49 type worddata
+imug_operand_4dab: unlabeled start 0x4dae unlabeled end 0x4db0 type worddata
+imug_operand_4dcb: unlabeled start 0x4dce unlabeled end 0x4dd0 type worddata
+imug_operand_4e07: unlabeled start 0x4e0a unlabeled end 0x4e0c type worddata
+imug_operand_4e8b: unlabeled start 0x4e8e unlabeled end 0x4e90 type worddata
+imug_operand_4ef4: unlabeled start 0x4ef7 unlabeled end 0x4ef9 type worddata
+imug_operand_4f9c: unlabeled start 0x4f9f unlabeled end 0x4fa1 type worddata
+imug_operand_5006: unlabeled start 0x5009 unlabeled end 0x500b type worddata
+imug_operand_5053: unlabeled start 0x5056 unlabeled end 0x5058 type worddata
+imug_operand_5086: unlabeled start 0x5089 unlabeled end 0x508b type worddata
+imug_operand_527e: unlabeled start 0x5281 unlabeled end 0x5283 type worddata
+imug_operand_52eb: unlabeled start 0x52ee unlabeled end 0x52f0 type worddata
+imug_operand_54f8: unlabeled start 0x54fb unlabeled end 0x54fd type worddata
+imug_operand_5541: unlabeled start 0x5544 unlabeled end 0x5546 type worddata
+imug_operand_55d8: unlabeled start 0x55db unlabeled end 0x55dd type worddata
+imug_operand_5744: unlabeled start 0x5747 unlabeled end 0x5749 type worddata

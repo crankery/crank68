@@ -43,7 +43,8 @@ The exact BASIC meaning of `$73BD` and `$7156` remains to be named. The
 disassembly at `$47FC..$4839` checks for a nonzero key, handles two special
 key values separately, and then enters the path with `$4828` and `$4833`.
 The two `$768E` call sites at `$4DAB` and `$4E07` were reached in a subsequent
-repeating game update path. This is direct evidence that a keypress opens a
+repeating game update path. This runtime entry [multiplies by an inline
+16-bit factor](MULTIPLY_INLINE.md). This is direct evidence that a keypress opens a
 branch the no-input trace missed.
 
 `key_sites.csv` and `key_targets.csv` summarize the run. The full event log

@@ -1,20 +1,25 @@
 # ROGUE feature roadmap
 
-The current `v7` game loads 26 varied 60×20 floors from FLEX files, with
+The current `v14` game loads 26 varied 60×20 floors from FLEX files, with
 exploration, gold, stairs, and descent. The goal is a small, playable dungeon game
-on C68 FLEX, using an ANSI terminal with at least 60 columns and 22 rows.
+on C68 FLEX, using an ANSI terminal with at least 80 columns and 22 rows.
 
 ## 1. Make room for game state
 
-- [ ] Keep terrain, floor items, and actors separate. A dropped item or monster
-      must not erase a doorway, stair, or floor tile.
+- [x] Keep terrain, floor objects, actors, and the player separate. Gold pickup
+      and bat placement leave the floor beneath them intact.
 - [ ] Define compact records for rooms, items, monsters, and the player, with
       fixed capacity limits and a clear response when a limit is reached.
 - [ ] Give each input command one turn; invalid keys and blocked movement do
-      not advance monsters. Add a message area for combat and item feedback.
+      not advance monsters. Use the message area for combat and item feedback.
+- [x] Add a message area beside the map for recent game events.
+- [x] Support uppercase `H/J/K/L` runs that stop at walls, actors, doors,
+      stairs, or gold.
 - [ ] Keep the terminal drawing cache in step with changes to all three layers.
 - [x] Use a fixed generator seed and emulator checks so the 26 packaged floors
       can be reproduced and validated.
+- [x] Seed a 16-bit runtime LFSR from FLEX's serial-input polling counter,
+      with a nonzero fallback and deterministic emulator checks.
 
 ## 2. Vary the dungeon
 
@@ -39,6 +44,11 @@ on C68 FLEX, using an ANSI terminal with at least 60 columns and 22 rows.
 
 ## 3. Add a first monster and combat loop
 
+- [x] Place one stationary bat outside the starting room. It occupies the
+      actor layer, appears only while visible, and blocks movement.
+- [x] Place one kobold in another room. It patrols on successful player steps,
+      approaches the player inside its room, and blocks movement in both
+      directions. Doors and corridors stay open until combat is available.
 - [ ] Use the proposed roster and implementation order in [MONSTERS.md](MONSTERS.md).
 - [ ] Add player hit points, monster hit points, damage, and death.
 - [ ] Spawn a few visible monsters outside the starting room. Give them a
@@ -51,6 +61,8 @@ on C68 FLEX, using an ANSI terminal with at least 60 columns and 22 rows.
 
 ## 4. Add loot and inventory
 
+- [x] Add inventory and help views that return to the explored map. Start with
+      one inert pocket-lint item while pickup and item use are still pending.
 - [ ] Use the proposed item roster and implementation order in [LOOT.md](LOOT.md).
 - [ ] Keep gold as a score and add at least three usable item types: a weapon,
       armor, and a healing potion.

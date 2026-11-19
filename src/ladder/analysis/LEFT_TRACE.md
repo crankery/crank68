@@ -70,8 +70,7 @@ $4CD8  CALL $768E      $4D44  CALL $768E
 At `$4CD8`, the first four observed HL values were `$0012`, `$0011`,
 `$0010`, `$000F` during ascent. At `$4D44`, they were `$0010`, `$0011`,
 `$0012`, `$0013` during the fall. This strongly connects `$0FB6` with a
-proposed vertical position. The exact role of runtime routine `$768E` still
-needs analysis.
+proposed vertical position. Runtime routine `$768E` [multiplies HL by the inline word `$0051`](MULTIPLY_INLINE.md) at these sites, giving an 81-cell row offset.
 
 These figures count only executed direct transfers from compiled game code
 into the linked runtime. They are a useful branch-coverage proxy, not total

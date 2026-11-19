@@ -2,9 +2,14 @@
 
 This list comes from the bundled Rogue 3.6 source: `3.6-unix-source/init.c`
 defines the 26 monsters, and `3.6-unix-source/monsters.c` gives their rough
-depth order. That order is not an exact spawn level for each monster. Our game
-has no monsters yet; the choices below are a proposed smaller roster, not
-implemented behavior.
+depth order. That order is not an exact spawn level for each monster. Apart
+from the stationary bat and room-roaming kobold, the choices below are a
+proposed smaller roster, not implemented behavior.
+
+The current game places one stationary bat and one room-roaming kobold per
+floor. The kobold patrols after successful player steps and approaches the
+player in its room. Both block movement but have no health or attack yet. The
+rest of this roster remains a proposal.
 
 The source's rough weak-to-strong glyph order is
 `KJBSHEAOZGLCRQNYTWFIXUMVDP`.

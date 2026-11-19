@@ -19,6 +19,9 @@ The map contains walls (`-`, `|`), doors (`+`), corridors (`#`), floor (`.`),
 gold (`*`), upstairs (`<`), and downstairs (`%`). The upstairs room on floor
 `n+1` equals the downstairs room on floor `n`.
 
-These files are read-only terrain. The current game keeps discovered cells and
-collected gold in RAM. A future save format will need separate mutable state
-and a version for it.
+These files are read-only floor records. The loader keeps each record intact in
+RAM and splits its map into terrain and object layers. Gold and stairs become
+objects over `.` terrain. A separate actor layer holds the bat and kobold.
+Collecting gold clears only its object cell; explored cells are stored
+separately. A future save format will need separate mutable state and a version
+for it.
