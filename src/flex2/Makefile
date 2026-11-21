@@ -120,7 +120,7 @@ build/rogue.bin: ../rogue/rogue.s Makefile
 ../ladder/flex/easy_street.inc: ../ladder/tools/make_levels.py ../ladder/Ladder/src/ladicons.pas
 	$(PYTHON) ../ladder/tools/make_levels.py
 
-build/ladder.bin: ../ladder/flex/ladder.s ../ladder/flex/easy_street.inc Makefile
+build/ladder.bin: ../ladder/flex/ladder.s ../ladder/flex/menu.inc ../ladder/flex/rocks.inc ../ladder/flex/easy_street.inc Makefile
 	@mkdir -p build
 	$(VASM_STD_BIN) -I../ladder/flex -Fbin -L build/ladder.lst -o $@ $<
 

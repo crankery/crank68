@@ -173,7 +173,8 @@ descent** in this fixture; random reversal or continued rolling starts
 only once the rock occupies the ladder cell. Pascal's `OnSolid` treats
 `H` below as support, while `AboveLadder` applies `Random(3)` to a
 left- or right-moving rock in the cell above. That can choose reverse or
-continue there, unlike the original. FLEX does not yet implement rocks.
+continue there, unlike the original. The FLEX port now follows the original
+above-ladder descent and on-ladder choice.
 
 Reproduce the rightward case with `--speed 1 --updates 5
 --poke-after 1:0E6A:001C,1:0E80:000B,1:0E96:0004 --rock-events

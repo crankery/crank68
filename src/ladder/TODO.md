@@ -1,33 +1,37 @@
 # Ladder roadmap
 
 The current `LADDER.CMD` plays Easy Street on an 80×24 ANSI terminal. Lad can
-walk, climb, jump, and fall; fire returns him to the start, and treasure ends
-the level. All seven 79×20 maps have been extracted from the Turbo Pascal
+walk, climb, jump, and fall; five Der Rocks are released and move through the
+board. Fire or rock contact costs a life, and treasure ends the level. All seven 79×20 maps have been extracted from the Turbo Pascal
 rewrite, but only Easy Street is wired into the game. Keep each milestone
 playable on C68 FLEX.
 
 ## 1. Put Der Rocks on Easy Street
 
-- [ ] Keep terrain and actors separate, so drawing or erasing Lad and rocks
+- [x] Keep terrain and actors separate, so drawing or erasing Lad and rocks
       always restores the tile underneath. Use a fixed rock pool sized for the
       largest Pascal level (eight rocks) rather than dynamic allocation.
 - [ ] Read `V` dispenser locations from the selected map. Release one rock
       per game update until the level's active-rock limit is reached, choosing
       a dispenser for each release. Use a reproducible seed for emulator
       checks; see [rock probes](analysis/ROCK_PROBES.md).
-- [ ] Make rocks roll, reverse at edges and obstructions, fall through gaps,
+- [x] Make rocks roll, reverse at edges and obstructions, fall through gaps,
       and react to ladders. A `*` eater removes a rock and returns it to a
       dispenser; it does not hurt Lad.
-- [ ] Check Lad and rock collisions before and after rock movement. Give Lad
+- [x] Check Lad and rock collisions before and after rock movement. Give Lad
       visible death feedback and restart the level cleanly, with no stale
       actors or terminal marks.
 - [ ] Test spawning, rolling, falling, eating, collision, and restart in the
       emulator. Play Easy Street with rocks on the throttled terminal.
+      Assembled CPU probes now cover release, falling, edge reversal, eater
+      recycling, RNG boundaries, lethal contact, and pool reset. Manual terminal
+      play and more terrain cases remain.
 
 ## 2. Restore the game's stakes
 
 - [ ] Start with five Lads. Lose one to a rock, fire, or expired bonus time;
       restart the level while lives remain, then show game over.
+      Rock and fire deaths now consume lives; bonus expiry remains.
 - [ ] Add the level's initial bonus time and decrement it every 25 game
       updates, as measured in the [state traces](analysis/STATE_TRACE.md).
 - [ ] Show lives, level, score, and bonus time on the status line. Refresh only
@@ -65,8 +69,11 @@ playable on C68 FLEX.
 
 ## 4. Finish the terminal game
 
-- [ ] Add a title screen, controls, pause/resume, and a clear game-over and
-      level-complete flow. Always restore the cursor when returning to FLEX.
+- [x] Add the original style title screen, playable menu choices, instructions,
+      difficulty speed cycle, and idle taunts.
+- [x] Return to the start menu after the last Lad dies; Play starts a fresh run.
+- [ ] Add pause/resume and a full level-complete flow. Always
+      restore the cursor when returning to FLEX.
 - [ ] Add optional sound and a small high-score table once scoring is stable.
       Decide whether to use a new FLEX data file or read the CP/M `LADDER.DAT`
       format; do not overwrite the original file during experiments.

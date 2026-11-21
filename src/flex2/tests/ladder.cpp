@@ -24,7 +24,9 @@ int main(int argc, char **argv) {
             }
             throw std::runtime_error("timed out at PC="+std::to_string(cpu.s_.pc));
         };
+        bus.input = 'p';
         run_until([&]{ return cpu.s_.pc == game_loop; });
+        require(bus.output.find("LLLLLLLL") != std::string::npos, "start logo absent");
         require(bus.output.find("Easy Street") != std::string::npos, "map/status absent");
         require(bus.output.find("\x1b[2J") != std::string::npos, "screen not cleared");
         require(bus.output.find("\x1b[19;6Hg") != std::string::npos, "Lad not at start");

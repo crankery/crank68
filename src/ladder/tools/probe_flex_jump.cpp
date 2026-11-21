@@ -36,7 +36,14 @@ static std::map<std::string, uint16_t> read_symbols(const std::string &path) {
     }
     for (const char *name : {"move_jump", "player_x", "player_y", "direction",
                              "jump_step", "level_map", "move_down", "move_player",
-                             "key_jump", "old_x", "old_y", "game_loop"})
+                             "key_jump", "old_x", "old_y", "game_loop",
+                             "restart_after_death", "death_flag", "lives",
+                             "death_pause", "death_ptr", "death_char", "death_glyphs",
+                             "game_over", "move_rocks", "rock_slots", "rock_count", "rng0",
+                             "rng_three", "rng_next", "start_screen", "menu_key",
+                             "menu_entry", "saved_sp",
+                             "menu_action", "change_speed", "play_speed", "tick_delay",
+                             "menu_idle_tick", "menu_idle_count", "menu_idle_state"})
         require(symbols.count(name) == 1, std::string("missing symbol ") + name);
     return symbols;
 }
@@ -49,6 +56,8 @@ public:
         require(binary.size() < 65536 - 0x300, "binary too large");
         std::copy(binary.begin(), binary.end(), bus.bytes.begin() + 0x300);
         bus.bytes[0xAD0F] = 0x39; // FLEX outch stub: RTS.
+        bus.bytes[at("death_pause")] = 0x39; // Skip real-time delay in CPU probes.
+        bus.bytes[at("lives")] = 5;
     }
 
     void position(uint8_t x, uint8_t y, uint8_t direction) {
@@ -62,6 +71,98 @@ public:
 
     void set_direction(uint8_t value) { bus.bytes[at("direction")] = value; }
     void set_jump_step(uint8_t value) { bus.bytes[at("jump_step")] = value; }
+    void restart_if_dead() {
+        require(bus.bytes[at("death_flag")] == 1, "expected death flag");
+        step("restart_after_death");
+        const uint16_t next = uint16_t(bus.bytes[at("death_ptr")]) << 8 |
+                              bus.bytes[at("death_ptr") + 1];
+        require(next == at("death_glyphs") + 11 &&
+                bus.bytes[at("death_char")] == '_',
+                "death glyph sequence did not finish");
+    }
+    void set_rock_count(uint8_t count) { bus.bytes[at("rock_count")] = count; }
+    void set_rock(int slot, uint8_t x, uint8_t y, uint8_t state) {
+        require(slot >= 0 && slot < 5, "invalid rock slot");
+        const uint16_t address = at("rock_slots") + 3 * slot;
+        bus.bytes[address] = x;
+        bus.bytes[address + 1] = y;
+        bus.bytes[address + 2] = state;
+    }
+    void expect_rock(int slot, uint8_t x, uint8_t y, uint8_t state,
+                     const std::string &name) const {
+        const uint16_t address = at("rock_slots") + 3 * slot;
+        require(bus.bytes[address] == x && bus.bytes[address + 1] == y &&
+                bus.bytes[address + 2] == state,
+                name + ": got " + std::to_string(bus.bytes[address]) + "," +
+                std::to_string(bus.bytes[address + 1]) + "," +
+                std::to_string(bus.bytes[address + 2]));
+    }
+    void expect_lives(uint8_t value, const std::string &name) const {
+        require(bus.bytes[at("lives")] == value, name + ": wrong lives");
+    }
+    void set_lives(uint8_t value) { bus.bytes[at("lives")] = value; }
+    void expect_game_over(uint8_t value, const std::string &name) const {
+        require(bus.bytes[at("game_over")] == value, name + ": wrong game-over flag");
+    }
+    void expect_rock_count(uint8_t value, const std::string &name) const {
+        require(bus.bytes[at("rock_count")] == value, name + ": wrong rock count");
+    }
+    void set_rng(uint32_t value) {
+        for (int i = 0; i < 3; ++i)
+            bus.bytes[at("rng0") + i] = uint8_t(value >> (i * 8));
+    }
+    uint32_t rng() const {
+        return uint32_t(bus.bytes[at("rng0")]) |
+               (uint32_t(bus.bytes[at("rng0") + 1]) << 8) |
+               (uint32_t(bus.bytes[at("rng0") + 2]) << 16);
+    }
+    uint8_t accumulator() const { return cpu.s_.a; }
+    uint8_t menu_key(char key) {
+        cpu.s_.a = uint8_t(key);
+        step("menu_key");
+        return bus.bytes[at("menu_action")];
+    }
+    void set_menu_idle(uint16_t count, uint8_t state) {
+        bus.bytes[at("menu_idle_count")] = uint8_t(count >> 8);
+        bus.bytes[at("menu_idle_count") + 1] = uint8_t(count);
+        bus.bytes[at("menu_idle_state")] = state;
+    }
+    uint8_t menu_idle_state() const { return bus.bytes[at("menu_idle_state")]; }
+    uint8_t play_speed() const { return bus.bytes[at("play_speed")]; }
+    uint16_t tick_delay() const {
+        return uint16_t(bus.bytes[at("tick_delay")]) << 8 |
+               bus.bytes[at("tick_delay") + 1];
+    }
+    void menu_start_with_play_key() {
+        bus.bytes[0xBF2A] = 0x0D; // SEC
+        bus.bytes[0xBF2B] = 0x39; // RTS
+        bus.bytes[0xBF00] = 0x86; // LDAA #'P'
+        bus.bytes[0xBF01] = 'P';
+        bus.bytes[0xBF02] = 0x39; // RTS
+        step("start_screen");
+    }
+    void replay_after_final_death() {
+        bus.bytes[at("saved_sp")] = 0xEF;
+        bus.bytes[at("saved_sp") + 1] = 0xFE;
+        bus.bytes[0xBF2A] = 0x0D; // SEC: P available at menu.
+        bus.bytes[0xBF2B] = 0x39;
+        bus.bytes[0xBF00] = 0x86;
+        bus.bytes[0xBF01] = 'P';
+        bus.bytes[0xBF02] = 0x39;
+        cpu.s_.pc = at("game_loop");
+        cpu.s_.sp = 0xEFFE;
+        bool saw_menu = false;
+        for (int instructions = 0; instructions < 500000; ++instructions) {
+            if (cpu.s_.pc == at("menu_entry")) {
+                saw_menu = true;
+                expect_lives(0, "final death reaches menu");
+                expect_game_over(1, "game over shown before menu");
+            }
+            if (saw_menu && cpu.s_.pc == at("game_loop")) return;
+            cpu.step();
+        }
+        throw std::runtime_error("final death did not replay from menu");
+    }
 
     void set_tile(uint8_t x, uint8_t y, char tile) {
         bus.bytes[at("level_map") + (y - 1) * 79 + (x - 1)] = uint8_t(tile);
@@ -77,7 +178,7 @@ public:
         cpu.s_.sp = 0xEFFE;
         bus.bytes[0xEFFF] = 0xF0;
         bus.bytes[0xF000] = 0x00;
-        for (int instructions = 0; instructions < 10000; ++instructions) {
+        for (int instructions = 0; instructions < 100000; ++instructions) {
             if (cpu.s_.pc == 0xF000) return;
             cpu.step();
         }
@@ -250,8 +351,10 @@ int main(int argc, char **argv) {
                 p.set_tile(73, 19, glyphs[code]);
                 p.set_tile(73, 20, '=');
                 p.step("move_player");
-                if (code == 8)
+                if (code == 8) {
+                    p.restart_if_dead();
                     p.expect(6, 19, 0, 0, "fire on fall");
+                }
                 else
                     p.expect(73, code >= 1 && code <= 5 ? 18 : 19, 0, 0,
                              "support tile code " + std::to_string(code));
@@ -301,8 +404,10 @@ int main(int argc, char **argv) {
                 p.set_tile(73, 18, glyphs[code]);
                 p.set_tile(73, 20, '=');
                 p.step("move_player");
-                if (code == 8)
+                if (code == 8) {
+                    p.restart_if_dead();
                     p.expect(6, 19, 0, 0, "jump into fire");
+                }
                 else if (code == 2)
                     p.expect(73, 19, 0, 0, "jump into solid floor");
                 else if (code == 4)
@@ -337,8 +442,10 @@ int main(int argc, char **argv) {
                 p.set_tile(74, 19, glyphs[code]);
                 p.set_tile(73, 20, '=');
                 p.step("move_player");
-                if (code == 8)
+                if (code == 8) {
+                    p.restart_if_dead();
                     p.expect(6, 19, 0, 0, "horizontal fire contact");
+                }
                 else if (code == 3)
                     p.expect(74, 19, 0, 0, "horizontal treasure entry");
                 else
@@ -355,8 +462,10 @@ int main(int argc, char **argv) {
                 p.set_tile(58, 18, 'H');
                 p.set_tile(58, 19, glyphs[code]);
                 p.step("move_player");
-                if (code == 8)
+                if (code == 8) {
+                    p.restart_if_dead();
                     p.expect(6, 19, 0, 0, "downward fire contact");
+                }
                 else if (code == 3)
                     p.expect(58, 19, 0, 0, "downward treasure entry");
                 else
@@ -415,6 +524,7 @@ int main(int argc, char **argv) {
             require(p.tile_at(25, 8) == ' ', "floor not removed before death");
             p.set_tile(27, 7, '^');
             p.step("move_player");
+            p.restart_if_dead();
             p.expect(6, 19, 0, 0, "fire restart after floor removal");
             require(p.tile_at(25, 8) == ' ', "fire restart restored removed floor");
         }
@@ -472,7 +582,152 @@ int main(int argc, char **argv) {
             p.tick(); p.expect(11, 18, 2, 0, "one-row fall");
             p.tick(); p.expect(12, 18, 2, 0, "right request resumes after fall");
         }
-        std::cout << "FLEX jump CPU probes passed\n";
+        {
+            Probe p(binary, symbols);
+            p.position(6, 19, 0);
+            p.set_jump_step(0);
+            p.step("move_rocks");
+            p.expect_rock(0, 40, 2, 2, "new rock waits at dispenser");
+            p.step("move_rocks");
+            p.expect_rock(0, 40, 3, 2, "rock falls one cell");
+            p.step("move_rocks");
+            p.expect_rock_count(3, "third release");
+            // Row 4 is solid: the first rock stays on row 3 and turns.
+            p.expect_rock(0, 40, 3, 4, "landing pauses and picks direction");
+            for (int i = 0; i < 5; ++i) p.step("move_rocks");
+            p.expect_rock_count(5, "Easy Street rock cap");
+        }
+        {
+            Probe p(binary, symbols);
+            p.position(6, 19, 0);
+            p.set_rock_count(5);
+            p.set_tile(78, 19, '=');
+            p.set_tile(79, 19, '=');
+            p.set_rock(0, 79, 18, 4);
+            p.step("move_rocks");
+            p.expect_rock(0, 79, 18, 3, "right edge reverses in place");
+            p.step("move_rocks");
+            p.expect_rock(0, 78, 18, 3, "reversed rock moves next tick");
+            p.set_tile(79, 19, '*');
+            p.set_rock(0, 78, 19, 4);
+            p.step("move_rocks");
+            p.expect_rock(0, 79, 19, 4, "rock enters eater");
+            p.step("move_rocks");
+            p.expect_rock(0, 79, 19, 0, "eater retires occupied rock");
+            p.expect_rock_count(4, "eater frees capacity");
+            p.step("move_rocks");
+            p.expect_rock(0, 40, 2, 2, "eaten slot released next tick");
+        }
+        {
+            Probe p(binary, symbols);
+            p.position(6, 19, 0);
+            p.set_jump_step(0);
+            p.set_rock_count(5);
+            p.set_rock(0, 7, 19, 3);
+            p.tick();
+            p.expect(6, 19, 0, 0, "rock contact restarts Lad");
+            p.expect_lives(4, "rock contact costs one Lad");
+            p.expect_rock_count(0, "death clears rock pool");
+        }
+        {
+            Probe p(binary, symbols);
+            p.position(6, 19, 0);
+            p.set_jump_step(0);
+            p.set_rock_count(5);
+            p.set_rock(0, 6, 19, 3);
+            p.tick();
+            p.expect_lives(4, "standing on a rock costs one Lad");
+        }
+        {
+            Probe p(binary, symbols);
+            p.position(6, 19, 0);
+            for (int life = 4; life >= 0; --life) {
+                p.step("restart_after_death");
+                p.expect_lives(uint8_t(life), "life countdown");
+                p.expect_game_over(life == 0, "fifth death ends game");
+            }
+        }
+        {
+            Probe p(binary, symbols);
+            p.position(6, 19, 0);
+            p.set_jump_step(0);
+            p.set_lives(1);
+            p.set_rock_count(5);
+            p.set_rock(0, 7, 19, 3);
+            p.replay_after_final_death();
+            p.expect_lives(5, "new game restores five Lads");
+            p.expect_game_over(0, "new game clears game over");
+            p.expect_rock_count(0, "new game clears old rocks");
+            p.expect(6, 19, 0, 0, "new game resets Lad position");
+        }
+        {
+            Probe p(binary, symbols);
+            p.position(6, 19, 0);
+            p.set_rock_count(5);
+            p.set_rock(0, 75, 19, 4);
+            p.set_rock(1, 77, 19, 3);
+            p.step("move_rocks");
+            p.expect_rock(0, 76, 19, 4, "first rock enters shared cell");
+            p.expect_rock(1, 76, 19, 3, "second rock enters shared cell");
+        }
+        {
+            Probe p(binary, symbols);
+            p.position(6, 19, 0);
+            p.set_rock_count(5);
+            p.set_rock(0, 73, 19, 4);
+            p.set_tile(74, 19, '|');
+            p.step("move_rocks");
+            p.expect_rock(0, 73, 19, 3, "wall turns rock without travel");
+            p.set_rock(0, 73, 17, 4);
+            p.set_tile(73, 18, 'H');
+            p.step("move_rocks");
+            p.expect_rock(0, 73, 18, 2, "rock descends into ladder below");
+        }
+        {
+            Probe p(binary, symbols);
+            for (uint32_t seed : {0u, 0x332211u, 0xFFFFFFu, 0x008000u}) {
+                p.set_rng(seed);
+                p.step("rng_next");
+                require(p.rng() == ((5 * seed + 3) & 0xFFFFFF),
+                        "rock RNG recurrence");
+            }
+            // 5 is invertible modulo 2^24; its inverse is 0xCCCCCD.
+            for (uint32_t output : {0x555555u, 0x555556u,
+                                    0xAAAAAAu, 0xAAAAABu}) {
+                const uint32_t seed = ((output - 3) * 0xCCCCCDu) & 0xFFFFFF;
+                p.set_rng(seed);
+                p.step("rng_three");
+                require(p.rng() == output, "rock RNG bucket setup");
+                require(p.accumulator() == (output <= 0x555555 ? 0 :
+                        output <= 0xAAAAAA ? 1 : 2), "rock RNG thirds");
+            }
+        }
+        {
+            Probe p(binary, symbols);
+            for (char key : {'p', 'P'}) require(p.menu_key(key) == 1, "menu play key");
+            for (char key : {'e', 'E'}) require(p.menu_key(key) == 2, "menu exit key");
+            for (char key : {'i', 'I'}) require(p.menu_key(key) == 3, "menu instructions key");
+            for (char key : {'l', 'L'}) require(p.menu_key(key) == 4, "menu speed key");
+            require(p.menu_key('x') == 0, "unknown menu key");
+            p.menu_start_with_play_key();
+            require(p.menu_key('P') == 1, "menu returns to play");
+            for (int speed = 2; speed <= 5; ++speed) {
+                p.step("change_speed");
+                require(p.play_speed() == speed &&
+                        p.tick_delay() == uint16_t(12000 >> (speed - 1)),
+                        "menu speed cycle");
+            }
+            p.step("change_speed");
+            require(p.play_speed() == 1 && p.tick_delay() == 12000,
+                    "menu speed wraps to one");
+            p.set_menu_idle(29999, 0);
+            p.step("menu_idle_tick");
+            require(p.menu_idle_state() == 1, "first menu idle taunt");
+            p.set_menu_idle(29999, 3);
+            p.step("menu_idle_tick");
+            require(p.menu_idle_state() == 0, "menu idle taunt cycle wraps");
+        }
+        std::cout << "FLEX movement and rock CPU probes passed\n";
         return 0;
     } catch (const std::exception &error) {
         std::cerr << error.what() << '\n';

@@ -10,6 +10,13 @@
         .org 0x0300
 start:
         sts saved_sp
+        ldaa #1
+        staa play_speed
+        ldx #12000
+        stx tick_delay
+menu_entry:
+        jsr start_screen
+new_game:
         ldaa #6
         staa player_x
         ldaa #19
@@ -17,16 +24,39 @@ start:
         clr direction
         clr jump_step
         clr won_level
+        clr game_over
+        clr death_flag
+        ldaa #5
+        staa lives
+        jsr init_rocks
         ldx #clear_text
         jsr print
         jsr draw_level
         jsr draw_player
+        jsr show_lives
 game_loop:
-        ldx #12000             ; approximate game tick; tune on hardware
+        ldx tick_delay         ; approximate game tick; tune on hardware
 tick_wait:
         dex
         bne tick_wait
+        tst game_over
+        bne input_poll
         jsr move_player
+        tst death_flag
+        bne game_restart
+        jsr check_player_rocks
+        tst death_flag
+        bne game_restart
+        jsr move_rocks
+        tst death_flag
+        beq input_poll
+game_restart:
+        jsr restart_after_death
+        tst game_over
+        beq input_poll
+        lds saved_sp
+        jmp menu_entry
+input_poll:
         jsr poll
         bcc game_loop
         jsr getc
@@ -89,6 +119,8 @@ quit:
         jsr print
         lds saved_sp
         jmp warms
+
+        .include "menu.inc"
 
 move_player:
         tst won_level
@@ -239,6 +271,21 @@ level_done:
         jsr print_at_prompt
         rts
 fire_reset:
+        ldaa #1
+        staa death_flag
+        rts
+
+restart_after_death:
+        clr death_flag
+        jsr animate_death
+        dec lives
+        tst lives
+        beq restart_game_over
+        jsr home_cursor
+        jsr draw_level
+        jsr show_lives
+restart_active:
+        jsr init_rocks
         ldaa #6
         staa player_x
         ldaa #19
@@ -246,6 +293,49 @@ fire_reset:
         clr direction
         clr jump_step
         jmp draw_player
+restart_game_over:
+        jsr show_lives
+        ldaa #1
+        staa game_over
+        ldx #game_over_text
+        jsr print_at_prompt
+        ldab #6
+game_over_pause:
+        jsr death_pause
+        decb
+        bne game_over_pause
+        rts
+
+; The Pascal death sequence twists Lad through eleven glyphs before restart.
+; At the throttled 1 MHz CPU rate, each delay is about 150 ms.
+animate_death:
+        ldx #death_glyphs
+        stx death_ptr
+death_glyph_loop:
+        ldx death_ptr
+        ldaa 0,x
+        beq death_glyph_done
+        staa death_char
+        ldaa player_x
+        staa cursor_col
+        ldaa player_y
+        staa cursor_row
+        jsr cursor_to
+        ldaa death_char
+        jsr outch
+        jsr death_pause
+        ldx death_ptr
+        inx
+        stx death_ptr
+        bra death_glyph_loop
+death_glyph_done:
+        rts
+death_pause:
+        ldx #20000
+death_pause_loop:
+        dex
+        bne death_pause_loop
+        rts
 
 ; Ordinary sideways movement consumes '-' below the departed cell.
 ; A jump's horizontal apex uses move_jump and leaves that floor intact.
@@ -433,6 +523,8 @@ col_found:
         ldaa 0,x
         rts
 
+        .include "rocks.inc"
+
 draw_level:
         ldx #level_map
         ldaa #20
@@ -491,6 +583,24 @@ print_at_prompt:
         staa cursor_col
         jsr cursor_to
         jmp print
+home_cursor:
+        ldaa #27
+        jsr outch
+        ldaa #'['
+        jsr outch
+        ldaa #'H'
+        jmp outch
+show_lives:
+        ldaa #21
+        staa cursor_row
+        ldaa #64
+        staa cursor_col
+        jsr cursor_to
+        ldx #lives_text
+        jsr print
+        ldaa lives
+        adda #'0'
+        jmp outch
 cursor_to:
         ldaa #27
         jsr outch
@@ -545,6 +655,15 @@ status_text:
 win_text:
         .ascii "You found the treasure! Press Q to leave.             "
         .byte 0
+game_over_text:
+        .ascii "Game over. Returning to menu...                        "
+        .byte 0
+death_glyphs:
+        .ascii "pbdqpbdq--_"
+        .byte 0
+lives_text:
+        .ascii "Lads: "
+        .byte 0
 exit_text:
         .byte 27
         .ascii "[23;1H"
@@ -562,6 +681,16 @@ target_y:     .byte 0
 direction:    .byte 0
 jump_step:    .byte 0
 won_level:    .byte 0
+game_over:    .byte 0
+death_flag:   .byte 0
+lives:        .byte 0
+play_speed:   .byte 1
+tick_delay:   .word 12000
+menu_action:  .byte 0
+menu_idle_state: .byte 0
+menu_idle_count: .word 0
+death_ptr:    .word 0
+death_char:   .byte 0
 solid_flag:   .byte 0
 cursor_col:   .byte 0
 cursor_row:   .byte 0
@@ -569,6 +698,22 @@ digit:        .byte 0
 draw_char:    .byte 0
 rows_left:    .byte 0
 cols_left:    .byte 0
+
+rock_count:   .byte 0
+rock_slot:    .byte 0
+rock_skip:    .byte 0
+rock_ptr:     .word 0
+rock_x:       .byte 0
+rock_y:       .byte 0
+rock_state:   .byte 0
+rng_old0:     .byte 0
+rng_old1:     .byte 0
+rng_old2:     .byte 0
+rng0:         .byte 0x11
+rng1:         .byte 0x22
+rng2:         .byte 0x33
+rock_slots:   .byte 0,0,0,0,0,0,0,0,0,0,0,0
+              .byte 0,0,0,0,0,0,0,0,0,0,0,0
 
 row_pointers:
         .word level_map+0,level_map+79,level_map+158,level_map+237

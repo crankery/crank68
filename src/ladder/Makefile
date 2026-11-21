@@ -18,7 +18,7 @@ test-maps: levels
 $(LEVEL_INCS): tools/make_levels.py Ladder/src/ladicons.pas analysis/map-parity.csv
 	python3 tools/make_levels.py
 
-ladder.bin ladder.lst: flex/ladder.s flex/easy_street.inc
+ladder.bin ladder.lst: flex/ladder.s flex/menu.inc flex/rocks.inc flex/easy_street.inc
 	$(VASM) -Iflex -Fbin -L ladder.lst -o ladder.bin flex/ladder.s
 
 LADDER.CMD: ladder.bin tools/make_cmd.py
