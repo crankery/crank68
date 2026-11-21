@@ -1,7 +1,7 @@
 #include "flex_harness.h"
 #include "../build/drive-config.h"
-#include "../../../hw/instore_sd/firmware/instore_sd/src/protocol.h"
-#include "../../../hw/instore_sd/firmware/instore_sd/src/direct_link.h"
+#include "../../../hw/sd/firmware/instore_sd/src/protocol.h"
+#include "../../../hw/sd/firmware/instore_sd/src/direct_link.h"
 
 // Test fixture: the direct register latches and pending flags connected to the
 // real AVR protocol engine. Service an event after each status read so the

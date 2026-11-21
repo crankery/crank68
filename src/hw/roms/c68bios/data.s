@@ -9,6 +9,8 @@
     .global st_banner_msg
     .global s_crlf
     .global s_monitor_unknown
+    .global s_no_resume
+    .global s_interrupt
     .global st_monitor_help
     .global s_starting_os
     .global s_build_tag
@@ -27,17 +29,26 @@ s_crlf:
 s_monitor_unknown:
     .string "Unknown command, enter H for help"
 
+s_no_resume:
+    .string "No interrupted program"
+
+s_interrupt:
+    .string "(Interrupt)\r\n"
+
 s_build_tag:
     .include "build_tag.inc"
 
 st_monitor_help:
-    .byte   0x07
+    .byte   0x08
     .string "H (?)"
     .byte 15
     .string "- Display help"
     .string "F"
     .byte 19
     .string "- Boot FLEX from SRAM"
+    .string "R"
+    .byte 19
+    .string "- Resume after NMI"
     .string "address"
     .byte 13
     .string "- Examine one byte"

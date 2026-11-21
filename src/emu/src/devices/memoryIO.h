@@ -10,7 +10,7 @@
 #include "latch.h"
 #include "acia.h"
 #include "pia.h"
-#include "sdDirect.h"
+#include "sd.h"
 #include "switches.h"
 #include "rtc.h"
 
@@ -22,7 +22,7 @@ public:
           banked_memory_latch_(0x0, 0x2),
           banked_memory_high_latch_(0x0, 0x3),
           config_switches_(0x0, 0x1),
-          rtc_(),
+          rtc_(0x7, 0x0),
           acia_1_0_(0x1, 0x0),
           acia_1_1_(0x1, 0x4),
           pia_1_0_(0x1, 0x8),
@@ -43,9 +43,9 @@ public:
 
     void attachSdImage(const std::string &path)
     {
-        auto direct = std::make_unique<SdDirect>(path);
-        devices_.push_back(direct.get());
-        sd_direct_ = std::move(direct);
+        auto sd = std::make_unique<Sd>(path);
+        devices_.push_back(sd.get());
+        sd_ = std::move(sd);
     }
 
     virtual uint8_t read(uint16_t addr) const override
@@ -92,5 +92,5 @@ private:
     static const uint16_t EndAddress = 0xE0FF;
 
     std::vector<MemoryIODevice *> devices_;
-    std::unique_ptr<SdDirect> sd_direct_;
+    std::unique_ptr<Sd> sd_;
 };

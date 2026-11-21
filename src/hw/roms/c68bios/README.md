@@ -36,18 +36,22 @@ The IO board schematic decodes its two ACIAs and two PIAs at offsets
 start at `$E010/$E014/$E018/$E01C`. The emulator uses the same layout;
 C68 BIOS uses only the first ACIA.
 
-NMI abandons the running program and opens the C68 BIOS monitor. The monitor
+NMI opens the C68 BIOS monitor while preserving the CPU's interrupt frame,
+the SRAM page selections, and FLEX's low RAM. The monitor uses scratch RAM at
+`$9B40–$9B61`, an input buffer at `$9C00–$9CFF`, and its own stack above
+FLEX. It prints `(Interrupt)` immediately before the first prompt. Enter `R`
+to return through the saved frame and continue the interrupted
+program. A second NMI while the monitor is open leaves that frame intact.
+Reset, FLEX's `MON` command, or `F` discards the saved frame. The monitor
 offers `H`/`?` for help, `F` to boot FLEX again, hexadecimal addresses to
 examine memory, `address: bytes` to write hex bytes, `: bytes` to continue at
 the next address, and `addressG` to run code. A program reached through `G`
-returns to the monitor with `RTS`; reset or NMI also re-enters the monitor.
+returns to the monitor with `RTS`; reset or NMI also enters the monitor.
 An empty `address:` sets the continuation address without writing a byte.
 Range dumps show 16 bytes per row with
 an ASCII column. The high bit is ignored; controls and DEL appear as spaces.
-FLEX's `MON`
-command goes through the reset vector and enters the warm monitor. Returning
-to a suspended FLEX session is not
-supported.
+FLEX's `MON` command goes through the reset vector and enters the warm monitor;
+it does not create a resumable NMI frame.
 
 ## Monitor TODO
 
@@ -80,4 +84,5 @@ The [Apple II Reference Manual](https://www.applelogic.org/files/AIIREF.pdf),
 chapter 3, documents the address, range, deposit, and continuation syntax.
 
 Run `make -C hw/roms/c68bios test` from `src` to exercise reset → FLEX, NMI →
-monitor, and monitor `F` → FLEX on the assembled ROM and current disk image.
+monitor, `R` → interrupted FLEX, and monitor `F` → FLEX on the assembled ROM
+and current disk image.

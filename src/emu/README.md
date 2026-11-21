@@ -48,7 +48,7 @@ Without `--sram-image`, SRAM lasts only for the current process.
 Existing `--load file@address` loads through the CPU memory map; it does not
 load the full SRAM image or change I/O latches.
 
-## Direct SD interface
+## SD interface
 
 The emulated Ricoh RP5C01A calendar uses an address latch at `$E070` and a
 4-bit data port at `$E071`. Select register `$D` and write mode `$8` to read
@@ -60,7 +60,7 @@ original date prompt when the device is absent, such as on hardware without
 the clock.
 
 Add `--sd-image FLEX.DSK` to connect the Instore SD registers at `$E080/$E081`
-to a host image through the direct-register protocol. The image must already
+to a host image. The image must already
 exist, be writable, and be exactly 1,048,576 bytes. Sector writes are flushed
 to the file immediately; the emulator does not create or resize it. It uses
 the AVR firmware's protocol parser, including INFO, STATUS, checksums and

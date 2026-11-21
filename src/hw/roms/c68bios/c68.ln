@@ -7,12 +7,12 @@ MEMORY
 
 SECTIONS
 {
-    .zp 0x0000 (NOLOAD) :
+    .zp 0x9B40 (NOLOAD) :
     {
         *(.zp)
     } > RAM
 
-    .bios_tmp 0x0100 (NOLOAD) :
+    .bios_tmp 0x9C00 (NOLOAD) :
     {
         *(.bios_tmp)
     } > RAM

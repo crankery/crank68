@@ -39,8 +39,8 @@ def main():
         'mikbug2.rom': ROOT / 'hw/roms/mikbug2/mikbug2.rom',
         'fonts-28c256.bin': ROOT / 'hw/video/fonts/build/fonts-28c256.bin',
         'flex2.dsk': ROOT / 'os/flex2/build/flex2.dsk',
-        'instore_sd.hex': ROOT / 'hw/instore_sd/build/instore_sd.ino.hex',
-        'avr-fuses.conf': ROOT / 'hw/instore_sd/fuses.conf',
+        'instore_sd.hex': ROOT / 'hw/sd/build/instore_sd.ino.hex',
+        'avr-fuses.conf': ROOT / 'hw/sd/fuses.conf',
         'emu': ROOT / 'emu/build/bin/emu',
     }
     for source in sorted((ROOT / 'hw/pld').glob('*.gal')):

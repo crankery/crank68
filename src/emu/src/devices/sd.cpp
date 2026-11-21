@@ -1,8 +1,8 @@
-#include "sdDirect.h"
+#include "sd.h"
 
 #include <stdexcept>
 
-DirectSdStorage::DirectSdStorage(const std::string &path)
+SdStorage::SdStorage(const std::string &path)
 {
     file_ = std::fopen(path.c_str(), "r+b");
     if (!file_)
@@ -16,18 +16,18 @@ DirectSdStorage::DirectSdStorage(const std::string &path)
     }
 }
 
-DirectSdStorage::~DirectSdStorage()
+SdStorage::~SdStorage()
 {
     if (file_) std::fclose(file_);
 }
 
-sdbridge::Status DirectSdStorage::fail()
+sdbridge::Status SdStorage::fail()
 {
     status_ = sdbridge::Status::IoError;
     return status_;
 }
 
-sdbridge::Status DirectSdStorage::read(uint32_t offset, uint8_t *buffer)
+sdbridge::Status SdStorage::read(uint32_t offset, uint8_t *buffer)
 {
     if (status_ != sdbridge::Status::Ok) return status_;
     if (offset > sdbridge::ImageBytes - sdbridge::SectorBytes)
@@ -38,7 +38,7 @@ sdbridge::Status DirectSdStorage::read(uint32_t offset, uint8_t *buffer)
     return sdbridge::Status::Ok;
 }
 
-sdbridge::Status DirectSdStorage::write(uint32_t offset, const uint8_t *buffer)
+sdbridge::Status SdStorage::write(uint32_t offset, const uint8_t *buffer)
 {
     if (status_ != sdbridge::Status::Ok) return status_;
     if (offset > sdbridge::ImageBytes - sdbridge::SectorBytes)
@@ -50,20 +50,20 @@ sdbridge::Status DirectSdStorage::write(uint32_t offset, const uint8_t *buffer)
     return sdbridge::Status::Ok;
 }
 
-sdbridge::Status DirectSdStorage::sync()
+sdbridge::Status SdStorage::sync()
 {
     if (status_ != sdbridge::Status::Ok) return status_;
     return std::fflush(file_) == 0 ? sdbridge::Status::Ok : fail();
 }
 
-SdDirect::SdDirect(const std::string &image)
+Sd::Sd(const std::string &image)
     : MemoryIODevice(0x8, 0x0, 2), storage_(image), engine_(storage_),
       link_(engine_, *this)
 {
     link_.begin();
 }
 
-uint8_t SdDirect::in(uint8_t port)
+uint8_t Sd::in(uint8_t port)
 {
     if (port == 0)
     {
@@ -80,7 +80,7 @@ uint8_t SdDirect::in(uint8_t port)
     return 0xff;
 }
 
-void SdDirect::out(uint8_t port, uint8_t value)
+void Sd::out(uint8_t port, uint8_t value)
 {
     if (port == 0)
     {

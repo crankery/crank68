@@ -31,6 +31,7 @@ rst_handler:
     jmp monitor_start
 cold_start:
     ; Give the operator about one second at 1 MHz to choose the monitor.
+    clr nmi_valid
     clra
     staa sram_page_low
     staa sram_page_high
@@ -75,10 +76,11 @@ startup_monitor:
 
 monitor_start:
     sei
+    clr nmi_valid
     ; stack goes at the end of ram
     lds #ram_end     
 
-    ; Select SRAM page zero in both windows; leave IRQ masked after NMI.
+    ; Select SRAM page zero in both windows for a warm reset.
     clra
     staa sram_page_low
     staa sram_page_high
@@ -87,12 +89,19 @@ monitor_start:
     jsr acia0_init
     clr zp_deposit_valid
 
+monitor_banner:
     ; output the bios banner
     ldx #s_crlf
     jsr puts
     ldx #st_banner_msg
     jsr putns
 
+    tst nmi_valid
+    beq .ordinary_monitor
+    ldx #s_interrupt
+    jsr puts
+    jmp monitor_prompt
+.ordinary_monitor:
     jmp monitor
 
 ; ------------------------------------------------------------
@@ -103,6 +112,7 @@ monitor:
     ldx #s_crlf
     jsr puts
 
+monitor_prompt:
     ; prompt
     ldaa #':'
     jsr putc
@@ -139,10 +149,21 @@ parse_command:
 .check_help:
         ; help
         cmpa    #'?'
-        beq     .cmd_help
+        beq     .help_dispatch
         cmpa    #'H'
-        beq     .cmd_help
+        bne     .check_resume
+.help_dispatch:
+        jmp     .cmd_help
 
+.check_resume:
+        ; R returns through the saved NMI frame, when one exists.
+        cmpa    #'R'
+        bne     .check_boot
+        ldab    1,x
+        bne     .address
+        jmp     .cmd_resume
+
+.check_boot:
         ; F alone boots FLEX; F800 is a hex address to examine.
         cmpa    #'F'
         bne     .address
@@ -162,9 +183,13 @@ parse_command:
         ldaa    0,x
         beq     .cmd_show_single
         cmpa    #':'
-        beq     .cmd_deposit
+        bne     .check_go
+        jmp     .cmd_deposit
+.check_go:
         cmpa    #'G'
-        beq     .cmd_go
+        bne     .check_range
+        jmp     .cmd_go
+.check_range:
         cmpa    #'.'
         bne     .unknown
         inx
@@ -216,6 +241,17 @@ parse_command:
 
 .cmd_boot:
         jmp flexboot
+
+.cmd_resume:
+        ldaa    nmi_valid
+        beq     .no_resume
+        clr     nmi_valid
+        lds     nmi_sp
+        rti
+.no_resume:
+        ldx     #s_no_resume
+        jsr     puts
+        rts
 
 .cmd_continue:
         ldaa    zp_deposit_valid
@@ -680,14 +716,24 @@ swi_handler:
     rti
 
 nmi_handler:
-    ; NMI abandons the interrupted program, including FLEX's RAM workspace.
-    jmp monitor_start
+    ; An NMI inside the monitor must not replace the first saved frame.
+    tst nmi_valid
+    bne .nmi_nested
+    sts nmi_sp
+    ldaa #1
+    staa nmi_valid
+    lds #ram_end
+    clr zp_deposit_valid
+    jmp monitor_banner
+.nmi_nested:
+    rti
 
 ; Keep this entry at the former MIKBUG $FFC0 address. No monitor RAM or
 ; stack is needed: the boot sector takes ownership after the jump to $0100.
     .section ".boot","acr"
 flexboot:
     sei
+    clr nmi_valid
     ldaa #3
     staa acia0_reg
     ldaa #0x11

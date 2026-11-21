@@ -1,7 +1,7 @@
 # PIA / SD bridge protocol v2
 
 This contract is implemented by the AVR firmware and the MIKBUG ROM host
-transport (`../roms/mikbug2/sdcard.s`), used by FLEX drive 2.
+transport (the earlier form of `../../hw/roms/mikbug2/sdcard.s`), once used by FLEX drive 2.
 Port A stays output on the C68; port B stays input. The AVR uses the two external
 latches to share its own Port D without connecting two output drivers together.
 All fields and payloads are bytes. A logical sector is exactly 256 bytes.

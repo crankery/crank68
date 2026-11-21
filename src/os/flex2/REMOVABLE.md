@@ -1,6 +1,6 @@
 # Mixed SRAM and removable disks
 
-The current AVR project is [../../hw/instore_sd](../../hw/instore_sd/README.md). It uses
+The current AVR project is [../../hw/sd](../../hw/sd/README.md). It uses
 the Instore board's direct registers at `$E080/$E081` and protocol v3. FLEX
 SD dispatch and the MIKBUG ROM transport now use that interface. The old PIA
 board and alternative wiring described below are design history. Hardware

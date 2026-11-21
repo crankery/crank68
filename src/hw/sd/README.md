@@ -1,136 +1,113 @@
-# C68 SD bridge firmware
+# Instore direct-bus SD AVR
 
-> **Inactive legacy add-on:** this firmware targets the separate PIA 1 SD
-> daughterboard, which is paused in favor of the
-> [Instore board](../../../hw/Instore/). The code and tests remain for the existing
-> legacy PIA emulator device. The current ROM and FLEX SD drivers use the
-> [Instore direct-bus firmware](../instore_sd/), not this protocol.
+Firmware for U1 on [`../../../hw/Instore/SD.kicad_sch`](../../../hw/Instore/SD.kicad_sch).
+This is a separate successor to the inactive PIA-based SD daughterboard firmware
+in `../../_deprecated/sd/`. It retains that project's FAT32 `/FLEX.DSK` storage behavior,
+256-byte sectors, status codes and additive payload checksum, but uses
+Instore's four 74HCT573 latches and three hardware pending flip-flops. The
+current MIKBUG ROM, FLEX driver and emulator speak this direct-register protocol.
 
-AVR project for the daughterboard in `../../SD`, connected to IO board PIA 1
-through J2. Target: **ATmega328P-PU, 5 V, internal 8 MHz**, with two HCT574
-latches and a level-shifted SPI SD card. This implements the proposed byte/sector
-protocol; it has been compiled and host-tested, **not tested on assembled hardware**.
-The current MIKBUG ROM and FLEX driver use the Instore direct-register
-protocol instead. This project remains only for the retired PIA daughterboard.
+The first firmware version supports one existing root-directory `FLEX.DSK`,
+exactly 1,048,576 bytes (128 tracks × 32 sectors × 256 bytes). It does not
+create or resize the file. Media is mounted once at startup; after card removal
+or an I/O fault, reset the AVR before trying another card. A successful WRITE
+includes a checked `sync()`. Sector writes are not power-fail atomic.
 
-## Build and test
+## Register map
 
-```sh
-cd src/hw/sd                 # from the repository root
-make check               # host tests, read-only board audit, AVR compilation
-make firmware            # compile only
-make test                # no AVR tools or card needed
-```
+With the Instore slot jumpers set for `$E080`, the SD registers are:
 
-Use the plain `build/sd_bridge.ino.hex` (or `.elf`), not an Arduino-generated
-`with_bootloader` artifact. Ordinary `make`, `make check`, and `make firmware`
-only build and test. The build uses Arduino CLI, Arduino AVR core and Arduino SD.
-Tested with **arduino-cli 1.3.1, arduino:avr 1.8.8, SD 1.2.4**. The script finds
-Arduino CLI on PATH or inside the macOS Arduino IDE; override `ARDUINO_CLI` and
-`SD_LIBRARY` with absolute paths as needed. On a fresh development setup:
+| Address | Read | Write |
+| --- | --- | --- |
+| `$E080` | Status byte | Command opcode |
+| `$E081` | One response byte | One parameter, payload or checksum byte |
 
-```sh
-arduino-cli core install arduino:avr@1.8.8
-arduino-cli lib install SD@1.2.4
-```
+The keyboard occupies `$E082/$E083`. The processor board's `/IO_SEL` already
+qualifies `$E000–$E0FF`, VMA and Φ2. All bus reads and writes are handled by
+external latches; the AVR does not respond within a C68 bus cycle.
 
-The Uno profile supplies the standard ATmega328P pin mapping only. The project
-overrides `F_CPU` to 8000000 and allows the full 32 KiB application flash;
-this is **not** an instruction to use Uno clock fuses or its serial bootloader.
-Select the internal 8 MHz clock in fuses. Setup removes CKDIV8 through CLKPR;
-that cannot fix a fuse selection for an absent external clock. Keep RESET and
-SPI programming enabled. Use ISP for this board; PD0/PD1 belong to the data bus,
-so firmware deliberately does not initialize Serial. The board now has J3, a
-six-pin ISP header. Check its physical orientation before attaching the cable.
+Status bits:
 
-For the socketed narrow DIP-28 ATmega328P-PU, `make program-dry-run` prints the
-Homebrew Minipro commands, and `make program` executes them. The wrapper writes
-the plain application HEX, then [fuses.conf](fuses.conf), then verifies both.
-The fuse bytes are low `$E2` (internal 8 MHz, no divide by eight), high `$D9`
-(RESET and SPI programming enabled, reset to application), extended `$FF`
-(brown-out detection disabled), and lock `$FF` (unlocked). It selects
-`ATMEGA328P@DIP28` for Minipro's ZIF socket. Flash programming erases the chip,
-including any EEPROM contents. The installed `minipro` must be on PATH.
-Use `make program-isp-dry-run` and `make program-isp` for the J3 header.
-These add Minipro's `-i` option, which supplies target power; disconnect any
-other 5 V source while using that mode.
+| Bit | Name | Meaning |
+| --- | --- | --- |
+| 0 | RX_SPACE | Firmware expects a command or data byte |
+| 1 | TX_VALID | A response byte is staged in U10 |
+| 2 | BUSY | A request or response is in progress |
+| 3 | ERROR | Current/last response was nonzero, or link recovery occurred |
+| 4 | MEDIA_READY | `/FLEX.DSK` mounted successfully |
+| 5 | RX_SEQUENCE | Toggles after firmware accepts each command or data write |
+| 6 | TX_SEQUENCE | Toggles after firmware handles each data read |
+| 7 | Reserved | Zero |
 
-The checked build currently uses 9,966 bytes of flash and 1,198 bytes of static SRAM,
-leaving about 850 bytes for stack/runtime use. This is a linker report, not a
-measured stack high-water mark. The protocol owns one 256-byte payload buffer;
-Arduino SD owns a separate 512-byte card cache. No dynamic strings or payload
-copies are used by the protocol.
+**The sequence bits are required.** RX_SPACE and TX_VALID are firmware-loaded
+latch bits, so they can remain stale for a short time after a C68 access. To
+send a byte: read status, require RX_SPACE, remember RX_SEQUENCE, write to the
+appropriate register, then poll until RX_SEQUENCE changes. Do not send another
+byte before that change. To receive a byte: require TX_VALID, remember
+TX_SEQUENCE, read `$E081` once, then poll until TX_SEQUENCE changes before
+reading the next byte. The byte and other status fields are staged before the
+sequence change. Reading status never acknowledges a byte. These one-bit
+sequence fields acknowledge one bus access; they are not command IDs or
+idempotency tokens. Give each poll a timeout. If a WRITE times out after its
+last checksum byte, the host cannot infer whether the SD sync completed; it
+must inspect status and choose explicitly whether to retry the sector write.
 
-## SD card
+After reset, wait for a valid status with RX_SPACE before the first command.
+During AVR reset or early startup the external 573 status latch has no reset
+input and its output may be undefined. A timeout/retry is required for startup
+and mid-operation AVR resets. The board can be strengthened by gating the two
+C68 read output-enables with AVR readiness, but this firmware does not depend
+on that for protocol recovery.
 
-Use a FAT32-formatted card with one existing **`/FLEX.DSK`**, exactly **1,048,576
-bytes** (one 128-track × 32-sector × 256-byte FLEX volume). Other files are
-ignored. The Arduino SD library handles FAT and partial 512-byte card blocks.
-This firmware uses its lower-level `SdFile` interface to check `sync()` errors.
-It opens the existing file read/write without append/create/truncate flags.
-Successful WRITE means the 16-bit payload checksum matched, all 256 bytes were
-written and `sync()` succeeded. READ replies include the same checksum.
+## Commands
 
-To prepare a data-volume image from the existing two-volume SRAM build:
+Write one opcode to `$E080`. READ and WRITE then take track and one-based
+sector number as data writes. WRITE also takes 256 payload bytes and a 16-bit
+unsigned-byte additive sum, high byte then low byte. There are no `A5 5A`
+synchronization bytes: the command register frames a request. Every command
+returns at least one response byte through `$E081`.
 
-```sh
-make -C ../../os/flex2 image
-make image                # expand SRAM drive 1 to build/FLEX.DSK
-# or: make image SD_VOLUME=0   # expand the system/BASIC volume instead
-```
+| Opcode | Command | Data writes | Response reads |
+| --- | --- | --- | --- |
+| `$00` | INFO | None | `00 03 80 20 00 01`: OK, version 3, 128 tracks, 32 sectors/track, 256-byte size little-endian |
+| `$01` | STATUS | None | Storage status code |
+| `$10` | READ | Track, sector | Status; if OK, 256 bytes and checksum high/low |
+| `$11` | WRITE | Track, sector, 256 bytes, checksum high/low | Status after checked card sync |
+| `$12` | SYNC | None | Status after checked card sync |
 
-The extractor refuses to overwrite an existing output; remove/rename it or
-invoke `tools/extract_image.py --force` deliberately. Copy the expanded file
-to the SD card yourself. The converter preserves existing track/sector addresses, adds the new sectors
-to the free chain and updates the SIR. A whole 1 MiB SRAM image contains two
-volumes and cannot be copied directly as the SD drive image.
-A system-volume copy does not make this hardware bootable: its current sector
-bootstrap still reads SRAM directly.
+Track is 0–127; sector is 1–32. A bad WRITE address still consumes the payload
+and checksum before returning BAD_ADDRESS, without writing the card. The status
+codes match [the legacy bridge table](../../_deprecated/sd/PROTOCOL.md#requests-and-responses).
+A partial request or unconsumed response times out after two seconds and
+returns to command mode with ERROR set. A new command clears ERROR.
 
-Mount happens once at startup. There is no card-detect/write-protect connection
-on the current schematic. After removal, insertion or an I/O fault, reset the
-AVR before using another card; automatic hot remount is not implemented. An I/O
-fault latches failure and stops further storage operations. Sector writes are
-not power-fail atomic. A link timeout aborts an incomplete payload without
-writing it, but cannot undo a write already committed by the SD library.
+## AVR wiring and latch ownership
 
-## Board and protocol
+| U1 pins | Use |
+| --- | --- |
+| PD0–PD7 | Shared latch-side byte bus; inputs while U5/U9 output, outputs while U8/U10 load |
+| PB2–PB5 | SD CS, MOSI, MISO, SCK |
+| PB6 | C68 R/W input, currently unused by firmware |
+| PB7 | U17 `/OE`; high during AVR reset, low after safe 595 state is loaded |
+| PC0–PC2 | Command-write, data-write and data-read pending Q inputs |
+| PC3–PC5 | U17 serial data, shift clock and storage clock outputs |
+| U17 QH | Active-low activity LED: on when idle, off during SD read/write/sync and for 50 ms afterward |
 
-[PINOUT.md](PINOUT.md) records the inspected nets and connector. `make
-check-board` compares PCB nets and schematic HCT values against the firmware;
-it is read-only and does not modify either KiCad project. It checks logical
-pin numbering, not the mechanical orientation of the proposed back-mounted
-socket. Verify the mating pin-1/row orientation in the board assembly view.
+U5 and U9 capture C68 writes. U8 and U10 hold status and response bytes for
+C68 reads. U17 selects only one incoming latch at a time, clears each pending
+flip-flop after service, and pulses output-latch load. The AVR returns PD0–PD7
+to inputs after every output load. The output latches retain their bytes across
+SD card delays. The default 595 controls are chosen so resistor pull-ups keep
+incoming latch outputs disabled while the AVR resets.
 
-[PROTOCOL.md](PROTOCOL.md) defines version 2, including PIA setup, strobes,
-status codes, data lengths, the 16-bit sector checksum and recovery. This is a concrete starting contract
-for the FLEX backend, not a pre-existing device standard.
+## Build and verification
 
-[DIRECT_BUS.md](DIRECT_BUS.md) sketches a possible **new** two-register
-memory-mapped SD board with its own AVR. It lists the external latches and
-ready flags needed to use the C68 data bus without a PIA. It does not describe
-the current board or firmware.
-
-Source organization:
-
-- `firmware/sd_bridge/sd_bridge.ino`: initialization, pin-change interrupt and loop.
-- `src/avr_board.h` under the sketch: latch isolation, clocks, controls and LEDs.
-- `src/protocol.h`: fixed-size request/response and sector state machine.
-- `src/link.h`: handshake ordering, backpressure and timeout recovery.
-- `src/sd_storage.h`: existing image, bounded offsets and checked SD sync.
-- `tests/`: host tests of the same protocol/link templates plus image extraction.
-
-Remaining features, including deferred SD error logging: [TODO.md](TODO.md).
-
-## Next hardware work
-
-- Bench-test latch bit order, request/ack flags and both handshake channels with
-  INFO/STATUS before enabling disk writes.
-- Scope /PA_OE and PD0–7 around AVR direction changes; U2 is disabled first.
-- Test SD faults and real call-stack usage; keep command timeouts long enough
-  for blocking SD operations.
-- Check the direct SD MISO path against the actual card's output levels and
-  the 5 V AVR's input threshold; U5 shifts CS/MOSI/SCK down, not MISO up.
-- Bench-test the MIKBUG/FLEX drive-2 backend, then add SD boot support.
-- Decide on write protection, explicit eject/remount, stronger CRC protection,
-  and physical programming/reset access before treating this as finished firmware.
+From `src/hw/sd`, run `make check` to run the SD protocol and image converter tests
+and compile the AVR firmware. The build uses Arduino CLI, the Arduino AVR core
+and Arduino SD library. It only builds; it does not flash a chip or set fuses.
+Use the internal 8 MHz oscillator fuses in `fuses.conf`, with CKDIV8, RESET and
+ISP configured as documented there. Program a plain firmware HEX, without an
+Arduino bootloader. U1 is socketed; the Instore schematic has no dedicated ISP
+header. Verify the installed microSD adapter's SPI voltage behavior before
+powering a card. Hardware latch timing, pending flags, reset/startup behavior,
+byte order and full-sector read/write still need bench testing.

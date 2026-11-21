@@ -34,6 +34,6 @@ if not library:
             break
 if library:
     command += ['--library', library]
-command.append(str(ROOT / 'firmware/sd_bridge'))
+command.append(str(ROOT / 'firmware/instore_sd'))
 print('ATmega328P, internal 8 MHz firmware; no programming/fuse operations.', flush=True)
 subprocess.run(command, check=True)

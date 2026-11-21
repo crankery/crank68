@@ -7,10 +7,10 @@
 #include <unistd.h>
 
 #include "machine/machine.h"
-#include "../../../hw/instore_sd/firmware/instore_sd/src/protocol.h"
-#include "../../../hw/instore_sd/firmware/instore_sd/src/direct_link.h"
+#include "../../../hw/sd/firmware/instore_sd/src/protocol.h"
+#include "../../../hw/sd/firmware/instore_sd/src/direct_link.h"
 
-TEST(SdBridgeTest, DirectRegistersReadAndPersistSectors)
+TEST(SdTest, RegistersReadAndPersistSectors)
 {
     char filename[] = "/tmp/crank68-sd-XXXXXX";
     const int fd = mkstemp(filename);
@@ -86,7 +86,7 @@ TEST(SdBridgeTest, DirectRegistersReadAndPersistSectors)
     for (auto byte : payload) EXPECT_EQ(image.get(), byte);
 }
 
-TEST(SdBridgeTest, RejectsMissingAndWrongSizedImages)
+TEST(SdTest, RejectsMissingAndWrongSizedImages)
 {
     auto machine = Machine::create_default();
     EXPECT_THROW(machine.memory_io_->attachSdImage("/tmp/crank68-sd-missing-image"), std::runtime_error);

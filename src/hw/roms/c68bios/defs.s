@@ -10,6 +10,8 @@
         .equ bios_start, 0xe100
         .equ bios_end, 0xffff
         .equ warm_flag, 0x9b20  ; four RAM bytes outside FLEX user RAM
+        .equ nmi_valid, 0x9b24
+        .equ nmi_sp, 0x9b25     ; saved SP after the CPU's seven-byte NMI frame
 
 ; device settings
         .equ acia_rdrf_mask, 0x1

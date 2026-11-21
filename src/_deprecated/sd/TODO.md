@@ -21,9 +21,8 @@
 - [x] Implement the FLEX drive-2 backend and MIKBUG ROM transport, including
   protocol-v2 payload checksums. CPU/protocol and FMS tests pass; hardware
   bring-up is still required.
-- [x] Emulate the PIA/AVR SD bridge in the C68 emulator with PIA handshakes,
-  protocol-v2 checksums and a 1 MiB host image. FLEX can catalog it in both
-  drive layouts.
+- [x] Retire the emulator's PIA/AVR SD bridge. The emulator's SD device uses
+  the Instore registers at `$E080/$E081`.
 - [ ] Add emulator fault injection and timeout recovery for removable-media
   driver testing. The separate CPU fixture covers absent media, bad checksums
   and a disconnected bridge.

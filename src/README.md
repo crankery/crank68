@@ -6,7 +6,7 @@ experiments remain in `_deprecated/` for reference.
 
 > The ROM, FLEX, emulator, and AVR firmware in this build use the
 > [Instore](../hw/Instore/) direct SD interface. The separate PIA SD daughterboard
-> in [sd](hw/sd/) and the VERA adapter remain as historical sources.
+> in [legacy SD](_deprecated/sd/) and the VERA adapter remain as historical sources.
 
 From this directory (`src`), run `make`. It builds and verifies FLEX, MIKBUG2,
 every `hw/pld/*.gal`, the Instore SD AVR firmware and the emulator, then gathers matching outputs in
@@ -65,12 +65,12 @@ pace the CPU at roughly 1 MHz.
 runs FLEX image verification, direct SD protocol tests and AVR compilation. The test suite boots the real emulator and catalogs the SD drive
 through FLEX in the selected layout. The AVR hex is for ISP programming of an
 internal-8-MHz target;
-the build does not set clock fuses. See [Instore SD firmware](hw/instore_sd/README.md) and
+the build does not set clock fuses. See [SD firmware](hw/sd/README.md) and
 [MIKBUG ROM API](hw/roms/mikbug2/README.md#sd-bridge-rom-api).
 
 For the socketed ATmega328P-PU in its narrow DIP-28 package,
 `make program-avr-dry-run` prints the Minipro commands. `make program-avr`
-explicitly writes the firmware and [fuses](hw/instore_sd/fuses.conf), then verifies
+explicitly writes the firmware and [fuses](hw/sd/fuses.conf), then verifies
 both. Ordinary `make`, `make run`, and `make test` do not contact a programmer.
 The Instore board has no dedicated ISP header; program the removed chip in a
 socket before installing it.

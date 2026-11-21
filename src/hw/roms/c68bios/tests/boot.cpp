@@ -117,6 +117,17 @@ int main(int argc, char **argv) {
               "build tag leaked into startup banner");
         const auto prompt_before_nmi = bus.output.rfind("+++");
         check(prompt_before_nmi != std::string::npos, "FLEX prompt missing before NMI");
+        const uint16_t interrupted_sp = cpu.s_.sp;
+        const uint8_t interrupted_low_page = bus.page;
+        const uint8_t interrupted_high_page = bus.high_page;
+        const unsigned low_page_writes = bus.low_page_zero_writes;
+        const unsigned high_page_writes = bus.high_page_zero_writes;
+        std::array<uint8_t, 0x22> interrupted_zero_page{};
+        std::array<uint8_t, 0x100> interrupted_input_ram{};
+        std::copy_n(bus.ram.begin(), interrupted_zero_page.size(),
+                    interrupted_zero_page.begin());
+        std::copy_n(bus.ram.begin() + 0x100, interrupted_input_ram.size(),
+                    interrupted_input_ram.begin());
         cpu.requestNmi();
         cpu.step();
         check(cpu.s_.pc == 0xFFF4 || cpu.s_.pc == 0xFFF8 || cpu.s_.pc >= 0xE100,
@@ -129,10 +140,60 @@ int main(int argc, char **argv) {
                 bus.output.back() == ':') { monitor = true; break; }
         }
         check(monitor, "FLEX NMI did not enter monitor");
-        check(bus.page == 0 && bus.high_page == 0,
-              "NMI monitor did not select both SRAM page zeros");
+        check(bus.page == interrupted_low_page &&
+              bus.high_page == interrupted_high_page &&
+              bus.low_page_zero_writes == low_page_writes &&
+              bus.high_page_zero_writes == high_page_writes,
+              "NMI monitor changed the SRAM page selection");
         check(bus.output.find("+++\r\nC68 BIOS v0.01", prompt_before_nmi) ==
               prompt_before_nmi, "NMI banner did not start on the next line");
+        check(bus.output.find("Dave Hamilton 2026\r\n(Interrupt)\r\n:",
+                              prompt_before_nmi) != std::string::npos,
+              "NMI marker is not immediately before the first monitor prompt");
+        const uint16_t monitor_sp = cpu.s_.sp;
+        const uint16_t monitor_pc = cpu.s_.pc;
+        const size_t output_before_nested_nmi = bus.output.size();
+        cpu.requestNmi();
+        cpu.step();
+        for (unsigned step = 0; step < 10 && cpu.s_.pc != monitor_pc; ++step)
+            cpu.step();
+        check(cpu.s_.pc == monitor_pc && cpu.s_.sp == monitor_sp &&
+              bus.output.size() == output_before_nested_nmi,
+              "nested NMI did not return to the monitor");
+        const size_t before_resume = bus.output.size();
+        const std::string resume = "R\r";
+        size_t resume_key = 0;
+        bool resumed = false;
+        for (unsigned step = 0; step < 100000; ++step) {
+            if (bus.input < 0 && resume_key < resume.size())
+                bus.input = uint8_t(resume[resume_key++]);
+            cpu.step();
+            if (resume_key == resume.size() && bus.input < 0 &&
+                cpu.s_.pc == inwait) { resumed = true; break; }
+        }
+        check(resumed && cpu.s_.sp == interrupted_sp,
+              "R did not restore FLEX's NMI stack frame");
+        check(std::equal(interrupted_zero_page.begin(), interrupted_zero_page.end(),
+                         bus.ram.begin()) &&
+              std::equal(interrupted_input_ram.begin(), interrupted_input_ram.end(),
+                         bus.ram.begin() + 0x100),
+              "NMI monitor changed FLEX's low RAM");
+        check(bus.output.find("Starting OS", before_resume) == std::string::npos,
+              "R rebooted instead of resuming FLEX");
+
+        const size_t before_second_nmi = bus.output.size();
+        cpu.requestNmi();
+        cpu.step();
+        bool second_monitor = false;
+        for (unsigned step = 0; step < 100000; ++step) {
+            cpu.step();
+            if (bus.output.find("C68 BIOS v0.01", before_second_nmi) !=
+                    std::string::npos && bus.output.back() == ':') {
+                second_monitor = true;
+                break;
+            }
+        }
+        check(second_monitor, "second NMI did not re-enter monitor");
         const size_t prior_output = bus.output.size();
         const std::string replay = "F\r";
         size_t replay_key = 0;
@@ -150,7 +211,7 @@ int main(int argc, char **argv) {
                 cpu.s_.pc == inwait) { rebooted = true; break; }
         }
         check(rebooted, "monitor F command did not reboot FLEX");
-        check(bus.low_page_zero_writes >= 4 && bus.high_page_zero_writes >= 4,
+        check(bus.low_page_zero_writes >= 3 && bus.high_page_zero_writes >= 3,
               "monitor F command did not select both SRAM page zeros");
 
         const size_t before_mon = bus.output.size();
@@ -197,6 +258,7 @@ int main(int argc, char **argv) {
             }
             throw std::runtime_error("monitor command failed: " + line);
         };
+        monitor_command("R\r", "No interrupted program");
         for (unsigned i = 0; i < 18; ++i)
             bus.ram[0x300 + i] = uint8_t(0x11 + i);
         bus.ram[0x300] = 0xC1; // high bit strips to printable 'A'
@@ -218,6 +280,7 @@ int main(int argc, char **argv) {
         check(bus.output.find(
                   "H (?)               - Display help\r\n"
                   "F                   - Boot FLEX from SRAM\r\n"
+                  "R                   - Resume after NMI\r\n"
                   "address             - Examine one byte\r\n"
                   "start.end           - Examine inclusive range\r\n"
                   "address: bytes      - Write hex bytes to memory\r\n"

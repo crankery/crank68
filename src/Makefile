@@ -31,7 +31,7 @@ fonts:
 # Keep the nested builds in order: FLEX builds the matching MIKBUG ROM.
 system: pld fonts
 	$(MAKE) -C os/flex2 all DRIVE_LAYOUT=$(DRIVE_LAYOUT) SOUND_BOARD_REV=$(SOUND_BOARD_REV)
-	$(MAKE) -C hw/instore_sd check
+	$(MAKE) -C hw/sd check
 	$(MAKE) -C emu all
 	$(PYTHON) tools/package-system.py --sd-volume $(SD_VOLUME) --drive-layout $(DRIVE_LAYOUT)
 
