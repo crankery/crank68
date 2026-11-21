@@ -1,0 +1,58 @@
+display_level,board,bonus_word,player_x,player_y,score,lads
+1,Easy Street,35,6,19,0,5
+2,Long Island,45,7,19,0,5
+3,Easy Street,33,6,19,0,5
+4,Long Island,43,7,19,0,5
+5,Ghost Town,33,6,3,0,5
+6,Easy Street,31,6,19,0,5
+7,Long Island,41,7,19,0,5
+8,Ghost Town,31,6,3,0,5
+9,Tunnel Vision,32,77,17,0,5
+10,Easy Street,29,6,19,0,5
+11,Long Island,39,7,19,0,5
+12,Ghost Town,29,6,3,0,5
+13,Tunnel Vision,30,77,17,0,5
+14,Point of No Return,29,74,4,0,5
+15,Easy Street,27,6,19,0,5
+16,Long Island,37,7,19,0,5
+17,Ghost Town,27,6,3,0,5
+18,Tunnel Vision,28,77,17,0,5
+19,Point of No Return,27,74,4,0,5
+20,Bug City,29,34,9,0,5
+21,Easy Street,25,6,19,0,5
+22,Long Island,35,7,19,0,5
+23,Ghost Town,25,6,3,0,5
+24,Tunnel Vision,26,77,17,0,5
+25,Point of No Return,25,74,4,0,5
+26,Bug City,27,34,9,0,5
+27,GangLand,22,7,3,0,5
+28,Easy Street,25,6,19,0,5
+29,Long Island,35,7,19,0,5
+30,Easy Street,23,6,19,0,5
+31,Long Island,33,7,19,0,5
+32,Ghost Town,23,6,3,0,5
+33,Easy Street,21,6,19,0,5
+34,Long Island,31,7,19,0,5
+35,Ghost Town,21,6,3,0,5
+36,Tunnel Vision,22,77,17,0,5
+37,Easy Street,19,6,19,0,5
+38,Long Island,29,7,19,0,5
+39,Ghost Town,19,6,3,0,5
+40,Tunnel Vision,20,77,17,0,5
+41,Point of No Return,19,74,4,0,5
+42,Easy Street,17,6,19,0,5
+43,Long Island,27,7,19,0,5
+44,Ghost Town,17,6,3,0,5
+45,Tunnel Vision,18,77,17,0,5
+46,Point of No Return,17,74,4,0,5
+47,Bug City,19,34,9,0,5
+48,Easy Street,15,6,19,0,5
+49,Long Island,25,7,19,0,5
+50,Ghost Town,15,6,3,0,5
+51,Tunnel Vision,16,77,17,0,5
+52,Point of No Return,15,74,4,0,5
+53,Bug City,17,34,9,0,5
+54,GangLand,12,7,3,0,5
+55,Easy Street,15,6,19,0,5
+56,Long Island,25,7,19,0,5
+57,Easy Street,13,6,19,0,5

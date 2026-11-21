@@ -44,8 +44,12 @@ table. Code at `$4B36..$4B55` writes the working X and Y values back to the
 indexed tables. Code at `$47A0..$47D7` copies coordinates from two more
 parallel tables at `$0EAA` and `$0EC0` into a selected actor slot and sets
 its `$0E94` entry to `2`; this looks like actor spawning from stored
-positions. The evidence so far does not assign every slot to a specific
-rock, dispenser, or the lad.
+positions. A [400-update state trace](STATE_TRACE.md) shows the first slot
+staying `(0,0,0)` and slots 1–5 becoming active while Lad's separate position
+at `$0F89/$0F8B` remains `(6,19)`. The slot statuses track observed motion:
+`3` usually moves left, `4` right, and `1` and `2` downward. Which downward
+state represents ladder descent versus free fall still needs a controlled
+terrain check.
 
 The climb/fall trace gives an independent check on the working Y word:
 `$4CD8` decrements `$0FB6` during ascent, while `$4D44` increments it during
@@ -56,5 +60,6 @@ rows in the saved text frames.
 These are addresses in the **running CP/M memory image**. The original COM
 contains executable bytes at some of the low addresses before startup, so
 the program or linked runtime reuses that region as variable storage during
-play. A later memory snapshot at the actor loop would establish exact slot
-roles without building a separate game engine.
+play. The state trace now provides those snapshots at each actor-loop
+completion; specific slot-to-dispenser assignments still need controlled
+probes.

@@ -1,4 +1,4 @@
-; Generated from Ladder/src/ladicons.pas by tools/make_levels.py
+; Generated from Pascal, corrected with analysis/map-parity.csv
 ; Ghost Town: initial bonus 35, rocks 5
         .ascii "                            V               V           V               $      "
         .ascii "                                                                       $$$     "
@@ -17,6 +17,6 @@
         .ascii "    T         ==================H=================H===================H======= "
         .ascii "    o                                             H                   H        "
         .ascii "    w                                                                 H        "
-        .ascii "    n                           ^                                     H        "
-        .ascii "*                              ^^^                                    H       *"
+        .ascii "    n                                                                 H        "
+        .ascii "*                                                                     H       *"
         .ascii "==============================================================================="

@@ -634,6 +634,12 @@
           "label": "Sim.Pins",
           "name": "Sim.Pins",
           "show": false
+        },
+        {
+          "group_by": false,
+          "label": "Sim.Type",
+          "name": "Sim.Type",
+          "show": false
         }
       ],
       "filter_string": "",
@@ -641,7 +647,7 @@
       "include_excluded_from_bom": true,
       "name": "",
       "sort_asc": true,
-      "sort_field": "Reference"
+      "sort_field": "Value"
     },
     "bus_aliases": {},
     "connection_grid_size": 50.0,
@@ -684,7 +690,7 @@
         "uuid": "4c598791-1b01-4b77-baa3-7fa3aaf7b92c"
       }
     ],
-    "used_designators": "",
+    "used_designators": "J7,RN3,R17-21,D1-2,#PWR117-134,C31-36,BT1,Y3,U11,U15,U17,U24-25",
     "variants": []
   },
   "sheets": [

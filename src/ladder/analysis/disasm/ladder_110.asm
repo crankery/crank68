@@ -1,5 +1,5 @@
 ; z80dasm 1.2.0
-; command line: z80dasm -a -l -t -c -S /private/tmp/ladder-disasm/ladder_110.sym -b /private/tmp/ladder-disasm/ladder_110.blocks -g 0x100 -o /private/tmp/ladder-disasm/ladder_110.asm cpm/LADDER.COM
+; command line: z80dasm -a -l -t -c -S analysis/disasm/ladder_110.sym -b analysis/disasm/ladder_110.blocks -g 0x100 -o analysis/disasm/ladder_110.asm cpm/LADDER.COM
 
 	org 00100h
 ; CP/M BDOS entry
@@ -2514,7 +2514,7 @@ main_code:
 	ld l,a			;1022	6f		o
 	ld (l0ef6h),hl		;1023	22 f6 0e	" . .
 	ld de,l0ef8h		;1026	11 f8 0e	. . .
-	ld hl,l6137h		;1029	21 37 61	! 7 a
+	ld hl,s_version_number	;1029	21 37 61	! 7 a
 	call string_assign	;102c	cd db 74	. . t
 	ld hl,00014h		;102f	21 14 00	! . .
 	ld (l0efbh),hl		;1032	22 fb 0e	" . .
@@ -2533,19 +2533,19 @@ main_code:
 	ld hl,00005h		;1059	21 05 00	! . .
 	ld (l0f09h),hl		;105c	22 09 0f	" . .
 	ld de,00f0bh		;105f	11 0b 0f	. . .
-	ld hl,l6133h		;1062	21 33 61	! 3 a
+	ld hl,s_space		;1062	21 33 61	! 3 a
 	call string_assign	;1065	cd db 74	. . t
 	ld de,00f0eh		;1068	11 0e 0f	. . .
-	ld hl,l6125h		;106b	21 25 61	! % a
+	ld hl,s_actor_glyphs_alt	;106b	21 25 61	! % a
 	call string_assign	;106e	cd db 74	. . t
 	ld de,l0f11h		;1071	11 11 0f	. . .
-	ld hl,l6117h		;1074	21 17 61	! . a
+	ld hl,s_actor_glyphs	;1074	21 17 61	! . a
 	call string_assign	;1077	cd db 74	. . t
 	ld de,l0f14h		;107a	11 14 0f	. . .
-	ld hl,l610fh		;107d	21 0f 61	! . a
+	ld hl,s_default_key_subset	;107d	21 0f 61	! . a
 	call string_assign	;1080	cd db 74	. . t
 	ld de,l0f17h		;1083	11 17 0f	. . .
-	ld hl,l60ffh		;1086	21 ff 60	! . `
+	ld hl,s_default_key_map	;1086	21 ff 60	! . `
 	call string_assign	;1089	cd db 74	. . t
 	ld hl,00000h		;108c	21 00 00	! . .
 	ld (l0e54h),hl		;108f	22 54 0e	" T .
@@ -11488,7 +11488,7 @@ l3a00h:
 	add hl,de		;3a06	19		.
 	ld l,(hl)		;3a07	6e		n
 	ld h,000h		;3a08	26 00		& .
-	call sub_75b5h		;3a0a	cd b5 75	. . u
+	call character_string	;3a0a	cd b5 75	. . u
 l3a0dh:
 	ld de,l0f1ch		;3a0d	11 1c 0f	. . .
 	call sub_706eh		;3a10	cd 6e 70	. n p
@@ -11513,11 +11513,11 @@ l3a31h:
 	rla			;3a31	17		.
 	jp nc,l3a00h		;3a32	d2 00 3a	. . :
 	call sub_8993h		;3a35	cd 93 89	. . .
-	ld hl,l60f8h		;3a38	21 f8 60	! . `
+	ld hl,s_key_r_upper	;3a38	21 f8 60	! . `
 	call sub_8ab4h		;3a3b	cd b4 8a	. . .
 l3a3eh:
 	ld bc,00001h		;3a3e	01 01 00	. . .
-	ld de,l60ebh		;3a41	11 eb 60	. . `
+	ld de,s_data_filename	;3a41	11 eb 60	. . `
 	ld hl,00020h		;3a44	21 20 00	!   .
 	call sub_8adch		;3a47	cd dc 8a	. . .
 	ld hl,00001h		;3a4a	21 01 00	! . .
@@ -11541,22 +11541,22 @@ l3a3eh:
 	jp nz,l3b2fh		;3a70	c2 2f 3b	. / ;
 	ld hl,00001h		;3a73	21 01 00	! . .
 	call sub_85f4h		;3a76	cd f4 85	. . .
-	ld hl,l60ebh		;3a79	21 eb 60	! . `
+	ld hl,s_data_filename	;3a79	21 eb 60	! . `
 	call sub_89afh		;3a7c	cd af 89	. . .
 	call print_setup	;3a7f	cd ea 6f	. . o
 	ld hl,l613eh		;3a82	21 3e 61	! > a
-	call sub_6e92h		;3a85	cd 92 6e	. . n
+	call print_string_line	;3a85	cd 92 6e	. . n
 	call print_setup	;3a88	cd ea 6f	. . o
 	ld hl,l613eh		;3a8b	21 3e 61	! > a
-	call sub_6e92h		;3a8e	cd 92 6e	. . n
+	call print_string_line	;3a8e	cd 92 6e	. . n
 	call print_setup	;3a91	cd ea 6f	. . o
-	ld hl,l60d3h		;3a94	21 d3 60	! . `
-	call sub_6e92h		;3a97	cd 92 6e	. . n
+	ld hl,s_not_configured	;3a94	21 d3 60	! . `
+	call print_string_line	;3a97	cd 92 6e	. . n
 l3a9ah:
-	ld hl,l60f8h		;3a9a	21 f8 60	! . `
+	ld hl,s_key_r_upper	;3a9a	21 f8 60	! . `
 	call sub_8ab4h		;3a9d	cd b4 8a	. . .
 	ld bc,00001h		;3aa0	01 01 00	. . .
-	ld de,l60c5h		;3aa3	11 c5 60	. . `
+	ld de,s_ladconf_filename	;3aa3	11 c5 60	. . `
 	ld hl,00020h		;3aa6	21 20 00	!   .
 	call sub_8adch		;3aa9	cd dc 8a	. . .
 	ld hl,00001h		;3aac	21 01 00	! . .
@@ -11580,34 +11580,34 @@ l3a9ah:
 	jp nz,l3b08h		;3ad2	c2 08 3b	. . ;
 	ld hl,00001h		;3ad5	21 01 00	! . .
 	call sub_85f4h		;3ad8	cd f4 85	. . .
-	ld hl,l60c5h		;3adb	21 c5 60	! . `
+	ld hl,s_ladconf_filename	;3adb	21 c5 60	! . `
 	call sub_89afh		;3ade	cd af 89	. . .
 	call print_setup	;3ae1	cd ea 6f	. . o
 	ld hl,l613eh		;3ae4	21 3e 61	! > a
-	call sub_6e92h		;3ae7	cd 92 6e	. . n
+	call print_string_line	;3ae7	cd 92 6e	. . n
 	call print_setup	;3aea	cd ea 6f	. . o
 	ld hl,l613eh		;3aed	21 3e 61	! > a
-	call sub_6e92h		;3af0	cd 92 6e	. . n
+	call print_string_line	;3af0	cd 92 6e	. . n
 	call print_setup	;3af3	cd ea 6f	. . o
-	ld hl,l60a5h		;3af6	21 a5 60	! . `
-	call sub_6e92h		;3af9	cd 92 6e	. . n
+	ld hl,s_config_link_error	;3af6	21 a5 60	! . `
+	call print_string_line	;3af9	cd 92 6e	. . n
 	call print_setup	;3afc	cd ea 6f	. . o
-	ld hl,l607eh		;3aff	21 7e 60	! ~ `
-	call sub_6e92h		;3b02	cd 92 6e	. . n
-	call sub_68bbh		;3b05	cd bb 68	. . h
+	ld hl,s_config_missing	;3aff	21 7e 60	! ~ `
+	call print_string_line	;3b02	cd 92 6e	. . n
+	call program_end	;3b05	cd bb 68	. . h
 l3b08h:
 	ld hl,00001h		;3b08	21 01 00	! . .
 	call sub_85f4h		;3b0b	cd f4 85	. . .
 	call print_setup	;3b0e	cd ea 6f	. . o
 	ld hl,l613eh		;3b11	21 3e 61	! > a
-	call sub_6e92h		;3b14	cd 92 6e	. . n
+	call print_string_line	;3b14	cd 92 6e	. . n
 	call print_setup	;3b17	cd ea 6f	. . o
 	ld hl,l613eh		;3b1a	21 3e 61	! > a
-	call sub_6e92h		;3b1d	cd 92 6e	. . n
+	call print_string_line	;3b1d	cd 92 6e	. . n
 	call print_setup	;3b20	cd ea 6f	. . o
-	ld hl,l6058h		;3b23	21 58 60	! X `
-	call sub_6e92h		;3b26	cd 92 6e	. . n
-	ld hl,l604eh		;3b29	21 4e 60	! N `
+	ld hl,s_linking_config	;3b23	21 58 60	! X `
+	call print_string_line	;3b26	cd 92 6e	. . n
+	ld hl,s_ladconf_name	;3b29	21 4e 60	! N `
 	call sub_6754h		;3b2c	cd 54 67	. T g
 l3b2fh:
 	ld de,l0f23h		;3b2f	11 23 0f	. # .
@@ -11822,7 +11822,7 @@ l3d51h:
 	call sub_85f4h		;3d57	cd f4 85	. . .
 	call print_setup	;3d5a	cd ea 6f	. . o
 	ld hl,l0f34h		;3d5d	21 34 0f	! 4 .
-	call sub_6e6eh		;3d60	cd 6e 6e	. n n
+	call print_string	;3d60	cd 6e 6e	. n n
 	ld de,00f2eh		;3d63	11 2e 0f	. . .
 	ld hl,l0f2bh		;3d66	21 2b 0f	! + .
 	call 06216h		;3d69	cd 16 62	. . b
@@ -11833,12 +11833,12 @@ l3d51h:
 	ld hl,l0f44h		;3d78	21 44 0f	! D .
 	call sub_625eh		;3d7b	cd 5e 62	. ^ b
 	ld de,l0f3ah		;3d7e	11 3a 0f	. : .
-	ld hl,l6047h		;3d81	21 47 60	! G `
-	call sub_73b8h		;3d84	cd b8 73	. . s
+	ld hl,s_yes		;3d81	21 47 60	! G `
+	call branch_if_strings_unequal	;3d84	cd b8 73	. . s
 	sbc a,b			;3d87	98		.
 	dec a			;3d88	3d		=
 	ld hl,00007h		;3d89	21 07 00	! . .
-	call sub_75b5h		;3d8c	cd b5 75	. . u
+	call character_string	;3d8c	cd b5 75	. . u
 	ld de,l0f49h		;3d8f	11 49 0f	. I .
 	call string_assign	;3d92	cd db 74	. . t
 	jp l3da1h		;3d95	c3 a1 3d	. . =
@@ -11847,8 +11847,8 @@ l3d51h:
 	call string_assign	;3d9e	cd db 74	. . t
 l3da1h:
 	ld de,00f3dh		;3da1	11 3d 0f	. = .
-	ld hl,l6047h		;3da4	21 47 60	! G `
-	call sub_73b8h		;3da7	cd b8 73	. . s
+	ld hl,s_yes		;3da4	21 47 60	! G `
+	call branch_if_strings_unequal	;3da7	cd b8 73	. . s
 	or l			;3daa	b5		.
 	dec a			;3dab	3d		=
 	ld hl,(l0ef6h)		;3dac	2a f6 0e	* . .
@@ -11858,7 +11858,7 @@ l3da1h:
 	ld (l0f4ch),hl		;3db8	22 4c 0f	" L .
 l3dbbh:
 	ld de,l0f1ch		;3dbb	11 1c 0f	. . .
-	ld hl,l6038h		;3dbe	21 38 60	! 8 `
+	ld hl,s_terminal_pro_level	;3dbe	21 38 60	! 8 `
 	call l7155h+1		;3dc1	cd 56 71	. V q
 	ld (l0f1fh+2),hl	;3dc4	22 21 0f	" ! .
 	ld hl,(l0f1fh+2)	;3dc7	2a 21 0f	* ! .
@@ -11893,7 +11893,7 @@ l3deah:
 	ld (00f50h),hl		;3e01	22 50 0f	" P .
 l3e04h:
 	ld de,l0f1ch		;3e04	11 1c 0f	. . .
-	ld hl,l602eh		;3e07	21 2e 60	! . `
+	ld hl,s_terminal_pro_men	;3e07	21 2e 60	! . `
 	call l7155h+1		;3e0a	cd 56 71	. V q
 	ld (l0f1fh+2),hl	;3e0d	22 21 0f	" ! .
 	ld hl,(l0f1fh+2)	;3e10	2a 21 0f	* ! .
@@ -11936,7 +11936,7 @@ l3e3dh:
 	ld (l0f52h),hl		;3e54	22 52 0f	" R .
 l3e57h:
 	ld de,l0f1ch		;3e57	11 1c 0f	. . .
-	ld hl,l6022h		;3e5a	21 22 60	! " `
+	ld hl,s_terminal_pro_score	;3e5a	21 22 60	! " `
 	call l7155h+1		;3e5d	cd 56 71	. V q
 	ld (l0f1fh+2),hl	;3e60	22 21 0f	" ! .
 	ld hl,(l0f1fh+2)	;3e63	2a 21 0f	* ! .
@@ -11983,87 +11983,87 @@ l3e90h:
 l3eafh:
 	call print_setup	;3eaf	cd ea 6f	. . o
 	ld hl,l0f37h		;3eb2	21 37 0f	! 7 .
-	call sub_6e92h		;3eb5	cd 92 6e	. . n
+	call print_string_line	;3eb5	cd 92 6e	. . n
 	ld hl,0000fh		;3eb8	21 0f 00	! . .
 	call sub_7570h		;3ebb	cd 70 75	. p u
 	ld de,l0f56h		;3ebe	11 56 0f	. V .
 	call string_assign	;3ec1	cd db 74	. . t
 	call print_setup	;3ec4	cd ea 6f	. . o
 	ld hl,l0f56h		;3ec7	21 56 0f	! V .
-	call sub_6e6eh		;3eca	cd 6e 6e	. n n
+	call print_string	;3eca	cd 6e 6e	. n n
 	call print_setup	;3ecd	cd ea 6f	. . o
-	ld hl,l5ffdh		;3ed0	21 fd 5f	! . _
-	call sub_6e92h		;3ed3	cd 92 6e	. . n
+	ld hl,s_menu_logo_row_1	;3ed0	21 fd 5f	! . _
+	call print_string_line	;3ed3	cd 92 6e	. . n
 	call print_setup	;3ed6	cd ea 6f	. . o
 	ld hl,l0f56h		;3ed9	21 56 0f	! V .
-	call sub_6e6eh		;3edc	cd 6e 6e	. n n
+	call print_string	;3edc	cd 6e 6e	. n n
 	call print_setup	;3edf	cd ea 6f	. . o
-	ld hl,l5ffdh		;3ee2	21 fd 5f	! . _
-	call sub_6e92h		;3ee5	cd 92 6e	. . n
+	ld hl,s_menu_logo_row_1	;3ee2	21 fd 5f	! . _
+	call print_string_line	;3ee5	cd 92 6e	. . n
 	call print_setup	;3ee8	cd ea 6f	. . o
 	ld hl,l0f56h		;3eeb	21 56 0f	! V .
-	call sub_6e6eh		;3eee	cd 6e 6e	. n n
+	call print_string	;3eee	cd 6e 6e	. n n
 	call print_setup	;3ef1	cd ea 6f	. . o
-	ld hl,l5fc6h		;3ef4	21 c6 5f	! . _
-	call sub_6e92h		;3ef7	cd 92 6e	. . n
+	ld hl,s_menu_logo_row_2	;3ef4	21 c6 5f	! . _
+	call print_string_line	;3ef7	cd 92 6e	. . n
 	call print_setup	;3efa	cd ea 6f	. . o
 	ld hl,l0f56h		;3efd	21 56 0f	! V .
-	call sub_6e6eh		;3f00	cd 6e 6e	. n n
+	call print_string	;3f00	cd 6e 6e	. n n
 	call print_setup	;3f03	cd ea 6f	. . o
-	ld hl,l5f8eh		;3f06	21 8e 5f	! . _
-	call sub_6e92h		;3f09	cd 92 6e	. . n
+	ld hl,s_menu_logo_row_3	;3f06	21 8e 5f	! . _
+	call print_string_line	;3f09	cd 92 6e	. . n
 	call print_setup	;3f0c	cd ea 6f	. . o
 	ld hl,l0f56h		;3f0f	21 56 0f	! V .
-	call sub_6e6eh		;3f12	cd 6e 6e	. n n
+	call print_string	;3f12	cd 6e 6e	. n n
 	call print_setup	;3f15	cd ea 6f	. . o
-	ld hl,l5f5ch		;3f18	21 5c 5f	! \ _
-	call sub_6e92h		;3f1b	cd 92 6e	. . n
+	ld hl,s_menu_logo_row_4	;3f18	21 5c 5f	! \ _
+	call print_string_line	;3f1b	cd 92 6e	. . n
 	call print_setup	;3f1e	cd ea 6f	. . o
 	ld hl,l0f56h		;3f21	21 56 0f	! V .
-	call sub_6e6eh		;3f24	cd 6e 6e	. n n
+	call print_string	;3f24	cd 6e 6e	. n n
 	call print_setup	;3f27	cd ea 6f	. . o
-	ld hl,l5f2ah		;3f2a	21 2a 5f	! * _
-	call sub_6e92h		;3f2d	cd 92 6e	. . n
+	ld hl,s_menu_logo_row_5	;3f2a	21 2a 5f	! * _
+	call print_string_line	;3f2d	cd 92 6e	. . n
 	call print_setup	;3f30	cd ea 6f	. . o
 	ld hl,l0f56h		;3f33	21 56 0f	! V .
-	call sub_6e6eh		;3f36	cd 6e 6e	. n n
+	call print_string	;3f36	cd 6e 6e	. n n
 	call print_setup	;3f39	cd ea 6f	. . o
-	ld hl,l5ef8h		;3f3c	21 f8 5e	! . ^
-	call sub_6e92h		;3f3f	cd 92 6e	. . n
+	ld hl,s_menu_logo_row_6	;3f3c	21 f8 5e	! . ^
+	call print_string_line	;3f3f	cd 92 6e	. . n
 	call print_setup	;3f42	cd ea 6f	. . o
 	ld hl,l613eh		;3f45	21 3e 61	! > a
-	call sub_6e92h		;3f48	cd 92 6e	. . n
+	call print_string_line	;3f48	cd 92 6e	. . n
 	call print_setup	;3f4b	cd ea 6f	. . o
-	ld hl,l5edeh		;3f4e	21 de 5e	! . ^
-	call sub_6e92h		;3f51	cd 92 6e	. . n
+	ld hl,s_copyright	;3f4e	21 de 5e	! . ^
+	call print_string_line	;3f51	cd 92 6e	. . n
 	call print_setup	;3f54	cd ea 6f	. . o
-	ld hl,l5ed1h		;3f57	21 d1 5e	! . ^
-	call sub_6e6eh		;3f5a	cd 6e 6e	. n n
+	ld hl,s_version_heading	;3f57	21 d1 5e	! . ^
+	call print_string	;3f5a	cd 6e 6e	. n n
 	ld hl,l0ef8h		;3f5d	21 f8 0e	! . .
-	call sub_6e92h		;3f60	cd 92 6e	. . n
+	call print_string_line	;3f60	cd 92 6e	. . n
 	call print_setup	;3f63	cd ea 6f	. . o
-	ld hl,l5ec4h		;3f66	21 c4 5e	! . ^
-	call sub_6e6eh		;3f69	cd 6e 6e	. n n
+	ld hl,s_terminal_heading	;3f66	21 c4 5e	! . ^
+	call print_string	;3f69	cd 6e 6e	. n n
 	ld hl,l0f26h+2		;3f6c	21 28 0f	! ( .
-	call sub_6e92h		;3f6f	cd 92 6e	. . n
+	call print_string_line	;3f6f	cd 92 6e	. . n
 	call print_setup	;3f72	cd ea 6f	. . o
 	ld hl,l613eh		;3f75	21 3e 61	! > a
-	call sub_6e92h		;3f78	cd 92 6e	. . n
+	call print_string_line	;3f78	cd 92 6e	. . n
 	call print_setup	;3f7b	cd ea 6f	. . o
-	ld hl,l5eb4h		;3f7e	21 b4 5e	! . ^
-	call sub_6e92h		;3f81	cd 92 6e	. . n
+	ld hl,s_menu_play_option	;3f7e	21 b4 5e	! . ^
+	call print_string_line	;3f81	cd 92 6e	. . n
 	call print_setup	;3f84	cd ea 6f	. . o
-	ld hl,l5e93h		;3f87	21 93 5e	! . ^
-	call sub_6e92h		;3f8a	cd 92 6e	. . n
+	ld hl,s_menu_difficulty_option	;3f87	21 93 5e	! . ^
+	call print_string_line	;3f8a	cd 92 6e	. . n
 	call print_setup	;3f8d	cd ea 6f	. . o
-	ld hl,l5e7ch		;3f90	21 7c 5e	! | ^
-	call sub_6e92h		;3f93	cd 92 6e	. . n
+	ld hl,s_menu_configure_option	;3f90	21 7c 5e	! | ^
+	call print_string_line	;3f93	cd 92 6e	. . n
 	call print_setup	;3f96	cd ea 6f	. . o
-	ld hl,l5e69h		;3f99	21 69 5e	! i ^
-	call sub_6e92h		;3f9c	cd 92 6e	. . n
+	ld hl,s_menu_instructions_option	;3f99	21 69 5e	! i ^
+	call print_string_line	;3f9c	cd 92 6e	. . n
 	call print_setup	;3f9f	cd ea 6f	. . o
-	ld hl,l5e57h		;3fa2	21 57 5e	! W ^
-	call sub_6e92h		;3fa5	cd 92 6e	. . n
+	ld hl,s_menu_exit_option	;3fa2	21 57 5e	! W ^
+	call print_string_line	;3fa5	cd 92 6e	. . n
 	ld hl,00028h		;3fa8	21 28 00	! ( .
 	ld (l0f59h),hl		;3fab	22 59 0f	" Y .
 	ld hl,0000bh		;3fae	21 0b 00	! . .
@@ -12072,42 +12072,42 @@ l3eafh:
 	ld hl,l0f59h		;3fb7	21 59 0f	! Y .
 	call sub_626bh		;3fba	cd 6b 62	. k b
 	call print_setup	;3fbd	cd ea 6f	. . o
-	ld hl,l5e4fh		;3fc0	21 4f 5e	! O ^
-	call sub_6e6eh		;3fc3	cd 6e 6e	. n n
+	ld hl,s_up_key_hint	;3fc0	21 4f 5e	! O ^
+	call print_string	;3fc3	cd 6e 6e	. n n
 	ld de,l0f46h		;3fc6	11 46 0f	. F .
 	ld hl,00001h		;3fc9	21 01 00	! . .
 	call sub_744dh		;3fcc	cd 4d 74	. M t
-	call sub_6e6eh		;3fcf	cd 6e 6e	. n n
-	ld hl,l5e43h		;3fd2	21 43 5e	! C ^
-	call sub_6e6eh		;3fd5	cd 6e 6e	. n n
+	call print_string	;3fcf	cd 6e 6e	. n n
+	ld hl,s_down_key_hint	;3fd2	21 43 5e	! C ^
+	call print_string	;3fd5	cd 6e 6e	. n n
 	ld bc,l0f46h		;3fd8	01 46 0f	. F .
 	ld de,00002h		;3fdb	11 02 00	. . .
 	ld hl,00001h		;3fde	21 01 00	! . .
 	call sub_747fh		;3fe1	cd 7f 74	. . t
-	call sub_6e6eh		;3fe4	cd 6e 6e	. n n
+	call print_string	;3fe4	cd 6e 6e	. n n
 	call print_setup	;3fe7	cd ea 6f	. . o
-	ld hl,l5e37h		;3fea	21 37 5e	! 7 ^
-	call sub_6e6eh		;3fed	cd 6e 6e	. n n
+	ld hl,s_left_key_hint	;3fea	21 37 5e	! 7 ^
+	call print_string	;3fed	cd 6e 6e	. n n
 	ld bc,l0f46h		;3ff0	01 46 0f	. F .
 	ld de,00003h		;3ff3	11 03 00	. . .
 	ld hl,00001h		;3ff6	21 01 00	! . .
 	call sub_747fh		;3ff9	cd 7f 74	. . t
-	call sub_6e6eh		;3ffc	cd 6e 6e	. n n
-	ld hl,l5e2ah		;3fff	21 2a 5e	! * ^
-	call sub_6e6eh		;4002	cd 6e 6e	. n n
+	call print_string	;3ffc	cd 6e 6e	. n n
+	ld hl,s_right_key_hint	;3fff	21 2a 5e	! * ^
+	call print_string	;4002	cd 6e 6e	. n n
 	ld bc,l0f46h		;4005	01 46 0f	. F .
 	ld de,00004h		;4008	11 04 00	. . .
 	ld hl,00001h		;400b	21 01 00	! . .
 	call sub_747fh		;400e	cd 7f 74	. . t
-	call sub_6e6eh		;4011	cd 6e 6e	. n n
+	call print_string	;4011	cd 6e 6e	. n n
 	ld hl,0000ch		;4014	21 0c 00	! . .
 	ld (l0f5bh),hl		;4017	22 5b 0f	" [ .
 	ld de,l0f5bh		;401a	11 5b 0f	. [ .
 	ld hl,l0f59h		;401d	21 59 0f	! Y .
 	call sub_626bh		;4020	cd 6b 62	. k b
 	call print_setup	;4023	cd ea 6f	. . o
-	ld hl,l5e1bh		;4026	21 1b 5e	! . ^
-	call sub_6e6eh		;4029	cd 6e 6e	. n n
+	ld hl,s_jump_key_hint	;4026	21 1b 5e	! . ^
+	call print_string	;4029	cd 6e 6e	. n n
 	ld hl,00028h		;402c	21 28 00	! ( .
 	ld (l0f59h),hl		;402f	22 59 0f	" Y .
 	ld hl,0000eh		;4032	21 0e 00	! . .
@@ -12117,8 +12117,8 @@ l3eafh:
 l403eh:
 	call sub_626bh		;403e	cd 6b 62	. k b
 	call print_setup	;4041	cd ea 6f	. . o
-	ld hl,l5e0dh		;4044	21 0d 5e	! . ^
-	call sub_6e6eh		;4047	cd 6e 6e	. n n
+	ld hl,s_high_scores_heading	;4044	21 0d 5e	! . ^
+	call print_string	;4047	cd 6e 6e	. n n
 	ld hl,00001h		;404a	21 01 00	! . .
 	jp l40b0h		;404d	c3 b0 40	. . @
 l4050h:
@@ -12132,10 +12132,10 @@ l4050h:
 	ld de,00030h		;4063	11 30 00	. 0 .
 	ld hl,(l0f1fh+2)	;4066	2a 21 0f	* ! .
 	add hl,de		;4069	19		.
-	call sub_75b5h		;406a	cd b5 75	. . u
-	call sub_6e6eh		;406d	cd 6e 6e	. n n
-	ld hl,l5e08h		;4070	21 08 5e	! . ^
-	call sub_6e6eh		;4073	cd 6e 6e	. n n
+	call character_string	;406a	cd b5 75	. . u
+	call print_string	;406d	cd 6e 6e	. n n
+	ld hl,s_score_rank_suffix	;4070	21 08 5e	! . ^
+	call print_string	;4073	cd 6e 6e	. n n
 	ld hl,(l0f1fh+2)	;4076	2a 21 0f	* ! .
 	add hl,hl		;4079	29		)
 	ld de,l0ee8h		;407a	11 e8 0e	. . .
@@ -12155,14 +12155,14 @@ l4050h:
 	pop hl			;4090	e1		.
 	call sub_61a8h		;4091	cd a8 61	. . a
 	call print_setup	;4094	cd ea 6f	. . o
-	ld hl,l5e01h		;4097	21 01 5e	! . ^
-	call sub_6e6eh		;409a	cd 6e 6e	. n n
+	ld hl,s_zero_hundreds_padded	;4097	21 01 5e	! . ^
+	call print_string	;409a	cd 6e 6e	. n n
 	ld hl,(l0f1fh+2)	;409d	2a 21 0f	* ! .
 	call integer_mul_inline	;40a0	cd 8e 76	. . v
 	defw 00003h		;40a3	03 00		. .
 	ld de,00ed6h		;40a5	11 d6 0e	. . .
 	add hl,de		;40a8	19		.
-	call sub_6e6eh		;40a9	cd 6e 6e	. n n
+	call print_string	;40a9	cd 6e 6e	. n n
 l40ach:
 	ld hl,(l0f1fh+2)	;40ac	2a 21 0f	* ! .
 	inc hl			;40af	23		#
@@ -12191,13 +12191,13 @@ l40c0h:
 	ld hl,l0f59h		;40da	21 59 0f	! Y .
 	call sub_626bh		;40dd	cd 6b 62	. k b
 	call print_setup	;40e0	cd ea 6f	. . o
-	ld hl,l5df2h		;40e3	21 f2 5d	! . ]
-	call sub_6e6eh		;40e6	cd 6e 6e	. n n
+	ld hl,s_last_score	;40e3	21 f2 5d	! . ]
+	call print_string	;40e6	cd 6e 6e	. n n
 	ld hl,score_word	;40e9	21 05 0f	! . .
 	call sub_61a8h		;40ec	cd a8 61	. . a
 	call print_setup	;40ef	cd ea 6f	. . o
-	ld hl,l5dedh		;40f2	21 ed 5d	! . ]
-	call sub_6e6eh		;40f5	cd 6e 6e	. n n
+	ld hl,s_zero_hundreds	;40f2	21 ed 5d	! . ]
+	call print_string	;40f5	cd 6e 6e	. n n
 l40f8h:
 	ld hl,00028h		;40f8	21 28 00	! ( .
 	ld (l0f59h),hl		;40fb	22 59 0f	" Y .
@@ -12207,16 +12207,16 @@ l40f8h:
 	ld hl,l0f59h		;4107	21 59 0f	! Y .
 	call sub_626bh		;410a	cd 6b 62	. k b
 	call print_setup	;410d	cd ea 6f	. . o
-	ld hl,l5ddeh		;4110	21 de 5d	! . ]
-	call sub_6e6eh		;4113	cd 6e 6e	. n n
+	ld hl,s_play_speed	;4110	21 de 5d	! . ]
+	call print_string	;4113	cd 6e 6e	. n n
 	ld de,00030h		;4116	11 30 00	. 0 .
 	ld hl,(score_word+2)	;4119	2a 07 0f	* . .
 	add hl,de		;411c	19		.
-	call sub_75b5h		;411d	cd b5 75	. . u
-	call sub_6e6eh		;4120	cd 6e 6e	. n n
+	call character_string	;411d	cd b5 75	. . u
+	call print_string	;4120	cd 6e 6e	. n n
 l4123h:
 	ld hl,00005h		;4123	21 05 00	! . .
-	call sub_6c31h		;4126	cd 31 6c	. 1 l
+	call random_float	;4126	cd 31 6c	. 1 l
 	call sub_7412h		;4129	cd 12 74	. . t
 	ld d,c			;412c	51		Q
 	ld h,c			;412d	61		a
@@ -12237,15 +12237,16 @@ l4142h:
 	ld hl,l0f59h		;4151	21 59 0f	! Y .
 	call sub_626bh		;4154	cd 6b 62	. k b
 	call print_setup	;4157	cd ea 6f	. . o
-	ld hl,l5dc3h		;415a	21 c3 5d	! . ]
-	call sub_6e6eh		;415d	cd 6e 6e	. n n
-l4160h:
+	ld hl,s_menu_prompt	;415a	21 c3 5d	! . ]
+	call print_string	;415d	cd 6e 6e	. n n
+; Start screen: poll until a key arrives, then dispatch the menu choice
+start_key_scan:
 	ld hl,l0f5fh		;4160	21 5f 0f	! _ .
 	call keyboard_poll	;4163	cd 7d 61	. } a
 	ld hl,(l0f5fh)		;4166	2a 5f 0f	* _ .
 	ld a,h			;4169	7c		|
 	or l			;416a	b5		.
-	jp nz,l41c3h		;416b	c2 c3 41	. . A
+	jp nz,start_key_dispatch	;416b	c2 c3 41	. . A
 	ld hl,(00f5dh)		;416e	2a 5d 0f	* ] .
 	dec hl			;4171	2b		+
 	ld (00f5dh),hl		;4172	22 5d 0f	" ] .
@@ -12254,21 +12255,21 @@ l4160h:
 	add a,a			;4179	87		.
 	jp c,l4181h		;417a	da 81 41	. . A
 	or l			;417d	b5		.
-	jp nz,l4160h		;417e	c2 60 41	. ` A
+	jp nz,start_key_scan	;417e	c2 60 41	. ` A
 l4181h:
 	ld hl,00005h		;4181	21 05 00	! . .
-	call sub_6c31h		;4184	cd 31 6c	. 1 l
+	call random_float	;4184	cd 31 6c	. 1 l
 	call sub_735dh		;4187	cd 5d 73	. ] s
 	ld c,c			;418a	49		I
 	ld h,c			;418b	61		a
 	sbc a,d			;418c	9a		.
 	ld b,c			;418d	41		A
 	ld de,l0f61h		;418e	11 61 0f	. a .
-	ld hl,l5da1h		;4191	21 a1 5d	! . ]
+	ld hl,s_insult_hurry	;4191	21 a1 5d	! . ]
 	call string_assign	;4194	cd db 74	. . t
 	jp l41a3h		;4197	c3 a3 41	. . A
 	ld de,l0f61h		;419a	11 61 0f	. a .
-	ld hl,l5d8fh		;419d	21 8f 5d	! . ]
+	ld hl,s_insult_quiche	;419d	21 8f 5d	! . ]
 	call string_assign	;41a0	cd db 74	. . t
 l41a3h:
 	call sub_57e3h		;41a3	cd e3 57	. . W
@@ -12283,18 +12284,18 @@ l41a3h:
 	ld de,l0f5bh		;41ba	11 5b 0f	. [ .
 	ld hl,l0f59h		;41bd	21 59 0f	! Y .
 	call sub_626bh		;41c0	cd 6b 62	. k b
-l41c3h:
+start_key_dispatch:
 	ld hl,(l0f5fh)		;41c3	2a 5f 0f	* _ .
-	call sub_75b5h		;41c6	cd b5 75	. . u
+	call character_string	;41c6	cd b5 75	. . u
 	ld de,00f64h		;41c9	11 64 0f	. d .
 	call string_assign	;41cc	cd db 74	. . t
 	ld de,00f64h		;41cf	11 64 0f	. d .
-	ld hl,l5d8bh		;41d2	21 8b 5d	! . ]
-	call sub_7399h		;41d5	cd 99 73	. . s
+	ld hl,s_key_e_upper	;41d2	21 8b 5d	! . ]
+	call string_equal	;41d5	cd 99 73	. . s
 	ld de,00f64h		;41d8	11 64 0f	. d .
 	push hl			;41db	e5		.
-	ld hl,l5d87h		;41dc	21 87 5d	! . ]
-	call sub_7399h		;41df	cd 99 73	. . s
+	ld hl,s_key_e_lower	;41dc	21 87 5d	! . ]
+	call string_equal	;41df	cd 99 73	. . s
 	pop de			;41e2	d1		.
 	ld a,h			;41e3	7c		|
 	or d			;41e4	b2		.
@@ -12306,17 +12307,17 @@ l41c3h:
 	or l			;41ea	b5		.
 	jp z,l41fah		;41eb	ca fa 41	. . A
 	call print_setup	;41ee	cd ea 6f	. . o
-	ld hl,l5d7ah		;41f1	21 7a 5d	! z ]
-	call sub_6e92h		;41f4	cd 92 6e	. . n
-	call sub_68bbh		;41f7	cd bb 68	. . h
+	ld hl,s_exiting		;41f1	21 7a 5d	! z ]
+	call print_string_line	;41f4	cd 92 6e	. . n
+	call program_end	;41f7	cd bb 68	. . h
 l41fah:
 	ld de,00f64h		;41fa	11 64 0f	. d .
-	ld hl,l5d76h		;41fd	21 76 5d	! v ]
-	call sub_7399h		;4200	cd 99 73	. . s
+	ld hl,s_key_p_upper	;41fd	21 76 5d	! v ]
+	call string_equal	;4200	cd 99 73	. . s
 	ld de,00f64h		;4203	11 64 0f	. d .
 	push hl			;4206	e5		.
-	ld hl,l5d72h		;4207	21 72 5d	! r ]
-	call sub_7399h		;420a	cd 99 73	. . s
+	ld hl,s_key_p_lower	;4207	21 72 5d	! r ]
+	call string_equal	;420a	cd 99 73	. . s
 	pop de			;420d	d1		.
 	ld a,h			;420e	7c		|
 	or d			;420f	b2		.
@@ -12326,14 +12327,14 @@ l41fah:
 	ld l,a			;4213	6f		o
 	ld a,h			;4214	7c		|
 	or l			;4215	b5		.
-	jp nz,l436fh		;4216	c2 6f 43	. o C
+	jp nz,menu_play		;4216	c2 6f 43	. o C
 	ld de,00f64h		;4219	11 64 0f	. d .
-	ld hl,l5d6eh		;421c	21 6e 5d	! n ]
-	call sub_7399h		;421f	cd 99 73	. . s
+	ld hl,s_key_c_upper	;421c	21 6e 5d	! n ]
+	call string_equal	;421f	cd 99 73	. . s
 	ld de,00f64h		;4222	11 64 0f	. d .
 	push hl			;4225	e5		.
-	ld hl,l5d6ah		;4226	21 6a 5d	! j ]
-	call sub_7399h		;4229	cd 99 73	. . s
+	ld hl,s_key_c_lower	;4226	21 6a 5d	! j ]
+	call string_equal	;4229	cd 99 73	. . s
 	pop de			;422c	d1		.
 	ld a,h			;422d	7c		|
 	or d			;422e	b2		.
@@ -12346,12 +12347,12 @@ l4234h:
 	or l			;4234	b5		.
 	jp nz,l3a9ah		;4235	c2 9a 3a	. . :
 	ld de,00f64h		;4238	11 64 0f	. d .
-	ld hl,l5d66h		;423b	21 66 5d	! f ]
-	call sub_7399h		;423e	cd 99 73	. . s
+	ld hl,s_key_i_upper	;423b	21 66 5d	! f ]
+	call string_equal	;423e	cd 99 73	. . s
 	ld de,00f64h		;4241	11 64 0f	. d .
 	push hl			;4244	e5		.
-	ld hl,l5d62h		;4245	21 62 5d	! b ]
-	call sub_7399h		;4248	cd 99 73	. . s
+	ld hl,s_key_i_lower	;4245	21 62 5d	! b ]
+	call string_equal	;4248	cd 99 73	. . s
 	pop de			;424b	d1		.
 	ld a,h			;424c	7c		|
 	or d			;424d	b2		.
@@ -12361,14 +12362,14 @@ l4234h:
 	ld l,a			;4251	6f		o
 	ld a,h			;4252	7c		|
 	or l			;4253	b5		.
-	jp nz,l4279h		;4254	c2 79 42	. y B
+	jp nz,menu_instructions	;4254	c2 79 42	. y B
 	ld de,00f64h		;4257	11 64 0f	. d .
-	ld hl,l5d5eh		;425a	21 5e 5d	! ^ ]
-	call sub_7399h		;425d	cd 99 73	. . s
+	ld hl,s_key_l_upper	;425a	21 5e 5d	! ^ ]
+	call string_equal	;425d	cd 99 73	. . s
 	ld de,00f64h		;4260	11 64 0f	. d .
 	push hl			;4263	e5		.
-	ld hl,l5d5ah		;4264	21 5a 5d	! Z ]
-	call sub_7399h		;4267	cd 99 73	. . s
+	ld hl,s_key_l_lower	;4264	21 5a 5d	! Z ]
+	call string_equal	;4267	cd 99 73	. . s
 	pop de			;426a	d1		.
 	ld a,h			;426b	7c		|
 	or d			;426c	b2		.
@@ -12378,97 +12379,95 @@ l4234h:
 	ld l,a			;4270	6f		o
 	ld a,h			;4271	7c		|
 	or l			;4272	b5		.
-	jp nz,l4360h		;4273	c2 60 43	. ` C
+	jp nz,menu_change_speed	;4273	c2 60 43	. ` C
 	jp l4142h		;4276	c3 42 41	. B A
-l4279h:
+menu_instructions:
 	call print_setup	;4279	cd ea 6f	. . o
 	ld hl,l0f37h		;427c	21 37 0f	! 7 .
-	call sub_6e92h		;427f	cd 92 6e	. . n
+	call print_string_line	;427f	cd 92 6e	. . n
 	call print_setup	;4282	cd ea 6f	. . o
 	ld hl,l613eh		;4285	21 3e 61	! > a
-	call sub_6e92h		;4288	cd 92 6e	. . n
+	call print_string_line	;4288	cd 92 6e	. . n
 	call print_setup	;428b	cd ea 6f	. . o
-	ld hl,l5d1ah		;428e	21 1a 5d	! . ]
-	call sub_6e92h		;4291	cd 92 6e	. . n
+	ld hl,s_instructions_intro	;428e	21 1a 5d	! . ]
+	call print_string_line	;4291	cd 92 6e	. . n
 	call print_setup	;4294	cd ea 6f	. . o
-	ld hl,l5cd9h		;4297	21 d9 5c	! . \
-	call sub_6e92h		;429a	cd 92 6e	. . n
+	ld hl,s_instructions_corridors	;4297	21 d9 5c	! . \
+	call print_string_line	;429a	cd 92 6e	. . n
 	call print_setup	;429d	cd ea 6f	. . o
-	ld hl,l5cc1h		;42a0	21 c1 5c	! . \
-	call sub_6e92h		;42a3	cd 92 6e	. . n
+	ld hl,s_instructions_riches	;42a0	21 c1 5c	! . \
+	call print_string_line	;42a3	cd 92 6e	. . n
 	call print_setup	;42a6	cd ea 6f	. . o
 	ld hl,l613eh		;42a9	21 3e 61	! > a
-	call sub_6e92h		;42ac	cd 92 6e	. . n
+	call print_string_line	;42ac	cd 92 6e	. . n
 	call print_setup	;42af	cd ea 6f	. . o
-	ld hl,l5c80h		;42b2	21 80 5c	! . \
-	call sub_6e92h		;42b5	cd 92 6e	. . n
+	ld hl,s_instructions_controls	;42b2	21 80 5c	! . \
+	call print_string_line	;42b5	cd 92 6e	. . n
 	call print_setup	;42b8	cd ea 6f	. . o
-	ld hl,l5c3dh		;42bb	21 3d 5c	! = \
-	call sub_6e92h		;42be	cd 92 6e	. . n
+	ld hl,s_instructions_jump_and_rocks	;42bb	21 3d 5c	! = \
+	call print_string_line	;42be	cd 92 6e	. . n
 	call print_setup	;42c1	cd ea 6f	. . o
-	ld hl,l5bfeh		;42c4	21 fe 5b	! . [
-	call sub_6e92h		;42c7	cd 92 6e	. . n
+	ld hl,s_instructions_treasure	;42c4	21 fe 5b	! . [
+	call print_string_line	;42c7	cd 92 6e	. . n
 	call print_setup	;42ca	cd ea 6f	. . o
-	ld hl,l5be7h		;42cd	21 e7 5b	! . [
-	call sub_6e92h		;42d0	cd 92 6e	. . n
+	ld hl,s_instructions_bonus_expires	;42cd	21 e7 5b	! . [
+	call print_string_line	;42d0	cd 92 6e	. . n
 	call print_setup	;42d3	cd ea 6f	. . o
 	ld hl,l613eh		;42d6	21 3e 61	! > a
-	call sub_6e92h		;42d9	cd 92 6e	. . n
+	call print_string_line	;42d9	cd 92 6e	. . n
 	call print_setup	;42dc	cd ea 6f	. . o
-	ld hl,l5bb2h		;42df	21 b2 5b	! . [
-	call sub_6e92h		;42e2	cd 92 6e	. . n
+	ld hl,s_instructions_extra_lad	;42df	21 b2 5b	! . [
+	call print_string_line	;42e2	cd 92 6e	. . n
 	call print_setup	;42e5	cd ea 6f	. . o
-	ld hl,l5b81h		;42e8	21 81 5b	! . [
-	call sub_6e92h		;42eb	cd 92 6e	. . n
+	ld hl,s_instructions_gold	;42e8	21 81 5b	! . [
+	call print_string_line	;42eb	cd 92 6e	. . n
 	call print_setup	;42ee	cd ea 6f	. . o
-	ld hl,l5b41h		;42f1	21 41 5b	! A [
-	call sub_6e92h		;42f4	cd 92 6e	. . n
+	ld hl,s_instructions_statues	;42f1	21 41 5b	! A [
+	call print_string_line	;42f4	cd 92 6e	. . n
 	call print_setup	;42f7	cd ea 6f	. . o
-	ld hl,l5b0fh		;42fa	21 0f 5b	! . [
-	call sub_6e92h		;42fd	cd 92 6e	. . n
+	ld hl,s_instructions_bonus_remainder	;42fa	21 0f 5b	! . [
+	call print_string_line	;42fd	cd 92 6e	. . n
 	call print_setup	;4300	cd ea 6f	. . o
-	ld hl,l5aebh		;4303	21 eb 5a	! . Z
-	call sub_6e92h		;4306	cd 92 6e	. . n
+	ld hl,s_pause_hint	;4303	21 eb 5a	! . Z
+	call print_string_line	;4306	cd 92 6e	. . n
 	call print_setup	;4309	cd ea 6f	. . o
 	ld hl,l613eh		;430c	21 3e 61	! > a
-	call sub_6e92h		;430f	cd 92 6e	. . n
+	call print_string_line	;430f	cd 92 6e	. . n
 	call print_setup	;4312	cd ea 6f	. . o
-	ld hl,l5adah		;4315	21 da 5a	! . Z
-	call sub_6e92h		;4318	cd 92 6e	. . n
+	ld hl,s_good_luck	;4315	21 da 5a	! . Z
+	call print_string_line	;4318	cd 92 6e	. . n
 	call print_setup	;431b	cd ea 6f	. . o
 	ld hl,l613eh		;431e	21 3e 61	! > a
-	call sub_6e92h		;4321	cd 92 6e	. . n
+	call print_string_line	;4321	cd 92 6e	. . n
 	call print_setup	;4324	cd ea 6f	. . o
 	ld hl,l613eh		;4327	21 3e 61	! > a
-	call sub_6e92h		;432a	cd 92 6e	. . n
+	call print_string_line	;432a	cd 92 6e	. . n
 	call print_setup	;432d	cd ea 6f	. . o
 	ld hl,l613eh		;4330	21 3e 61	! > a
-	call sub_6e92h		;4333	cd 92 6e	. . n
+	call print_string_line	;4333	cd 92 6e	. . n
 	call print_setup	;4336	cd ea 6f	. . o
-	ld hl,l5ab3h		;4339	21 b3 5a	! . Z
-	call sub_6e6eh		;433c	cd 6e 6e	. n n
+	ld hl,s_type_return_for_menu	;4339	21 b3 5a	! . Z
+	call print_string	;433c	cd 6e 6e	. n n
 	ld de,00001h		;433f	11 01 00	. . .
 	ld hl,000ffh		;4342	21 ff 00	! . .
-	call sub_8e38h		;4345	cd 38 8e	. 8 .
+	call input_string	;4345	cd 38 8e	. 8 .
 	ld de,00f64h		;4348	11 64 0f	. d .
 	call string_assign	;434b	cd db 74	. . t
 	ld hl,0000dh		;434e	21 0d 00	! . .
-	call sub_75b5h		;4351	cd b5 75	. . u
+	call character_string	;4351	cd b5 75	. . u
 	ex de,hl		;4354	eb		.
 	ld hl,00f64h		;4355	21 64 0f	! d .
-	call sub_73b8h		;4358	cd b8 73	. . s
-	ccf			;435b	3f		?
-	ld b,e			;435c	43		C
+	call branch_if_strings_unequal	;4358	cd b8 73	. . s
+	defw 0433fh		;435b	3f 43		? C
 	jp l3eafh		;435d	c3 af 3e	. . >
-l4360h:
+menu_change_speed:
 	ld hl,(score_word+2)	;4360	2a 07 0f	* . .
-	call sub_7646h		;4363	cd 46 76	. F v
-	dec b			;4366	05		.
-	nop			;4367	00		.
+	call integer_mod_inline	;4363	cd 46 76	. F v
+	defw 00005h		;4366	05 00		. .
 	inc hl			;4368	23		#
 	ld (score_word+2),hl	;4369	22 07 0f	" . .
 	jp l40f8h		;436c	c3 f8 40	. . @
-l436fh:
+menu_play:
 	ld hl,(l0f52h)		;436f	2a 52 0f	* R .
 	ld (lads_word),hl	;4372	22 67 0f	" g .
 	ld hl,00001h		;4375	21 01 00	! . .
@@ -12601,7 +12600,7 @@ l447ch:
 	ld (l0f7fh),hl		;447f	22 7f 0f	" . .
 	call print_setup	;4482	cd ea 6f	. . o
 	ld hl,l0f37h		;4485	21 37 0f	! 7 .
-	call sub_6e6eh		;4488	cd 6e 6e	. n n
+	call print_string	;4488	cd 6e 6e	. n n
 	ld hl,(l0efbh)		;448b	2a fb 0e	* . .
 	ld (l0f7fh+2),hl	;448e	22 81 0f	" . .
 	ld hl,00001h		;4491	21 01 00	! . .
@@ -12611,7 +12610,7 @@ l4497h:
 	call sub_7258h		;449a	cd 58 72	. X r
 	call print_setup	;449d	cd ea 6f	. . o
 	ld hl,l0f23h		;44a0	21 23 0f	! # .
-	call sub_6e92h		;44a3	cd 92 6e	. . n
+	call print_string_line	;44a3	cd 92 6e	. . n
 	ld hl,00001h		;44a6	21 01 00	! . .
 	jp l44c8h		;44a9	c3 c8 44	. . D
 l44ach:
@@ -12886,39 +12885,39 @@ l4684h:
 	ld hl,l0fa1h+2		;46a6	21 a3 0f	! . .
 	call sub_626bh		;46a9	cd 6b 62	. k b
 	call print_setup	;46ac	cd ea 6f	. . o
-	ld hl,l5aach		;46af	21 ac 5a	! . Z
-	call sub_6e6eh		;46b2	cd 6e 6e	. n n
+	ld hl,s_lads		;46af	21 ac 5a	! . Z
+	call print_string	;46b2	cd 6e 6e	. n n
 	ld hl,lads_word		;46b5	21 67 0f	! g .
 	call sub_61a8h		;46b8	cd a8 61	. . a
 	call print_setup	;46bb	cd ea 6f	. . o
-	ld hl,l5a9fh		;46be	21 9f 5a	! . Z
-	call sub_6e6eh		;46c1	cd 6e 6e	. n n
+	ld hl,s_level		;46be	21 9f 5a	! . Z
+	call print_string	;46c1	cd 6e 6e	. n n
 	ld hl,level_word	;46c4	21 69 0f	! i .
 	call sub_61a8h		;46c7	cd a8 61	. . a
 	call print_setup	;46ca	cd ea 6f	. . o
-	ld hl,l5a91h		;46cd	21 91 5a	! . Z
-	call sub_6e6eh		;46d0	cd 6e 6e	. n n
+	ld hl,s_score		;46cd	21 91 5a	! . Z
+	call print_string	;46d0	cd 6e 6e	. n n
 	ld hl,score_word	;46d3	21 05 0f	! . .
 	call sub_61a8h		;46d6	cd a8 61	. . a
 	call print_setup	;46d9	cd ea 6f	. . o
-	ld hl,l5dedh		;46dc	21 ed 5d	! . ]
-	call sub_6e6eh		;46df	cd 6e 6e	. n n
+	ld hl,s_zero_hundreds	;46dc	21 ed 5d	! . ]
+	call print_string	;46df	cd 6e 6e	. n n
 	ld hl,0003ch		;46e2	21 3c 00	! < .
 	ld (l0fa1h+2),hl	;46e5	22 a3 0f	" . .
 	ld de,l0efdh		;46e8	11 fd 0e	. . .
 	ld hl,l0fa1h+2		;46eb	21 a3 0f	! . .
 	call sub_626bh		;46ee	cd 6b 62	. k b
 	call print_setup	;46f1	cd ea 6f	. . o
-	ld hl,l5a83h		;46f4	21 83 5a	! . Z
-	call sub_6e6eh		;46f7	cd 6e 6e	. n n
+	ld hl,s_bonus_time	;46f4	21 83 5a	! . Z
+	call print_string	;46f7	cd 6e 6e	. n n
 	ld hl,bonus_word	;46fa	21 77 0f	! w .
 	call sub_61a8h		;46fd	cd a8 61	. . a
 	call print_setup	;4700	cd ea 6f	. . o
-	ld hl,l5dedh		;4703	21 ed 5d	! . ]
-	call sub_6e6eh		;4706	cd 6e 6e	. n n
+	ld hl,s_zero_hundreds	;4703	21 ed 5d	! . ]
+	call print_string	;4706	cd 6e 6e	. n n
 	call sub_57d1h		;4709	cd d1 57	. . W
 	ld de,l0f61h		;470c	11 61 0f	. a .
-	ld hl,l5a76h		;470f	21 76 5a	! v Z
+	ld hl,s_get_ready	;470f	21 76 5a	! v Z
 	call string_assign	;4712	cd db 74	. . t
 	call sub_57e3h		;4715	cd e3 57	. . W
 l4718h:
@@ -12937,7 +12936,7 @@ l4729h:
 	rla			;4729	17		.
 	jp nc,l47d8h		;472a	d2 d8 47	. . G
 	ld hl,00005h		;472d	21 05 00	! . .
-	call sub_6c31h		;4730	cd 31 6c	. 1 l
+	call random_float	;4730	cd 31 6c	. 1 l
 	call sub_75fch		;4733	cd fc 75	. . u
 	add a,c			;4736	81		.
 	ld hl,(l0f7fh)		;4737	2a 7f 0f	* . .
@@ -13039,18 +13038,19 @@ l47d8h:
 	ld hl,(l0f7dh)		;47de	2a 7d 0f	* } .
 	ld (l0fabh),hl		;47e1	22 ab 0f	" . .
 	ld hl,00001h		;47e4	21 01 00	! . .
-	jp l4bcfh		;47e7	c3 cf 4b	. . K
-l47eah:
+	jp next_actor		;47e7	c3 cf 4b	. . K
+; Gameplay: poll input for each actor, update it, then advance the index
+game_actor_loop:
 	ld hl,00fadh		;47ea	21 ad 0f	! . .
 	call keyboard_poll	;47ed	cd 7d 61	. } a
 	ld hl,(00fadh)		;47f0	2a ad 0f	* . .
-	call sub_75b5h		;47f3	cd b5 75	. . u
+	call character_string	;47f3	cd b5 75	. . u
 	ld de,l0fafh		;47f6	11 af 0f	. . .
 	call string_assign	;47f9	cd db 74	. . t
 	ld hl,(00fadh)		;47fc	2a ad 0f	* . .
 	ld a,h			;47ff	7c		|
 	or l			;4800	b5		.
-	jp z,l48b0h		;4801	ca b0 48	. . H
+	jp z,actor_update	;4801	ca b0 48	. . H
 	ld hl,(00fadh)		;4804	2a ad 0f	* . .
 	ld de,0ffe5h		;4807	11 e5 ff	. . .
 	add hl,de		;480a	19		.
@@ -13058,7 +13058,7 @@ l47eah:
 	or l			;480c	b5		.
 	jp nz,l4816h		;480d	c2 16 48	. . H
 	call sub_586fh		;4810	cd 6f 58	. o X
-	jp l48b0h		;4813	c3 b0 48	. . H
+	jp actor_update		;4813	c3 b0 48	. . H
 l4816h:
 	ld hl,(00fadh)		;4816	2a ad 0f	* . .
 	ld de,0fffdh		;4819	11 fd ff	. . .
@@ -13075,14 +13075,14 @@ l4816h:
 	ld hl,l0fafh		;4830	21 af 0f	! . .
 	call l7155h+1		;4833	cd 56 71	. V q
 	ld (l0f9dh),hl		;4836	22 9d 0f	" . .
-	jp l48b0h		;4839	c3 b0 48	. . H
+	jp actor_update		;4839	c3 b0 48	. . H
 	ld hl,(l0f91h+2)	;483c	2a 93 0f	* . .
 	ld a,h			;483f	7c		|
 	or l			;4840	b5		.
 	jp z,l484dh		;4841	ca 4d 48	. M H
 	ld hl,(l0ef6h)		;4844	2a f6 0e	* . .
 	ld (l0f95h),hl		;4847	22 95 0f	" . .
-	jp l48b0h		;484a	c3 b0 48	. . H
+	jp actor_update		;484a	c3 b0 48	. . H
 l484dh:
 	ld hl,(l0f8bh)		;484d	2a 8b 0f	* . .
 	call integer_mul_inline	;4850	cd 8e 76	. . v
@@ -13129,7 +13129,7 @@ l4879h:
 	ld l,a			;4888	6f		o
 	ld a,h			;4889	7c		|
 	or l			;488a	b5		.
-	jp nz,l48b0h		;488b	c2 b0 48	. . H
+	jp nz,actor_update	;488b	c2 b0 48	. . H
 	ld hl,(l0ef6h)		;488e	2a f6 0e	* . .
 	ld (l0f91h+2),hl	;4891	22 93 0f	" . .
 	ld hl,00006h		;4894	21 06 00	! . .
@@ -13143,10 +13143,10 @@ sub_489ah:
 	add hl,de		;48a5	19		.
 	add hl,hl		;48a6	29		)
 l48a7h:
-	jp nc,l48b0h		;48a7	d2 b0 48	. . H
+	jp nc,actor_update	;48a7	d2 b0 48	. . H
 	ld hl,00000h		;48aa	21 00 00	! . .
 	ld (l0f9fh),hl		;48ad	22 9f 0f	" . .
-l48b0h:
+actor_update:
 	ld hl,(actor_index_word)	;48b0	2a b2 0f	* . .
 	add hl,hl		;48b3	29		)
 	ld de,00e94h		;48b4	11 94 0e	. . .
@@ -13217,8 +13217,8 @@ l48b0h:
 	ld hl,l0fb4h		;4926	21 b4 0f	! . .
 	call sub_626bh		;4929	cd 6b 62	. k b
 	call print_setup	;492c	cd ea 6f	. . o
-	ld hl,l5a72h		;492f	21 72 5a	! r Z
-	call sub_6e6eh		;4932	cd 6e 6e	. n n
+	ld hl,s_actor_asterisk	;492f	21 72 5a	! r Z
+	call print_string	;4932	cd 6e 6e	. n n
 	jp l4bcbh		;4935	c3 cb 4b	. . K
 l4938h:
 	ld hl,(l0fb6h)		;4938	2a b6 0f	* . .
@@ -13242,7 +13242,7 @@ sub_493eh:
 	or l			;4954	b5		.
 	jp nz,l49aah		;4955	c2 aa 49	. . I
 	ld hl,00005h		;4958	21 05 00	! . .
-	call sub_6c31h		;495b	cd 31 6c	. 1 l
+	call random_float	;495b	cd 31 6c	. 1 l
 	call sub_7412h		;495e	cd 12 74	. . t
 	ld b,c			;4961	41		A
 	ld h,c			;4962	61		a
@@ -13407,7 +13407,7 @@ l4a36h:
 	or l			;4a47	b5		.
 	jp nz,l4af4h		;4a48	c2 f4 4a	. . J
 	ld hl,00005h		;4a4b	21 05 00	! . .
-	call sub_6c31h		;4a4e	cd 31 6c	. 1 l
+	call random_float	;4a4e	cd 31 6c	. 1 l
 	call sub_74c9h		;4a51	cd c9 74	. . t
 	ld bc,l8521h		;4a54	01 21 85	. ! .
 	sub d			;4a57	92		.
@@ -13536,13 +13536,13 @@ l4af4h:
 	ld bc,l0f11h		;4b18	01 11 0f	. . .
 	ld hl,00001h		;4b1b	21 01 00	! . .
 	call sub_747fh		;4b1e	cd 7f 74	. . t
-	call sub_6e6eh		;4b21	cd 6e 6e	. n n
+	call print_string	;4b21	cd 6e 6e	. n n
 	ld de,l0fb6h		;4b24	11 b6 0f	. . .
 	ld hl,l0fb4h		;4b27	21 b4 0f	! . .
 	call sub_626bh		;4b2a	cd 6b 62	. k b
 	call print_setup	;4b2d	cd ea 6f	. . o
-	ld hl,l5a6eh		;4b30	21 6e 5a	! n Z
-	call sub_6e6eh		;4b33	cd 6e 6e	. n n
+	ld hl,s_actor_o		;4b30	21 6e 5a	! n Z
+	call print_string	;4b33	cd 6e 6e	. n n
 	ld hl,(actor_index_word)	;4b36	2a b2 0f	* . .
 	add hl,hl		;4b39	29		)
 	push hl			;4b3a	e5		.
@@ -13642,7 +13642,7 @@ l4af4h:
 l4bcbh:
 	ld hl,(actor_index_word)	;4bcb	2a b2 0f	* . .
 	inc hl			;4bce	23		#
-l4bcfh:
+next_actor:
 	ld (actor_index_word),hl	;4bcf	22 b2 0f	" . .
 	ld hl,(actor_index_word)	;4bd2	2a b2 0f	* . .
 	ex de,hl		;4bd5	eb		.
@@ -13657,7 +13657,7 @@ l4bcfh:
 	sbc a,d			;4be2	9a		.
 l4be3h:
 	rla			;4be3	17		.
-	jp nc,l47eah		;4be4	d2 ea 47	. . G
+	jp nc,game_actor_loop	;4be4	d2 ea 47	. . G
 	call sub_577fh		;4be7	cd 7f 57	. . W
 	call sub_7138h		;4bea	cd 38 71	. 8 q
 	call sub_7618h		;4bed	cd 18 76	. . v
@@ -13691,7 +13691,7 @@ l4c25h:
 	jp nc,l4c31h		;4c25	d2 31 4c	. 1 L
 	call print_setup	;4c28	cd ea 6f	. . o
 	ld hl,l0f49h		;4c2b	21 49 0f	! I .
-	call sub_6e6eh		;4c2e	cd 6e 6e	. n n
+	call print_string	;4c2e	cd 6e 6e	. n n
 l4c31h:
 	ld hl,(00f01h)		;4c31	2a 01 0f	* . .
 	ld (l0fa1h),hl		;4c34	22 a1 0f	" . .
@@ -13969,8 +13969,8 @@ sub_4d91h:
 	ld hl,l0fb4h		;4de3	21 b4 0f	! . .
 	call sub_626bh		;4de6	cd 6b 62	. k b
 	call print_setup	;4de9	cd ea 6f	. . o
-	ld hl,l6133h		;4dec	21 33 61	! 3 a
-	call sub_6e6eh		;4def	cd 6e 6e	. n n
+	ld hl,s_space		;4dec	21 33 61	! 3 a
+	call print_string	;4def	cd 6e 6e	. n n
 l4df2h:
 	ld hl,(l0f9fh)		;4df2	2a 9f 0f	* . .
 	add hl,hl		;4df5	29		)
@@ -14293,7 +14293,7 @@ l4ff7h:
 	ld bc,l0f11h		;501b	01 11 0f	. . .
 	ld hl,00001h		;501e	21 01 00	! . .
 	call sub_747fh		;5021	cd 7f 74	. . t
-	call sub_6e6eh		;5024	cd 6e 6e	. n n
+	call print_string	;5024	cd 6e 6e	. n n
 	ld de,l0fb6h		;5027	11 b6 0f	. . .
 	ld hl,l0fb4h		;502a	21 b4 0f	! . .
 	call sub_626bh		;502d	cd 6b 62	. k b
@@ -14304,7 +14304,7 @@ l4ff7h:
 	ld bc,l0f14h		;5038	01 14 0f	. . .
 	ld hl,00001h		;503b	21 01 00	! . .
 	call sub_747fh		;503e	cd 7f 74	. . t
-	call sub_6e6eh		;5041	cd 6e 6e	. n n
+	call print_string	;5041	cd 6e 6e	. n n
 	ld hl,(l0fb4h)		;5044	2a b4 0f	* . .
 	ld (l0f89h),hl		;5047	22 89 0f	" . .
 	ld hl,(l0fb6h)		;504a	2a b6 0f	* . .
@@ -14369,7 +14369,7 @@ l509eh:
 	or l			;50be	b5		.
 	jp nz,l5105h		;50bf	c2 05 51	. . Q
 	ld hl,00005h		;50c2	21 05 00	! . .
-	call sub_6c31h		;50c5	cd 31 6c	. 1 l
+	call random_float	;50c5	cd 31 6c	. 1 l
 	call sub_7412h		;50c8	cd 12 74	. . t
 	ld b,c			;50cb	41		A
 	ld h,c			;50cc	61		a
@@ -14494,7 +14494,7 @@ l5183h:
 l518ah:
 	call print_setup	;518a	cd ea 6f	. . o
 	ld hl,l0f49h		;518d	21 49 0f	! I .
-	call sub_6e6eh		;5190	cd 6e 6e	. n n
+	call print_string	;5190	cd 6e 6e	. n n
 	ld hl,(bonus_word)	;5193	2a 77 0f	* w .
 	ld a,h			;5196	7c		|
 	add a,a			;5197	87		.
@@ -14533,7 +14533,7 @@ l51abh:
 	jp l51f0h		;51e1	c3 f0 51	. . Q
 l51e4h:
 	ld de,l0f61h		;51e4	11 61 0f	. a .
-	ld hl,l5a65h		;51e7	21 65 5a	! e Z
+	ld hl,s_hooka		;51e7	21 65 5a	! e Z
 	call string_assign	;51ea	cd db 74	. . t
 	call sub_57ech		;51ed	cd ec 57	. . W
 l51f0h:
@@ -14563,7 +14563,7 @@ l520ch:
 l5216h:
 	call print_setup	;5216	cd ea 6f	. . o
 	ld hl,l0f49h		;5219	21 49 0f	! I .
-	call sub_6e6eh		;521c	cd 6e 6e	. n n
+	call print_string	;521c	cd 6e 6e	. n n
 	ld hl,l0f17h		;521f	21 17 0f	! . .
 	call sub_71d5h		;5222	cd d5 71	. . q
 	ld (l0fcch),hl		;5225	22 cc 0f	" . .
@@ -14579,7 +14579,7 @@ l522eh:
 	ex de,hl		;5240	eb		.
 	ld hl,00001h		;5241	21 01 00	! . .
 	call sub_747fh		;5244	cd 7f 74	. . t
-	call sub_6e6eh		;5247	cd 6e 6e	. n n
+	call print_string	;5247	cd 6e 6e	. n n
 	call sub_57a8h		;524a	cd a8 57	. . W
 	ld hl,(l0f1fh+2)	;524d	2a 21 0f	* ! .
 	inc hl			;5250	23		#
@@ -14604,7 +14604,7 @@ l5265h:
 	call sub_626bh		;526f	cd 6b 62	. k b
 	call print_setup	;5272	cd ea 6f	. . o
 	ld hl,l0f49h		;5275	21 49 0f	! I .
-	call sub_6e6eh		;5278	cd 6e 6e	. n n
+	call print_string	;5278	cd 6e 6e	. n n
 	ld hl,(l0f8bh)		;527b	2a 8b 0f	* . .
 	call integer_mul_inline	;527e	cd 8e 76	. . v
 	defw 00051h		;5281	51 00		Q .
@@ -14623,7 +14623,7 @@ l5265h:
 	ld bc,l0f11h		;5293	01 11 0f	. . .
 	ld hl,00001h		;5296	21 01 00	! . .
 	call sub_747fh		;5299	cd 7f 74	. . t
-	call sub_6e6eh		;529c	cd 6e 6e	. n n
+	call print_string	;529c	cd 6e 6e	. n n
 	ld hl,(l0f7dh)		;529f	2a 7d 0f	* } .
 	ld (l0fceh),hl		;52a2	22 ce 0f	" . .
 	ld hl,00001h		;52a5	21 01 00	! . .
@@ -14690,7 +14690,7 @@ l52abh:
 	ld bc,l0f11h		;530a	01 11 0f	. . .
 	ld hl,00001h		;530d	21 01 00	! . .
 	call sub_747fh		;5310	cd 7f 74	. . t
-	call sub_6e6eh		;5313	cd 6e 6e	. n n
+	call print_string	;5313	cd 6e 6e	. n n
 l5316h:
 	ld hl,(l0f1fh+2)	;5316	2a 21 0f	* ! .
 	inc hl			;5319	23		#
@@ -14755,7 +14755,7 @@ l5369h:
 	or l			;5377	b5		.
 	jp nz,l538ah		;5378	c2 8a 53	. . S
 	ld de,l0f61h		;537b	11 61 0f	. a .
-	ld hl,l5a43h		;537e	21 43 5a	! C Z
+	ld hl,s_high_score_cheated	;537e	21 43 5a	! C Z
 	call string_assign	;5381	cd db 74	. . t
 	call sub_57e3h		;5384	cd e3 57	. . W
 	jp l556ah		;5387	c3 6a 55	. j U
@@ -14764,28 +14764,28 @@ l538ah:
 	ld (l0fa9h),hl		;538d	22 a9 0f	" . .
 	call print_setup	;5390	cd ea 6f	. . o
 	ld hl,l0f37h		;5393	21 37 0f	! 7 .
-	call sub_6e92h		;5396	cd 92 6e	. . n
+	call print_string_line	;5396	cd 92 6e	. . n
 	call print_setup	;5399	cd ea 6f	. . o
 	ld hl,l613eh		;539c	21 3e 61	! > a
-	call sub_6e92h		;539f	cd 92 6e	. . n
+	call print_string_line	;539f	cd 92 6e	. . n
 	call print_setup	;53a2	cd ea 6f	. . o
 	ld hl,l613eh		;53a5	21 3e 61	! > a
-	call sub_6e92h		;53a8	cd 92 6e	. . n
+	call print_string_line	;53a8	cd 92 6e	. . n
 	call print_setup	;53ab	cd ea 6f	. . o
 	ld hl,l613eh		;53ae	21 3e 61	! > a
-	call sub_6e92h		;53b1	cd 92 6e	. . n
+	call print_string_line	;53b1	cd 92 6e	. . n
 	call print_setup	;53b4	cd ea 6f	. . o
 	ld hl,l613eh		;53b7	21 3e 61	! > a
-	call sub_6e92h		;53ba	cd 92 6e	. . n
+	call print_string_line	;53ba	cd 92 6e	. . n
 	call print_setup	;53bd	cd ea 6f	. . o
 	ld hl,l613eh		;53c0	21 3e 61	! > a
-	call sub_6e92h		;53c3	cd 92 6e	. . n
+	call print_string_line	;53c3	cd 92 6e	. . n
 	call print_setup	;53c6	cd ea 6f	. . o
-	ld hl,l5a06h		;53c9	21 06 5a	! . Z
-	call sub_6e92h		;53cc	cd 92 6e	. . n
+	ld hl,s_high_score_yahoo	;53c9	21 06 5a	! . Z
+	call print_string_line	;53cc	cd 92 6e	. . n
 	call print_setup	;53cf	cd ea 6f	. . o
 	ld hl,l613eh		;53d2	21 3e 61	! > a
-	call sub_6e92h		;53d5	cd 92 6e	. . n
+	call print_string_line	;53d5	cd 92 6e	. . n
 	ld hl,(score_word)	;53d8	2a 05 0f	* . .
 	ld de,0d8efh		;53db	11 ef d8	. . .
 	ld a,h			;53de	7c		|
@@ -14796,8 +14796,8 @@ l538ah:
 l53e5h:
 	jp c,l53f4h		;53e5	da f4 53	. . S
 	call print_setup	;53e8	cd ea 6f	. . o
-	ld hl,l59e7h		;53eb	21 e7 59	! . Y
-	call sub_6e92h		;53ee	cd 92 6e	. . n
+	ld hl,s_high_score_lad_master	;53eb	21 e7 59	! . Y
+	call print_string_line	;53ee	cd 92 6e	. . n
 	jp l5489h		;53f1	c3 89 54	. . T
 l53f4h:
 	ld hl,(score_word)	;53f4	2a 05 0f	* . .
@@ -14810,8 +14810,8 @@ l53f4h:
 l5401h:
 	jp c,l5410h		;5401	da 10 54	. . T
 	call print_setup	;5404	cd ea 6f	. . o
-	ld hl,l59c8h		;5407	21 c8 59	! . Y
-	call sub_6e92h		;540a	cd 92 6e	. . n
+	ld hl,s_high_score_lad_guru	;5407	21 c8 59	! . Y
+	call print_string_line	;540a	cd 92 6e	. . n
 l540dh:
 	jp l5489h		;540d	c3 89 54	. . T
 l5410h:
@@ -14825,8 +14825,8 @@ l5410h:
 l541dh:
 	jp c,l542ch		;541d	da 2c 54	. , T
 	call print_setup	;5420	cd ea 6f	. . o
-	ld hl,l59aah		;5423	21 aa 59	! . Y
-	call sub_6e92h		;5426	cd 92 6e	. . n
+	ld hl,s_high_score_lad_wiz	;5423	21 aa 59	! . Y
+	call print_string_line	;5426	cd 92 6e	. . n
 	jp l5489h		;5429	c3 89 54	. . T
 l542ch:
 	ld hl,(score_word)	;542c	2a 05 0f	* . .
@@ -14839,8 +14839,8 @@ l542ch:
 l5439h:
 	jp c,l5448h		;5439	da 48 54	. H T
 	call print_setup	;543c	cd ea 6f	. . o
-	ld hl,l5986h		;543f	21 86 59	! . Y
-	call sub_6e92h		;5442	cd 92 6e	. . n
+	ld hl,s_high_score_ladder	;543f	21 86 59	! . Y
+	call print_string_line	;5442	cd 92 6e	. . n
 	jp l5489h		;5445	c3 89 54	. . T
 l5448h:
 	ld hl,(score_word)	;5448	2a 05 0f	* . .
@@ -14853,8 +14853,8 @@ l5448h:
 l5455h:
 	jp c,l5464h		;5455	da 64 54	. d T
 	call print_setup	;5458	cd ea 6f	. . o
-	ld hl,l5970h		;545b	21 70 59	! p Y
-	call sub_6e92h		;545e	cd 92 6e	. . n
+	ld hl,s_high_score_amazing	;545b	21 70 59	! p Y
+	call print_string_line	;545e	cd 92 6e	. . n
 	jp l5489h		;5461	c3 89 54	. . T
 l5464h:
 	ld hl,(score_word)	;5464	2a 05 0f	* . .
@@ -14867,20 +14867,20 @@ l5464h:
 l5471h:
 	jp c,l5480h		;5471	da 80 54	. . T
 	call print_setup	;5474	cd ea 6f	. . o
-	ld hl,l5956h		;5477	21 56 59	! V Y
-	call sub_6e92h		;547a	cd 92 6e	. . n
+	ld hl,s_high_score_not_bad	;5477	21 56 59	! V Y
+	call print_string_line	;547a	cd 92 6e	. . n
 	jp l5489h		;547d	c3 89 54	. . T
 l5480h:
 	call print_setup	;5480	cd ea 6f	. . o
-	ld hl,l592fh		;5483	21 2f 59	! / Y
-	call sub_6e92h		;5486	cd 92 6e	. . n
+	ld hl,s_high_score_undeserved	;5483	21 2f 59	! / Y
+	call print_string_line	;5486	cd 92 6e	. . n
 l5489h:
 	call print_setup	;5489	cd ea 6f	. . o
 	ld hl,l613eh		;548c	21 3e 61	! > a
-	call sub_6e92h		;548f	cd 92 6e	. . n
+	call print_string_line	;548f	cd 92 6e	. . n
 	call print_setup	;5492	cd ea 6f	. . o
-	ld hl,l591bh		;5495	21 1b 59	! . Y
-	call sub_6e6eh		;5498	cd 6e 6e	. n n
+	ld hl,s_enter_your_name	;5495	21 1b 59	! . Y
+	call print_string	;5498	cd 6e 6e	. n n
 	call sub_57d1h		;549b	cd d1 57	. . W
 	ld hl,l613eh		;549e	21 3e 61	! > a
 	call sub_6c8bh		;54a1	cd 8b 6c	. . l
@@ -15005,26 +15005,26 @@ l556ah:
 	jp nz,l3eafh		;5575	c2 af 3e	. . >
 	call print_setup	;5578	cd ea 6f	. . o
 	ld hl,l613eh		;557b	21 3e 61	! > a
-	call sub_6e92h		;557e	cd 92 6e	. . n
+	call print_string_line	;557e	cd 92 6e	. . n
 	call print_setup	;5581	cd ea 6f	. . o
 	ld hl,l613eh		;5584	21 3e 61	! > a
-	call sub_6e92h		;5587	cd 92 6e	. . n
+	call print_string_line	;5587	cd 92 6e	. . n
 	call print_setup	;558a	cd ea 6f	. . o
 	ld hl,l613eh		;558d	21 3e 61	! > a
-	call sub_6e92h		;5590	cd 92 6e	. . n
+	call print_string_line	;5590	cd 92 6e	. . n
 	call print_setup	;5593	cd ea 6f	. . o
 	ld hl,l613eh		;5596	21 3e 61	! > a
-	call sub_6e92h		;5599	cd 92 6e	. . n
+	call print_string_line	;5599	cd 92 6e	. . n
 	call print_setup	;559c	cd ea 6f	. . o
 	ld hl,l613eh		;559f	21 3e 61	! > a
-	call sub_6e92h		;55a2	cd 92 6e	. . n
+	call print_string_line	;55a2	cd 92 6e	. . n
 	call print_setup	;55a5	cd ea 6f	. . o
-	ld hl,l5901h		;55a8	21 01 59	! . Y
-	call sub_6e92h		;55ab	cd 92 6e	. . n
-	ld hl,l60f8h		;55ae	21 f8 60	! . `
+	ld hl,s_updating_high_scores	;55a8	21 01 59	! . Y
+	call print_string_line	;55ab	cd 92 6e	. . n
+	ld hl,s_key_r_upper	;55ae	21 f8 60	! . `
 	call sub_8ab4h		;55b1	cd b4 8a	. . .
 	ld bc,00001h		;55b4	01 01 00	. . .
-	ld de,l60ebh		;55b7	11 eb 60	. . `
+	ld de,s_data_filename	;55b7	11 eb 60	. . `
 	ld hl,00020h		;55ba	21 20 00	!   .
 	call sub_8adch		;55bd	cd dc 8a	. . .
 	ld hl,00001h		;55c0	21 01 00	! . .
@@ -15042,7 +15042,7 @@ l55d5h:
 	ld de,00ed6h		;55de	11 d6 0e	. . .
 	add hl,de		;55e1	19		.
 	call sub_71d5h		;55e2	cd d5 71	. . q
-	call sub_75b5h		;55e5	cd b5 75	. . u
+	call character_string	;55e5	cd b5 75	. . u
 	push hl			;55e8	e5		.
 	ld hl,(l0f1fh+2)	;55e9	2a 21 0f	* ! .
 	add hl,hl		;55ec	29		)
@@ -15089,10 +15089,10 @@ l563dh:
 	jp c,l55d5h		;563d	da d5 55	. . U
 	ld hl,00001h		;5640	21 01 00	! . .
 	call sub_85f4h		;5643	cd f4 85	. . .
-	ld hl,l60f8h		;5646	21 f8 60	! . `
+	ld hl,s_key_r_upper	;5646	21 f8 60	! . `
 	call sub_8ab4h		;5649	cd b4 8a	. . .
 	ld bc,00001h		;564c	01 01 00	. . .
-	ld de,l60ebh		;564f	11 eb 60	. . `
+	ld de,s_data_filename	;564f	11 eb 60	. . `
 	ld hl,00020h		;5652	21 20 00	!   .
 	call sub_8adch		;5655	cd dc 8a	. . .
 	ld hl,00001h		;5658	21 01 00	! . .
@@ -15207,7 +15207,7 @@ sub_5706h:
 	call sub_61a8h		;5718	cd a8 61	. . a
 	call print_setup	;571b	cd ea 6f	. . o
 	ld hl,l0f49h		;571e	21 49 0f	! I .
-	call sub_6e6eh		;5721	cd 6e 6e	. n n
+	call print_string	;5721	cd 6e 6e	. n n
 	ld hl,(score_word)	;5724	2a 05 0f	* . .
 	ex de,hl		;5727	eb		.
 	ld hl,(l0f6dh)		;5728	2a 6d 0f	* m .
@@ -15358,7 +15358,7 @@ l582eh:
 	ld hl,l0f61h		;583a	21 61 0f	! a .
 	call sub_71d5h		;583d	cd d5 71	. . q
 	call sub_7570h		;5840	cd 70 75	. p u
-	call sub_6e6eh		;5843	cd 6e 6e	. n n
+	call print_string	;5843	cd 6e 6e	. n n
 	ret			;5846	c9		.
 sub_5847h:
 	ld hl,(l0f4ch)		;5847	2a 4c 0f	* L .
@@ -15380,7 +15380,7 @@ l5856h:
 	call sub_626bh		;5862	cd 6b 62	. k b
 	call print_setup	;5865	cd ea 6f	. . o
 	ld hl,l0f61h		;5868	21 61 0f	! a .
-	call sub_6e6eh		;586b	cd 6e 6e	. n n
+	call print_string	;586b	cd 6e 6e	. n n
 	ret			;586e	c9		.
 sub_586fh:
 	ld de,l0fafh		;586f	11 af 0f	. . .
@@ -15392,18 +15392,18 @@ sub_586fh:
 	ld hl,l0fa1h+2		;5881	21 a3 0f	! . .
 	call sub_626bh		;5884	cd 6b 62	. k b
 	ld de,l0f61h		;5887	11 61 0f	. a .
-	ld hl,l58e2h		;588a	21 e2 58	! . X
+	ld hl,s_type_return_to_continue	;588a	21 e2 58	! . X
 	call string_assign	;588d	cd db 74	. . t
 	call print_setup	;5890	cd ea 6f	. . o
 	ld hl,l0f61h		;5893	21 61 0f	! a .
-	call sub_6e6eh		;5896	cd 6e 6e	. n n
+	call print_string	;5896	cd 6e 6e	. n n
 	ld de,00001h		;5899	11 01 00	. . .
 	ld hl,000ffh		;589c	21 ff 00	! . .
-	call sub_8e38h		;589f	cd 38 8e	. 8 .
+	call input_string	;589f	cd 38 8e	. 8 .
 	ld de,00f64h		;58a2	11 64 0f	. d .
 	call string_assign	;58a5	cd db 74	. . t
 	ld hl,00003h		;58a8	21 03 00	! . .
-	call sub_75b5h		;58ab	cd b5 75	. . u
+	call character_string	;58ab	cd b5 75	. . u
 	ex de,hl		;58ae	eb		.
 	ld hl,00f64h		;58af	21 64 0f	! d .
 	call sub_73bdh		;58b2	cd bd 73	. . s
@@ -15411,10 +15411,10 @@ sub_586fh:
 	ld a,021h		;58b6	3e 21		> !
 	dec c			;58b8	0d		.
 	nop			;58b9	00		.
-	call sub_75b5h		;58ba	cd b5 75	. . u
+	call character_string	;58ba	cd b5 75	. . u
 	ex de,hl		;58bd	eb		.
 	ld hl,00f64h		;58be	21 64 0f	! d .
-	call sub_73b8h		;58c1	cd b8 73	. . s
+	call branch_if_strings_unequal	;58c1	cd b8 73	. . s
 	sbc a,c			;58c4	99		.
 	ld e,b			;58c5	58		X
 	ld de,00effh		;58c6	11 ff 0e	. . .
@@ -15424,7 +15424,7 @@ sub_586fh:
 	ld hl,l0f61h		;58d2	21 61 0f	! a .
 	call sub_71d5h		;58d5	cd d5 71	. . q
 	call sub_7570h		;58d8	cd 70 75	. p u
-	call sub_6e6eh		;58db	cd 6e 6e	. n n
+	call print_string	;58db	cd 6e 6e	. n n
 	ret			;58de	c9		.
 
 ; BLOCK 'game_data' (start 0x58df end 0x617d)
@@ -15432,2245 +15432,404 @@ game_data_start:
 	defb 0cdh		;58df	cd		.
 	defb 0bbh		;58e0	bb		.
 	defb 068h		;58e1	68		h
-l58e2h:
-	defb 019h		;58e2	19		.
-	defb 0e5h		;58e3	e5		.
-	defb 058h		;58e4	58		X
-	defb 054h		;58e5	54		T
-	defb 079h		;58e6	79		y
-	defb 070h		;58e7	70		p
-	defb 065h		;58e8	65		e
-	defb 020h		;58e9	20		 
-	defb 052h		;58ea	52		R
-	defb 045h		;58eb	45		E
-	defb 054h		;58ec	54		T
-	defb 055h		;58ed	55		U
-	defb 052h		;58ee	52		R
-	defb 04eh		;58ef	4e		N
-	defb 020h		;58f0	20		 
-	defb 074h		;58f1	74		t
-	defb 06fh		;58f2	6f		o
-	defb 020h		;58f3	20		 
-	defb 063h		;58f4	63		c
-	defb 06fh		;58f5	6f		o
-	defb 06eh		;58f6	6e		n
-	defb 074h		;58f7	74		t
-	defb 069h		;58f8	69		i
-	defb 06eh		;58f9	6e		n
-	defb 075h		;58fa	75		u
-	defb 065h		;58fb	65		e
-	defb 03ah		;58fc	3a		:
-	defb 020h		;58fd	20		 
+; Game string descriptors (length byte, little-endian text pointer)
+s_type_return_to_continue:
+	defb 019h		;58e2	19		|.|
+	defw 058e5h		;58e3	e5 58		|.X|
+	defm "Type RETURN to continue: "		;58e5	54 79 70 65 20 52 45 54 55 52 4e 20 74 6f 20 63 6f 6e 74 69 6e 75 65 3a 20		|Type RETURN to continue: |
 l58feh:
 	defb 000h		;58fe	00		.
 	defb 001h		;58ff	01		.
 	defb 059h		;5900	59		Y
-l5901h:
-	defb 017h		;5901	17		.
-	defb 004h		;5902	04		.
-	defb 059h		;5903	59		Y
-	defb 055h		;5904	55		U
-	defb 070h		;5905	70		p
-	defb 064h		;5906	64		d
-	defb 061h		;5907	61		a
-	defb 074h		;5908	74		t
-	defb 069h		;5909	69		i
-	defb 06eh		;590a	6e		n
-	defb 067h		;590b	67		g
-	defb 020h		;590c	20		 
-	defb 068h		;590d	68		h
-	defb 069h		;590e	69		i
-	defb 067h		;590f	67		g
-	defb 068h		;5910	68		h
-	defb 020h		;5911	20		 
-	defb 073h		;5912	73		s
-	defb 063h		;5913	63		c
-	defb 06fh		;5914	6f		o
-	defb 072h		;5915	72		r
-	defb 065h		;5916	65		e
-	defb 073h		;5917	73		s
-	defb 02eh		;5918	2e		.
-	defb 02eh		;5919	2e		.
-	defb 02eh		;591a	2e		.
-l591bh:
-	defb 011h		;591b	11		.
-	defb 01eh		;591c	1e		.
-	defb 059h		;591d	59		Y
-	defb 045h		;591e	45		E
-	defb 06eh		;591f	6e		n
-	defb 074h		;5920	74		t
-	defb 065h		;5921	65		e
-	defb 072h		;5922	72		r
-	defb 020h		;5923	20		 
-	defb 079h		;5924	79		y
-	defb 06fh		;5925	6f		o
-	defb 075h		;5926	75		u
-	defb 072h		;5927	72		r
-	defb 020h		;5928	20		 
-	defb 06eh		;5929	6e		n
-	defb 061h		;592a	61		a
-	defb 06dh		;592b	6d		m
-	defb 065h		;592c	65		e
-	defb 03ah		;592d	3a		:
-	defb 020h		;592e	20		 
-l592fh:
-	defb 024h		;592f	24		$
-	defb 032h		;5930	32		2
-	defb 059h		;5931	59		Y
-	defb 059h		;5932	59		Y
-	defb 06fh		;5933	6f		o
-	defb 075h		;5934	75		u
-	defb 020h		;5935	20		 
-	defb 072h		;5936	72		r
-	defb 065h		;5937	65		e
-	defb 061h		;5938	61		a
-	defb 06ch		;5939	6c		l
-	defb 06ch		;593a	6c		l
-	defb 079h		;593b	79		y
-	defb 020h		;593c	20		 
-	defb 064h		;593d	64		d
-	defb 06fh		;593e	6f		o
-	defb 06eh		;593f	6e		n
-	defb 027h		;5940	27		'
-	defb 074h		;5941	74		t
-	defb 020h		;5942	20		 
-	defb 064h		;5943	64		d
-	defb 065h		;5944	65		e
-	defb 073h		;5945	73		s
-	defb 065h		;5946	65		e
-	defb 072h		;5947	72		r
-	defb 076h		;5948	76		v
-	defb 065h		;5949	65		e
-	defb 020h		;594a	20		 
-	defb 074h		;594b	74		t
-	defb 068h		;594c	68		h
-	defb 069h		;594d	69		i
-	defb 073h		;594e	73		s
-	defb 020h		;594f	20		 
-	defb 062h		;5950	62		b
-	defb 075h		;5951	75		u
-	defb 074h		;5952	74		t
-	defb 02eh		;5953	2e		.
-	defb 02eh		;5954	2e		.
-	defb 02eh		;5955	2e		.
-l5956h:
-	defb 017h		;5956	17		.
-	defb 059h		;5957	59		Y
-	defb 059h		;5958	59		Y
-	defb 04eh		;5959	4e		N
-	defb 06fh		;595a	6f		o
-	defb 074h		;595b	74		t
-	defb 020h		;595c	20		 
-	defb 062h		;595d	62		b
-	defb 061h		;595e	61		a
-	defb 064h		;595f	64		d
-	defb 020h		;5960	20		 
-	defb 066h		;5961	66		f
-	defb 06fh		;5962	6f		o
-	defb 072h		;5963	72		r
-	defb 020h		;5964	20		 
-	defb 061h		;5965	61		a
-	defb 020h		;5966	20		 
-	defb 079h		;5967	79		y
-	defb 06fh		;5968	6f		o
-	defb 075h		;5969	75		u
-	defb 06eh		;596a	6e		n
-	defb 067h		;596b	67		g
-	defb 020h		;596c	20		 
-	defb 04ch		;596d	4c		L
-	defb 061h		;596e	61		a
-	defb 064h		;596f	64		d
-l5970h:
-	defb 013h		;5970	13		.
-	defb 073h		;5971	73		s
-	defb 059h		;5972	59		Y
-	defb 041h		;5973	41		A
-	defb 06dh		;5974	6d		m
-	defb 061h		;5975	61		a
-	defb 07ah		;5976	7a		z
-	defb 069h		;5977	69		i
-	defb 06eh		;5978	6e		n
-	defb 067h		;5979	67		g
-	defb 021h		;597a	21		!
-	defb 020h		;597b	20		 
-	defb 020h		;597c	20		 
-	defb 059h		;597d	59		Y
-	defb 06fh		;597e	6f		o
-	defb 075h		;597f	75		u
-	defb 020h		;5980	20		 
-	defb 072h		;5981	72		r
-	defb 061h		;5982	61		a
-	defb 074h		;5983	74		t
-	defb 065h		;5984	65		e
-	defb 021h		;5985	21		!
-l5986h:
-	defb 021h		;5986	21		!
-	defb 089h		;5987	89		.
-	defb 059h		;5988	59		Y
-	defb 04ch		;5989	4c		L
-	defb 06fh		;598a	6f		o
-	defb 06fh		;598b	6f		o
-	defb 06bh		;598c	6b		k
-	defb 073h		;598d	73		s
-	defb 020h		;598e	20		 
-	defb 06ch		;598f	6c		l
-	defb 069h		;5990	69		i
-	defb 06bh		;5991	6b		k
-	defb 065h		;5992	65		e
-	defb 020h		;5993	20		 
-	defb 077h		;5994	77		w
-	defb 065h		;5995	65		e
-	defb 020h		;5996	20		 
-	defb 068h		;5997	68		h
-	defb 061h		;5998	61		a
-	defb 076h		;5999	76		v
-	defb 065h		;599a	65		e
-	defb 020h		;599b	20		 
-	defb 061h		;599c	61		a
-	defb 020h		;599d	20		 
-	defb 04ch		;599e	4c		L
-	defb 061h		;599f	61		a
-	defb 064h		;59a0	64		d
-	defb 02dh		;59a1	2d		-
-	defb 044h		;59a2	44		D
-	defb 065h		;59a3	65		e
-	defb 072h		;59a4	72		r
-	defb 020h		;59a5	20		 
-	defb 068h		;59a6	68		h
-	defb 065h		;59a7	65		e
-	defb 072h		;59a8	72		r
-	defb 065h		;59a9	65		e
-l59aah:
-	defb 01bh		;59aa	1b		.
-	defb 0adh		;59ab	ad		.
-	defb 059h		;59ac	59		Y
-	defb 059h		;59ad	59		Y
-	defb 065h		;59ae	65		e
-	defb 068h		;59af	68		h
-	defb 021h		;59b0	21		!
-	defb 020h		;59b1	20		 
-	defb 04eh		;59b2	4e		N
-	defb 06fh		;59b3	6f		o
-	defb 077h		;59b4	77		w
-	defb 020h		;59b5	20		 
-	defb 079h		;59b6	79		y
-	defb 06fh		;59b7	6f		o
-	defb 075h		;59b8	75		u
-	defb 020h		;59b9	20		 
-	defb 061h		;59ba	61		a
-	defb 072h		;59bb	72		r
-	defb 065h		;59bc	65		e
-	defb 020h		;59bd	20		 
-	defb 061h		;59be	61		a
-	defb 020h		;59bf	20		 
-	defb 04ch		;59c0	4c		L
-	defb 061h		;59c1	61		a
-	defb 064h		;59c2	64		d
-	defb 02dh		;59c3	2d		-
-	defb 057h		;59c4	57		W
-	defb 069h		;59c5	69		i
-	defb 07ah		;59c6	7a		z
-	defb 021h		;59c7	21		!
-l59c8h:
-	defb 01ch		;59c8	1c		.
-	defb 0cbh		;59c9	cb		.
-	defb 059h		;59ca	59		Y
-	defb 057h		;59cb	57		W
-	defb 06fh		;59cc	6f		o
-	defb 077h		;59cd	77		w
-	defb 021h		;59ce	21		!
-	defb 020h		;59cf	20		 
-	defb 059h		;59d0	59		Y
-	defb 06fh		;59d1	6f		o
-	defb 075h		;59d2	75		u
-	defb 020h		;59d3	20		 
-	defb 061h		;59d4	61		a
-	defb 072h		;59d5	72		r
-	defb 065h		;59d6	65		e
-	defb 020h		;59d7	20		 
-	defb 06eh		;59d8	6e		n
-	defb 06fh		;59d9	6f		o
-	defb 077h		;59da	77		w
-	defb 020h		;59db	20		 
-	defb 061h		;59dc	61		a
-	defb 020h		;59dd	20		 
-	defb 04ch		;59de	4c		L
-	defb 061h		;59df	61		a
-	defb 064h		;59e0	64		d
-	defb 02dh		;59e1	2d		-
-	defb 047h		;59e2	47		G
-	defb 075h		;59e3	75		u
-	defb 072h		;59e4	72		r
-	defb 075h		;59e5	75		u
-	defb 021h		;59e6	21		!
-l59e7h:
-	defb 01ch		;59e7	1c		.
-	defb 0eah		;59e8	ea		.
-	defb 059h		;59e9	59		Y
-	defb 059h		;59ea	59		Y
-	defb 06fh		;59eb	6f		o
-	defb 075h		;59ec	75		u
-	defb 020h		;59ed	20		 
-	defb 061h		;59ee	61		a
-	defb 072h		;59ef	72		r
-	defb 065h		;59f0	65		e
-	defb 020h		;59f1	20		 
-	defb 061h		;59f2	61		a
-	defb 020h		;59f3	20		 
-	defb 074h		;59f4	74		t
-	defb 072h		;59f5	72		r
-	defb 075h		;59f6	75		u
-	defb 065h		;59f7	65		e
-	defb 020h		;59f8	20		 
-	defb 04ch		;59f9	4c		L
-	defb 061h		;59fa	61		a
-	defb 064h		;59fb	64		d
-	defb 02dh		;59fc	2d		-
-	defb 04dh		;59fd	4d		M
-	defb 061h		;59fe	61		a
-	defb 073h		;59ff	73		s
-	defb 074h		;5a00	74		t
-	defb 065h		;5a01	65		e
-	defb 072h		;5a02	72		r
-	defb 021h		;5a03	21		!
-	defb 021h		;5a04	21		!
-	defb 021h		;5a05	21		!
-l5a06h:
-	defb 03ah		;5a06	3a		:
-	defb 009h		;5a07	09		.
-	defb 05ah		;5a08	5a		Z
-	defb 020h		;5a09	20		 
-	defb 020h		;5a0a	20		 
-	defb 020h		;5a0b	20		 
-	defb 020h		;5a0c	20		 
-	defb 020h		;5a0d	20		 
-	defb 020h		;5a0e	20		 
-	defb 020h		;5a0f	20		 
-	defb 020h		;5a10	20		 
-	defb 020h		;5a11	20		 
-	defb 020h		;5a12	20		 
-	defb 059h		;5a13	59		Y
-	defb 041h		;5a14	41		A
-	defb 048h		;5a15	48		H
-	defb 04fh		;5a16	4f		O
-	defb 04fh		;5a17	4f		O
-	defb 021h		;5a18	21		!
-	defb 020h		;5a19	20		 
-	defb 059h		;5a1a	59		Y
-	defb 041h		;5a1b	41		A
-	defb 048h		;5a1c	48		H
-	defb 04fh		;5a1d	4f		O
-	defb 04fh		;5a1e	4f		O
-	defb 021h		;5a1f	21		!
-	defb 020h		;5a20	20		 
-	defb 059h		;5a21	59		Y
-	defb 041h		;5a22	41		A
-	defb 048h		;5a23	48		H
-	defb 04fh		;5a24	4f		O
-	defb 04fh		;5a25	4f		O
-	defb 021h		;5a26	21		!
-	defb 020h		;5a27	20		 
-	defb 059h		;5a28	59		Y
-	defb 041h		;5a29	41		A
-	defb 048h		;5a2a	48		H
-	defb 04fh		;5a2b	4f		O
-	defb 04fh		;5a2c	4f		O
-	defb 021h		;5a2d	21		!
-	defb 020h		;5a2e	20		 
-	defb 059h		;5a2f	59		Y
-	defb 041h		;5a30	41		A
-	defb 048h		;5a31	48		H
-	defb 04fh		;5a32	4f		O
-	defb 04fh		;5a33	4f		O
-	defb 021h		;5a34	21		!
-	defb 020h		;5a35	20		 
-	defb 059h		;5a36	59		Y
-	defb 041h		;5a37	41		A
-	defb 048h		;5a38	48		H
-	defb 04fh		;5a39	4f		O
-	defb 04fh		;5a3a	4f		O
-	defb 021h		;5a3b	21		!
-	defb 020h		;5a3c	20		 
-	defb 059h		;5a3d	59		Y
-	defb 041h		;5a3e	41		A
-	defb 048h		;5a3f	48		H
-	defb 04fh		;5a40	4f		O
-	defb 04fh		;5a41	4f		O
-	defb 021h		;5a42	21		!
-l5a43h:
-	defb 01fh		;5a43	1f		.
-	defb 046h		;5a44	46		F
-	defb 05ah		;5a45	5a		Z
-	defb 059h		;5a46	59		Y
-	defb 04fh		;5a47	4f		O
-	defb 055h		;5a48	55		U
-	defb 020h		;5a49	20		 
-	defb 043h		;5a4a	43		C
-	defb 048h		;5a4b	48		H
-	defb 045h		;5a4c	45		E
-	defb 041h		;5a4d	41		A
-	defb 054h		;5a4e	54		T
-	defb 045h		;5a4f	45		E
-	defb 044h		;5a50	44		D
-	defb 021h		;5a51	21		!
-	defb 021h		;5a52	21		!
-	defb 021h		;5a53	21		!
-	defb 020h		;5a54	20		 
-	defb 020h		;5a55	20		 
-	defb 059h		;5a56	59		Y
-	defb 06fh		;5a57	6f		o
-	defb 075h		;5a58	75		u
-	defb 020h		;5a59	20		 
-	defb 064h		;5a5a	64		d
-	defb 06fh		;5a5b	6f		o
-	defb 06eh		;5a5c	6e		n
-	defb 027h		;5a5d	27		'
-	defb 074h		;5a5e	74		t
-	defb 020h		;5a5f	20		 
-	defb 072h		;5a60	72		r
-	defb 061h		;5a61	61		a
-	defb 074h		;5a62	74		t
-	defb 065h		;5a63	65		e
-	defb 02eh		;5a64	2e		.
-l5a65h:
-	defb 006h		;5a65	06		.
-	defb 068h		;5a66	68		h
-	defb 05ah		;5a67	5a		Z
-	defb 048h		;5a68	48		H
-	defb 06fh		;5a69	6f		o
-	defb 06fh		;5a6a	6f		o
-	defb 06bh		;5a6b	6b		k
-	defb 061h		;5a6c	61		a
-	defb 021h		;5a6d	21		!
-l5a6eh:
-	defb 001h		;5a6e	01		.
-	defb 071h		;5a6f	71		q
-	defb 05ah		;5a70	5a		Z
-	defb 06fh		;5a71	6f		o
-l5a72h:
-	defb 001h		;5a72	01		.
-	defb 075h		;5a73	75		u
-	defb 05ah		;5a74	5a		Z
-	defb 02ah		;5a75	2a		*
-l5a76h:
-	defb 00ah		;5a76	0a		.
-	defb 079h		;5a77	79		y
-	defb 05ah		;5a78	5a		Z
-	defb 047h		;5a79	47		G
-	defb 065h		;5a7a	65		e
-	defb 074h		;5a7b	74		t
-	defb 020h		;5a7c	20		 
-	defb 072h		;5a7d	72		r
-	defb 065h		;5a7e	65		e
-	defb 061h		;5a7f	61		a
-	defb 064h		;5a80	64		d
-	defb 079h		;5a81	79		y
-	defb 021h		;5a82	21		!
-l5a83h:
-	defb 00bh		;5a83	0b		.
-	defb 086h		;5a84	86		.
-	defb 05ah		;5a85	5a		Z
-	defb 042h		;5a86	42		B
-	defb 06fh		;5a87	6f		o
-	defb 06eh		;5a88	6e		n
-	defb 075h		;5a89	75		u
-	defb 073h		;5a8a	73		s
-	defb 020h		;5a8b	20		 
-	defb 074h		;5a8c	74		t
-	defb 069h		;5a8d	69		i
-	defb 06dh		;5a8e	6d		m
-	defb 065h		;5a8f	65		e
-	defb 020h		;5a90	20		 
-l5a91h:
-	defb 00bh		;5a91	0b		.
-	defb 094h		;5a92	94		.
-	defb 05ah		;5a93	5a		Z
-	defb 020h		;5a94	20		 
-	defb 020h		;5a95	20		 
-	defb 020h		;5a96	20		 
-	defb 020h		;5a97	20		 
-	defb 020h		;5a98	20		 
-	defb 053h		;5a99	53		S
-	defb 063h		;5a9a	63		c
-	defb 06fh		;5a9b	6f		o
-	defb 072h		;5a9c	72		r
-	defb 065h		;5a9d	65		e
-	defb 020h		;5a9e	20		 
-l5a9fh:
-	defb 00ah		;5a9f	0a		.
-	defb 0a2h		;5aa0	a2		.
-	defb 05ah		;5aa1	5a		Z
-	defb 020h		;5aa2	20		 
-	defb 020h		;5aa3	20		 
-	defb 020h		;5aa4	20		 
-	defb 020h		;5aa5	20		 
-	defb 020h		;5aa6	20		 
-	defb 04ch		;5aa7	4c		L
-	defb 065h		;5aa8	65		e
-	defb 076h		;5aa9	76		v
-	defb 065h		;5aaa	65		e
-	defb 06ch		;5aab	6c		l
-l5aach:
-	defb 004h		;5aac	04		.
-	defb 0afh		;5aad	af		.
-	defb 05ah		;5aae	5a		Z
-	defb 04ch		;5aaf	4c		L
-	defb 061h		;5ab0	61		a
-	defb 064h		;5ab1	64		d
-	defb 073h		;5ab2	73		s
-l5ab3h:
-	defb 024h		;5ab3	24		$
-	defb 0b6h		;5ab4	b6		.
-	defb 05ah		;5ab5	5a		Z
-	defb 054h		;5ab6	54		T
-	defb 079h		;5ab7	79		y
-	defb 070h		;5ab8	70		p
-	defb 065h		;5ab9	65		e
-	defb 020h		;5aba	20		 
-	defb 052h		;5abb	52		R
-	defb 045h		;5abc	45		E
-	defb 054h		;5abd	54		T
-	defb 055h		;5abe	55		U
-	defb 052h		;5abf	52		R
-	defb 04eh		;5ac0	4e		N
-	defb 020h		;5ac1	20		 
-	defb 074h		;5ac2	74		t
-	defb 06fh		;5ac3	6f		o
-	defb 020h		;5ac4	20		 
-	defb 072h		;5ac5	72		r
-	defb 065h		;5ac6	65		e
-	defb 074h		;5ac7	74		t
-	defb 075h		;5ac8	75		u
-	defb 072h		;5ac9	72		r
-	defb 06eh		;5aca	6e		n
-	defb 020h		;5acb	20		 
-	defb 074h		;5acc	74		t
-	defb 06fh		;5acd	6f		o
-	defb 020h		;5ace	20		 
-	defb 06dh		;5acf	6d		m
-	defb 061h		;5ad0	61		a
-	defb 069h		;5ad1	69		i
-	defb 06eh		;5ad2	6e		n
-	defb 020h		;5ad3	20		 
-	defb 06dh		;5ad4	6d		m
-	defb 065h		;5ad5	65		e
-	defb 06eh		;5ad6	6e		n
-	defb 075h		;5ad7	75		u
-	defb 03ah		;5ad8	3a		:
-	defb 020h		;5ad9	20		 
-l5adah:
-	defb 00eh		;5ada	0e		.
-	defb 0ddh		;5adb	dd		.
-	defb 05ah		;5adc	5a		Z
-	defb 047h		;5add	47		G
-	defb 06fh		;5ade	6f		o
-	defb 06fh		;5adf	6f		o
-	defb 064h		;5ae0	64		d
-	defb 020h		;5ae1	20		 
-	defb 06ch		;5ae2	6c		l
-	defb 075h		;5ae3	75		u
-	defb 063h		;5ae4	63		c
-	defb 06bh		;5ae5	6b		k
-	defb 020h		;5ae6	20		 
-	defb 04ch		;5ae7	4c		L
-	defb 061h		;5ae8	61		a
-	defb 064h		;5ae9	64		d
-	defb 02eh		;5aea	2e		.
-l5aebh:
-	defb 021h		;5aeb	21		!
-	defb 0eeh		;5aec	ee		.
-	defb 05ah		;5aed	5a		Z
-	defb 054h		;5aee	54		T
-	defb 079h		;5aef	79		y
-	defb 070h		;5af0	70		p
-	defb 065h		;5af1	65		e
-	defb 020h		;5af2	20		 
-	defb 061h		;5af3	61		a
-	defb 06eh		;5af4	6e		n
-	defb 020h		;5af5	20		 
-	defb 045h		;5af6	45		E
-	defb 053h		;5af7	53		S
-	defb 043h		;5af8	43		C
-	defb 061h		;5af9	61		a
-	defb 070h		;5afa	70		p
-	defb 065h		;5afb	65		e
-	defb 020h		;5afc	20		 
-	defb 074h		;5afd	74		t
-	defb 06fh		;5afe	6f		o
-	defb 020h		;5aff	20		 
-	defb 070h		;5b00	70		p
-	defb 061h		;5b01	61		a
-	defb 075h		;5b02	75		u
-	defb 073h		;5b03	73		s
-	defb 065h		;5b04	65		e
-	defb 020h		;5b05	20		 
-	defb 074h		;5b06	74		t
-	defb 068h		;5b07	68		h
-	defb 065h		;5b08	65		e
-	defb 020h		;5b09	20		 
-	defb 067h		;5b0a	67		g
-	defb 061h		;5b0b	61		a
-	defb 06dh		;5b0c	6d		m
-	defb 065h		;5b0d	65		e
-	defb 02eh		;5b0e	2e		.
-l5b0fh:
-	defb 02fh		;5b0f	2f		/
-	defb 012h		;5b10	12		.
-	defb 05bh		;5b11	5b		[
-	defb 074h		;5b12	74		t
-	defb 068h		;5b13	68		h
-	defb 061h		;5b14	61		a
-	defb 074h		;5b15	74		t
-	defb 020h		;5b16	20		 
-	defb 061h		;5b17	61		a
-	defb 072h		;5b18	72		r
-	defb 065h		;5b19	65		e
-	defb 020h		;5b1a	20		 
-	defb 06ch		;5b1b	6c		l
-	defb 065h		;5b1c	65		e
-	defb 066h		;5b1d	66		f
-	defb 074h		;5b1e	74		t
-	defb 020h		;5b1f	20		 
-	defb 077h		;5b20	77		w
-	defb 068h		;5b21	68		h
-	defb 065h		;5b22	65		e
-	defb 06eh		;5b23	6e		n
-	defb 020h		;5b24	20		 
-	defb 079h		;5b25	79		y
-	defb 06fh		;5b26	6f		o
-	defb 075h		;5b27	75		u
-	defb 020h		;5b28	20		 
-	defb 068h		;5b29	68		h
-	defb 061h		;5b2a	61		a
-	defb 076h		;5b2b	76		v
-	defb 065h		;5b2c	65		e
-	defb 020h		;5b2d	20		 
-	defb 066h		;5b2e	66		f
-	defb 069h		;5b2f	69		i
-	defb 06eh		;5b30	6e		n
-	defb 069h		;5b31	69		i
-	defb 073h		;5b32	73		s
-	defb 068h		;5b33	68		h
-	defb 065h		;5b34	65		e
-	defb 064h		;5b35	64		d
-	defb 020h		;5b36	20		 
-	defb 074h		;5b37	74		t
-	defb 068h		;5b38	68		h
-	defb 065h		;5b39	65		e
-	defb 020h		;5b3a	20		 
-	defb 06ch		;5b3b	6c		l
-	defb 065h		;5b3c	65		e
-	defb 076h		;5b3d	76		v
-	defb 065h		;5b3e	65		e
-	defb 06ch		;5b3f	6c		l
-	defb 02eh		;5b40	2e		.
-l5b41h:
-	defb 03dh		;5b41	3d		=
-	defb 044h		;5b42	44		D
-	defb 05bh		;5b43	5b		[
-	defb 073h		;5b44	73		s
-	defb 074h		;5b45	74		t
-	defb 061h		;5b46	61		a
-	defb 074h		;5b47	74		t
-	defb 075h		;5b48	75		u
-	defb 065h		;5b49	65		e
-	defb 073h		;5b4a	73		s
-	defb 020h		;5b4b	20		 
-	defb 028h		;5b4c	28		(
-	defb 073h		;5b4d	73		s
-	defb 068h		;5b4e	68		h
-	defb 06fh		;5b4f	6f		o
-	defb 077h		;5b50	77		w
-	defb 06eh		;5b51	6e		n
-	defb 020h		;5b52	20		 
-	defb 061h		;5b53	61		a
-	defb 073h		;5b54	73		s
-	defb 020h		;5b55	20		 
-	defb 026h		;5b56	26		&
-	defb 029h		;5b57	29		)
-	defb 02eh		;5b58	2e		.
-	defb 020h		;5b59	20		 
-	defb 020h		;5b5a	20		 
-	defb 059h		;5b5b	59		Y
-	defb 06fh		;5b5c	6f		o
-	defb 075h		;5b5d	75		u
-	defb 020h		;5b5e	20		 
-	defb 077h		;5b5f	77		w
-	defb 069h		;5b60	69		i
-	defb 06ch		;5b61	6c		l
-	defb 06ch		;5b62	6c		l
-	defb 020h		;5b63	20		 
-	defb 072h		;5b64	72		r
-	defb 065h		;5b65	65		e
-	defb 063h		;5b66	63		c
-	defb 065h		;5b67	65		e
-	defb 069h		;5b68	69		i
-	defb 076h		;5b69	76		v
-	defb 065h		;5b6a	65		e
-	defb 020h		;5b6b	20		 
-	defb 074h		;5b6c	74		t
-	defb 068h		;5b6d	68		h
-	defb 065h		;5b6e	65		e
-	defb 020h		;5b6f	20		 
-	defb 062h		;5b70	62		b
-	defb 06fh		;5b71	6f		o
-	defb 06eh		;5b72	6e		n
-	defb 075h		;5b73	75		u
-	defb 073h		;5b74	73		s
-	defb 020h		;5b75	20		 
-	defb 074h		;5b76	74		t
-	defb 069h		;5b77	69		i
-	defb 06dh		;5b78	6d		m
-	defb 065h		;5b79	65		e
-	defb 020h		;5b7a	20		 
-	defb 070h		;5b7b	70		p
-	defb 06fh		;5b7c	6f		o
-	defb 069h		;5b7d	69		i
-	defb 06eh		;5b7e	6e		n
-	defb 074h		;5b7f	74		t
-	defb 073h		;5b80	73		s
-l5b81h:
-	defb 02eh		;5b81	2e		.
-	defb 084h		;5b82	84		.
-	defb 05bh		;5b83	5b		[
-	defb 045h		;5b84	45		E
-	defb 078h		;5b85	78		x
-	defb 074h		;5b86	74		t
-	defb 072h		;5b87	72		r
-	defb 061h		;5b88	61		a
-	defb 020h		;5b89	20		 
-	defb 070h		;5b8a	70		p
-	defb 06fh		;5b8b	6f		o
-	defb 069h		;5b8c	69		i
-	defb 06eh		;5b8d	6e		n
-	defb 074h		;5b8e	74		t
-	defb 073h		;5b8f	73		s
-	defb 020h		;5b90	20		 
-	defb 061h		;5b91	61		a
-	defb 072h		;5b92	72		r
-	defb 065h		;5b93	65		e
-	defb 020h		;5b94	20		 
-	defb 061h		;5b95	61		a
-	defb 077h		;5b96	77		w
-	defb 061h		;5b97	61		a
-	defb 072h		;5b98	72		r
-	defb 064h		;5b99	64		d
-	defb 065h		;5b9a	65		e
-	defb 064h		;5b9b	64		d
-	defb 020h		;5b9c	20		 
-	defb 066h		;5b9d	66		f
-	defb 06fh		;5b9e	6f		o
-	defb 072h		;5b9f	72		r
-	defb 020h		;5ba0	20		 
-	defb 074h		;5ba1	74		t
-	defb 06fh		;5ba2	6f		o
-	defb 075h		;5ba3	75		u
-	defb 063h		;5ba4	63		c
-	defb 068h		;5ba5	68		h
-	defb 069h		;5ba6	69		i
-	defb 06eh		;5ba7	6e		n
-	defb 067h		;5ba8	67		g
-	defb 020h		;5ba9	20		 
-	defb 074h		;5baa	74		t
-	defb 068h		;5bab	68		h
-	defb 065h		;5bac	65		e
-	defb 020h		;5bad	20		 
-	defb 067h		;5bae	67		g
-	defb 06fh		;5baf	6f		o
-	defb 06ch		;5bb0	6c		l
-	defb 064h		;5bb1	64		d
-l5bb2h:
-	defb 032h		;5bb2	32		2
-	defb 0b5h		;5bb3	b5		.
-	defb 05bh		;5bb4	5b		[
-	defb 041h		;5bb5	41		A
-	defb 020h		;5bb6	20		 
-	defb 06eh		;5bb7	6e		n
-	defb 065h		;5bb8	65		e
-	defb 077h		;5bb9	77		w
-	defb 020h		;5bba	20		 
-	defb 04ch		;5bbb	4c		L
-	defb 061h		;5bbc	61		a
-	defb 064h		;5bbd	64		d
-	defb 020h		;5bbe	20		 
-	defb 077h		;5bbf	77		w
-	defb 069h		;5bc0	69		i
-	defb 06ch		;5bc1	6c		l
-	defb 06ch		;5bc2	6c		l
-	defb 020h		;5bc3	20		 
-	defb 062h		;5bc4	62		b
-	defb 065h		;5bc5	65		e
-	defb 020h		;5bc6	20		 
-	defb 061h		;5bc7	61		a
-	defb 077h		;5bc8	77		w
-	defb 061h		;5bc9	61		a
-	defb 072h		;5bca	72		r
-	defb 064h		;5bcb	64		d
-	defb 065h		;5bcc	65		e
-	defb 064h		;5bcd	64		d
-	defb 020h		;5bce	20		 
-	defb 066h		;5bcf	66		f
-	defb 06fh		;5bd0	6f		o
-	defb 072h		;5bd1	72		r
-	defb 020h		;5bd2	20		 
-	defb 065h		;5bd3	65		e
-	defb 076h		;5bd4	76		v
-	defb 065h		;5bd5	65		e
-	defb 072h		;5bd6	72		r
-	defb 079h		;5bd7	79		y
-	defb 020h		;5bd8	20		 
-	defb 031h		;5bd9	31		1
-	defb 030h		;5bda	30		0
-	defb 02ch		;5bdb	2c		,
-	defb 030h		;5bdc	30		0
-	defb 030h		;5bdd	30		0
-	defb 030h		;5bde	30		0
-	defb 020h		;5bdf	20		 
-	defb 070h		;5be0	70		p
-	defb 06fh		;5be1	6f		o
-	defb 069h		;5be2	69		i
-	defb 06eh		;5be3	6e		n
-	defb 074h		;5be4	74		t
-	defb 073h		;5be5	73		s
-	defb 02eh		;5be6	2e		.
-l5be7h:
-	defb 014h		;5be7	14		.
-	defb 0eah		;5be8	ea		.
-	defb 05bh		;5be9	5b		[
-	defb 062h		;5bea	62		b
-	defb 06fh		;5beb	6f		o
-	defb 06eh		;5bec	6e		n
-	defb 075h		;5bed	75		u
-	defb 073h		;5bee	73		s
-	defb 020h		;5bef	20		 
-	defb 074h		;5bf0	74		t
-	defb 069h		;5bf1	69		i
-	defb 06dh		;5bf2	6d		m
-	defb 065h		;5bf3	65		e
-	defb 020h		;5bf4	20		 
-	defb 072h		;5bf5	72		r
-	defb 075h		;5bf6	75		u
-	defb 06eh		;5bf7	6e		n
-	defb 073h		;5bf8	73		s
-	defb 020h		;5bf9	20		 
-	defb 06fh		;5bfa	6f		o
-	defb 075h		;5bfb	75		u
-	defb 074h		;5bfc	74		t
-	defb 02eh		;5bfd	2e		.
-l5bfeh:
-	defb 03ch		;5bfe	3c		<
-	defb 001h		;5bff	01		.
-	defb 05ch		;5c00	5c		\
-	defb 059h		;5c01	59		Y
-	defb 06fh		;5c02	6f		o
-	defb 075h		;5c03	75		u
-	defb 020h		;5c04	20		 
-	defb 06dh		;5c05	6d		m
-	defb 075h		;5c06	75		u
-	defb 073h		;5c07	73		s
-	defb 074h		;5c08	74		t
-	defb 020h		;5c09	20		 
-	defb 066h		;5c0a	66		f
-	defb 069h		;5c0b	69		i
-	defb 06eh		;5c0c	6e		n
-	defb 064h		;5c0d	64		d
-	defb 020h		;5c0e	20		 
-	defb 061h		;5c0f	61		a
-	defb 06eh		;5c10	6e		n
-	defb 064h		;5c11	64		d
-	defb 020h		;5c12	20		 
-	defb 067h		;5c13	67		g
-	defb 072h		;5c14	72		r
-	defb 061h		;5c15	61		a
-	defb 073h		;5c16	73		s
-	defb 070h		;5c17	70		p
-	defb 020h		;5c18	20		 
-	defb 074h		;5c19	74		t
-	defb 068h		;5c1a	68		h
-	defb 065h		;5c1b	65		e
-	defb 020h		;5c1c	20		 
-	defb 074h		;5c1d	74		t
-	defb 072h		;5c1e	72		r
-	defb 065h		;5c1f	65		e
-	defb 061h		;5c20	61		a
-	defb 073h		;5c21	73		s
-	defb 075h		;5c22	75		u
-	defb 072h		;5c23	72		r
-	defb 065h		;5c24	65		e
-	defb 020h		;5c25	20		 
-	defb 028h		;5c26	28		(
-	defb 073h		;5c27	73		s
-	defb 068h		;5c28	68		h
-	defb 06fh		;5c29	6f		o
-	defb 077h		;5c2a	77		w
-	defb 06eh		;5c2b	6e		n
-	defb 020h		;5c2c	20		 
-	defb 061h		;5c2d	61		a
-	defb 073h		;5c2e	73		s
-	defb 020h		;5c2f	20		 
-	defb 024h		;5c30	24		$
-	defb 029h		;5c31	29		)
-	defb 020h		;5c32	20		 
-	defb 042h		;5c33	42		B
-	defb 045h		;5c34	45		E
-	defb 046h		;5c35	46		F
-	defb 04fh		;5c36	4f		O
-	defb 052h		;5c37	52		R
-	defb 045h		;5c38	45		E
-	defb 020h		;5c39	20		 
-	defb 074h		;5c3a	74		t
-	defb 068h		;5c3b	68		h
-	defb 065h		;5c3c	65		e
-l5c3dh:
-	defb 040h		;5c3d	40		@
-	defb 040h		;5c3e	40		@
-	defb 05ch		;5c3f	5c		\
-	defb 074h		;5c40	74		t
-	defb 079h		;5c41	79		y
-	defb 070h		;5c42	70		p
-	defb 069h		;5c43	69		i
-	defb 06eh		;5c44	6e		n
-	defb 067h		;5c45	67		g
-	defb 020h		;5c46	20		 
-	defb 053h		;5c47	53		S
-	defb 050h		;5c48	50		P
-	defb 041h		;5c49	41		A
-	defb 043h		;5c4a	43		C
-	defb 045h		;5c4b	45		E
-	defb 02eh		;5c4c	2e		.
-	defb 020h		;5c4d	20		 
-	defb 020h		;5c4e	20		 
-	defb 042h		;5c4f	42		B
-	defb 075h		;5c50	75		u
-	defb 074h		;5c51	74		t
-	defb 020h		;5c52	20		 
-	defb 062h		;5c53	62		b
-	defb 065h		;5c54	65		e
-	defb 077h		;5c55	77		w
-	defb 061h		;5c56	61		a
-	defb 072h		;5c57	72		r
-	defb 065h		;5c58	65		e
-	defb 020h		;5c59	20		 
-	defb 06fh		;5c5a	6f		o
-	defb 066h		;5c5b	66		f
-	defb 020h		;5c5c	20		 
-	defb 074h		;5c5d	74		t
-	defb 068h		;5c5e	68		h
-	defb 065h		;5c5f	65		e
-	defb 020h		;5c60	20		 
-	defb 066h		;5c61	66		f
-	defb 061h		;5c62	61		a
-	defb 06ch		;5c63	6c		l
-	defb 06ch		;5c64	6c		l
-	defb 069h		;5c65	69		i
-	defb 06eh		;5c66	6e		n
-	defb 067h		;5c67	67		g
-	defb 020h		;5c68	20		 
-	defb 072h		;5c69	72		r
-	defb 06fh		;5c6a	6f		o
-	defb 063h		;5c6b	63		c
-	defb 06bh		;5c6c	6b		k
-	defb 073h		;5c6d	73		s
-	defb 020h		;5c6e	20		 
-	defb 063h		;5c6f	63		c
-	defb 061h		;5c70	61		a
-	defb 06ch		;5c71	6c		l
-	defb 06ch		;5c72	6c		l
-	defb 065h		;5c73	65		e
-	defb 064h		;5c74	64		d
-	defb 020h		;5c75	20		 
-	defb 044h		;5c76	44		D
-	defb 065h		;5c77	65		e
-	defb 072h		;5c78	72		r
-	defb 020h		;5c79	20		 
-	defb 072h		;5c7a	72		r
-	defb 06fh		;5c7b	6f		o
-	defb 063h		;5c7c	63		c
-	defb 06bh		;5c7d	6b		k
-	defb 073h		;5c7e	73		s
-	defb 02eh		;5c7f	2e		.
-l5c80h:
-	defb 03eh		;5c80	3e		>
-	defb 083h		;5c81	83		.
-	defb 05ch		;5c82	5c		\
-	defb 059h		;5c83	59		Y
-	defb 06fh		;5c84	6f		o
-	defb 075h		;5c85	75		u
-	defb 020h		;5c86	20		 
-	defb 063h		;5c87	63		c
-	defb 06fh		;5c88	6f		o
-	defb 06eh		;5c89	6e		n
-	defb 074h		;5c8a	74		t
-	defb 072h		;5c8b	72		r
-	defb 06fh		;5c8c	6f		o
-	defb 06ch		;5c8d	6c		l
-	defb 020h		;5c8e	20		 
-	defb 04ch		;5c8f	4c		L
-	defb 061h		;5c90	61		a
-	defb 064h		;5c91	64		d
-	defb 020h		;5c92	20		 
-	defb 062h		;5c93	62		b
-	defb 079h		;5c94	79		y
-	defb 020h		;5c95	20		 
-	defb 074h		;5c96	74		t
-	defb 079h		;5c97	79		y
-	defb 070h		;5c98	70		p
-	defb 069h		;5c99	69		i
-	defb 06eh		;5c9a	6e		n
-	defb 067h		;5c9b	67		g
-	defb 020h		;5c9c	20		 
-	defb 074h		;5c9d	74		t
-	defb 068h		;5c9e	68		h
-	defb 065h		;5c9f	65		e
-	defb 020h		;5ca0	20		 
-	defb 064h		;5ca1	64		d
-	defb 069h		;5ca2	69		i
-	defb 072h		;5ca3	72		r
-	defb 065h		;5ca4	65		e
-	defb 063h		;5ca5	63		c
-	defb 074h		;5ca6	74		t
-	defb 069h		;5ca7	69		i
-	defb 06fh		;5ca8	6f		o
-	defb 06eh		;5ca9	6e		n
-	defb 020h		;5caa	20		 
-	defb 062h		;5cab	62		b
-	defb 075h		;5cac	75		u
-	defb 074h		;5cad	74		t
-	defb 074h		;5cae	74		t
-	defb 06fh		;5caf	6f		o
-	defb 06eh		;5cb0	6e		n
-	defb 073h		;5cb1	73		s
-	defb 020h		;5cb2	20		 
-	defb 061h		;5cb3	61		a
-	defb 06eh		;5cb4	6e		n
-	defb 064h		;5cb5	64		d
-	defb 020h		;5cb6	20		 
-	defb 06ah		;5cb7	6a		j
-	defb 075h		;5cb8	75		u
-	defb 06dh		;5cb9	6d		m
-	defb 070h		;5cba	70		p
-	defb 069h		;5cbb	69		i
-	defb 06eh		;5cbc	6e		n
-	defb 067h		;5cbd	67		g
-	defb 020h		;5cbe	20		 
-	defb 062h		;5cbf	62		b
-	defb 079h		;5cc0	79		y
-l5cc1h:
-	defb 015h		;5cc1	15		.
-	defb 0c4h		;5cc2	c4		.
-	defb 05ch		;5cc3	5c		\
-	defb 074h		;5cc4	74		t
-	defb 072h		;5cc5	72		r
-	defb 065h		;5cc6	65		e
-	defb 061h		;5cc7	61		a
-	defb 073h		;5cc8	73		s
-	defb 075h		;5cc9	75		u
-	defb 072h		;5cca	72		r
-	defb 065h		;5ccb	65		e
-	defb 073h		;5ccc	73		s
-	defb 020h		;5ccd	20		 
-	defb 061h		;5cce	61		a
-	defb 06eh		;5ccf	6e		n
-	defb 064h		;5cd0	64		d
-	defb 020h		;5cd1	20		 
-	defb 072h		;5cd2	72		r
-	defb 069h		;5cd3	69		i
-	defb 063h		;5cd4	63		c
-	defb 068h		;5cd5	68		h
-	defb 065h		;5cd6	65		e
-	defb 073h		;5cd7	73		s
-	defb 02eh		;5cd8	2e		.
-l5cd9h:
-	defb 03eh		;5cd9	3e		>
-	defb 0dch		;5cda	dc		.
-	defb 05ch		;5cdb	5c		\
-	defb 064h		;5cdc	64		d
-	defb 061h		;5cdd	61		a
-	defb 072h		;5cde	72		r
-	defb 06bh		;5cdf	6b		k
-	defb 020h		;5ce0	20		 
-	defb 063h		;5ce1	63		c
-	defb 06fh		;5ce2	6f		o
-	defb 072h		;5ce3	72		r
-	defb 072h		;5ce4	72		r
-	defb 069h		;5ce5	69		i
-	defb 064h		;5ce6	64		d
-	defb 06fh		;5ce7	6f		o
-	defb 072h		;5ce8	72		r
-	defb 073h		;5ce9	73		s
-	defb 020h		;5cea	20		 
-	defb 06eh		;5ceb	6e		n
-	defb 065h		;5cec	65		e
-	defb 076h		;5ced	76		v
-	defb 065h		;5cee	65		e
-	defb 072h		;5cef	72		r
-	defb 020h		;5cf0	20		 
-	defb 062h		;5cf1	62		b
-	defb 065h		;5cf2	65		e
-	defb 066h		;5cf3	66		f
-	defb 06fh		;5cf4	6f		o
-	defb 072h		;5cf5	72		r
-	defb 065h		;5cf6	65		e
-	defb 020h		;5cf7	20		 
-	defb 073h		;5cf8	73		s
-	defb 065h		;5cf9	65		e
-	defb 065h		;5cfa	65		e
-	defb 06eh		;5cfb	6e		n
-	defb 020h		;5cfc	20		 
-	defb 062h		;5cfd	62		b
-	defb 079h		;5cfe	79		y
-	defb 020h		;5cff	20		 
-	defb 068h		;5d00	68		h
-	defb 075h		;5d01	75		u
-	defb 06dh		;5d02	6d		m
-	defb 061h		;5d03	61		a
-	defb 06eh		;5d04	6e		n
-	defb 020h		;5d05	20		 
-	defb 065h		;5d06	65		e
-	defb 079h		;5d07	79		y
-	defb 065h		;5d08	65		e
-	defb 073h		;5d09	73		s
-	defb 020h		;5d0a	20		 
-	defb 061h		;5d0b	61		a
-	defb 06eh		;5d0c	6e		n
-	defb 064h		;5d0d	64		d
-	defb 020h		;5d0e	20		 
-	defb 066h		;5d0f	66		f
-	defb 069h		;5d10	69		i
-	defb 06eh		;5d11	6e		n
-	defb 064h		;5d12	64		d
-	defb 020h		;5d13	20		 
-	defb 068h		;5d14	68		h
-	defb 069h		;5d15	69		i
-	defb 064h		;5d16	64		d
-	defb 064h		;5d17	64		d
-	defb 065h		;5d18	65		e
-	defb 06eh		;5d19	6e		n
-l5d1ah:
-	defb 03dh		;5d1a	3d		=
-	defb 01dh		;5d1b	1d		.
-	defb 05dh		;5d1c	5d		]
-	defb 059h		;5d1d	59		Y
-	defb 06fh		;5d1e	6f		o
-	defb 075h		;5d1f	75		u
-	defb 020h		;5d20	20		 
-	defb 061h		;5d21	61		a
-	defb 072h		;5d22	72		r
-	defb 065h		;5d23	65		e
-	defb 020h		;5d24	20		 
-	defb 061h		;5d25	61		a
-	defb 020h		;5d26	20		 
-	defb 04ch		;5d27	4c		L
-	defb 061h		;5d28	61		a
-	defb 064h		;5d29	64		d
-	defb 020h		;5d2a	20		 
-	defb 074h		;5d2b	74		t
-	defb 072h		;5d2c	72		r
-	defb 061h		;5d2d	61		a
-	defb 070h		;5d2e	70		p
-	defb 070h		;5d2f	70		p
-	defb 065h		;5d30	65		e
-	defb 064h		;5d31	64		d
-	defb 020h		;5d32	20		 
-	defb 069h		;5d33	69		i
-	defb 06eh		;5d34	6e		n
-	defb 020h		;5d35	20		 
-	defb 061h		;5d36	61		a
-	defb 020h		;5d37	20		 
-	defb 06dh		;5d38	6d		m
-	defb 061h		;5d39	61		a
-	defb 07ah		;5d3a	7a		z
-	defb 065h		;5d3b	65		e
-	defb 02eh		;5d3c	2e		.
-	defb 020h		;5d3d	20		 
-	defb 020h		;5d3e	20		 
-	defb 059h		;5d3f	59		Y
-	defb 06fh		;5d40	6f		o
-	defb 075h		;5d41	75		u
-	defb 072h		;5d42	72		r
-	defb 020h		;5d43	20		 
-	defb 06dh		;5d44	6d		m
-	defb 069h		;5d45	69		i
-	defb 073h		;5d46	73		s
-	defb 073h		;5d47	73		s
-	defb 069h		;5d48	69		i
-	defb 06fh		;5d49	6f		o
-	defb 06eh		;5d4a	6e		n
-	defb 020h		;5d4b	20		 
-	defb 069h		;5d4c	69		i
-	defb 073h		;5d4d	73		s
-	defb 020h		;5d4e	20		 
-	defb 065h		;5d4f	65		e
-	defb 078h		;5d50	78		x
-	defb 070h		;5d51	70		p
-	defb 06ch		;5d52	6c		l
-	defb 06fh		;5d53	6f		o
-	defb 072h		;5d54	72		r
-	defb 065h		;5d55	65		e
-	defb 020h		;5d56	20		 
-	defb 074h		;5d57	74		t
-	defb 068h		;5d58	68		h
-	defb 065h		;5d59	65		e
-l5d5ah:
-	defb 001h		;5d5a	01		.
-	defb 05dh		;5d5b	5d		]
-	defb 05dh		;5d5c	5d		]
-	defb 06ch		;5d5d	6c		l
-l5d5eh:
-	defb 001h		;5d5e	01		.
-	defb 061h		;5d5f	61		a
-	defb 05dh		;5d60	5d		]
-	defb 04ch		;5d61	4c		L
-l5d62h:
-	defb 001h		;5d62	01		.
-	defb 065h		;5d63	65		e
-	defb 05dh		;5d64	5d		]
-	defb 069h		;5d65	69		i
-l5d66h:
-	defb 001h		;5d66	01		.
-	defb 069h		;5d67	69		i
-	defb 05dh		;5d68	5d		]
-	defb 049h		;5d69	49		I
-l5d6ah:
-	defb 001h		;5d6a	01		.
-	defb 06dh		;5d6b	6d		m
-	defb 05dh		;5d6c	5d		]
-	defb 063h		;5d6d	63		c
-l5d6eh:
-	defb 001h		;5d6e	01		.
-	defb 071h		;5d6f	71		q
-	defb 05dh		;5d70	5d		]
-	defb 043h		;5d71	43		C
-l5d72h:
-	defb 001h		;5d72	01		.
-	defb 075h		;5d73	75		u
-	defb 05dh		;5d74	5d		]
-	defb 070h		;5d75	70		p
-l5d76h:
-	defb 001h		;5d76	01		.
-	defb 079h		;5d77	79		y
-	defb 05dh		;5d78	5d		]
-	defb 050h		;5d79	50		P
-l5d7ah:
-	defb 00ah		;5d7a	0a		.
-	defb 07dh		;5d7b	7d		}
-	defb 05dh		;5d7c	5d		]
-	defb 045h		;5d7d	45		E
-	defb 078h		;5d7e	78		x
-	defb 069h		;5d7f	69		i
-	defb 074h		;5d80	74		t
-	defb 069h		;5d81	69		i
-	defb 06eh		;5d82	6e		n
-	defb 067h		;5d83	67		g
-	defb 02eh		;5d84	2e		.
-	defb 02eh		;5d85	2e		.
-	defb 02eh		;5d86	2e		.
-l5d87h:
-	defb 001h		;5d87	01		.
-	defb 08ah		;5d88	8a		.
-	defb 05dh		;5d89	5d		]
-	defb 065h		;5d8a	65		e
-l5d8bh:
-	defb 001h		;5d8b	01		.
-	defb 08eh		;5d8c	8e		.
-	defb 05dh		;5d8d	5d		]
-	defb 045h		;5d8e	45		E
-l5d8fh:
-	defb 00fh		;5d8f	0f		.
-	defb 092h		;5d90	92		.
-	defb 05dh		;5d91	5d		]
-	defb 059h		;5d92	59		Y
-	defb 06fh		;5d93	6f		o
-	defb 075h		;5d94	75		u
-	defb 020h		;5d95	20		 
-	defb 065h		;5d96	65		e
-	defb 061h		;5d97	61		a
-	defb 074h		;5d98	74		t
-	defb 020h		;5d99	20		 
-	defb 071h		;5d9a	71		q
-	defb 075h		;5d9b	75		u
-	defb 069h		;5d9c	69		i
-	defb 063h		;5d9d	63		c
-	defb 068h		;5d9e	68		h
-	defb 065h		;5d9f	65		e
-	defb 021h		;5da0	21		!
-l5da1h:
-	defb 01fh		;5da1	1f		.
-	defb 0a4h		;5da2	a4		.
-	defb 05dh		;5da3	5d		]
-	defb 043h		;5da4	43		C
-	defb 06fh		;5da5	6f		o
-	defb 06dh		;5da6	6d		m
-	defb 065h		;5da7	65		e
-	defb 020h		;5da8	20		 
-	defb 06fh		;5da9	6f		o
-	defb 06eh		;5daa	6e		n
-	defb 02ch		;5dab	2c		,
-	defb 020h		;5dac	20		 
-	defb 077h		;5dad	77		w
-	defb 065h		;5dae	65		e
-	defb 020h		;5daf	20		 
-	defb 064h		;5db0	64		d
-	defb 06fh		;5db1	6f		o
-	defb 06eh		;5db2	6e		n
-	defb 027h		;5db3	27		'
-	defb 074h		;5db4	74		t
-	defb 020h		;5db5	20		 
-	defb 068h		;5db6	68		h
-	defb 061h		;5db7	61		a
-	defb 076h		;5db8	76		v
-	defb 065h		;5db9	65		e
-	defb 020h		;5dba	20		 
-	defb 061h		;5dbb	61		a
-	defb 06ch		;5dbc	6c		l
-	defb 06ch		;5dbd	6c		l
-	defb 020h		;5dbe	20		 
-	defb 064h		;5dbf	64		d
-	defb 061h		;5dc0	61		a
-	defb 079h		;5dc1	79		y
-	defb 021h		;5dc2	21		!
-l5dc3h:
-	defb 018h		;5dc3	18		.
-	defb 0c6h		;5dc4	c6		.
-	defb 05dh		;5dc5	5d		]
-	defb 045h		;5dc6	45		E
-	defb 06eh		;5dc7	6e		n
-	defb 074h		;5dc8	74		t
-	defb 065h		;5dc9	65		e
-	defb 072h		;5dca	72		r
-	defb 020h		;5dcb	20		 
-	defb 06fh		;5dcc	6f		o
-	defb 06eh		;5dcd	6e		n
-	defb 065h		;5dce	65		e
-	defb 020h		;5dcf	20		 
-	defb 06fh		;5dd0	6f		o
-	defb 066h		;5dd1	66		f
-	defb 020h		;5dd2	20		 
-	defb 074h		;5dd3	74		t
-	defb 068h		;5dd4	68		h
-	defb 065h		;5dd5	65		e
-	defb 020h		;5dd6	20		 
-	defb 061h		;5dd7	61		a
-	defb 062h		;5dd8	62		b
-	defb 06fh		;5dd9	6f		o
+s_updating_high_scores:
+	defb 017h		;5901	17		|.|
+	defw 05904h		;5902	04 59		|.Y|
+	defm "Updating high scores..."		;5904	55 70 64 61 74 69 6e 67 20 68 69 67 68 20 73 63 6f 72 65 73 2e 2e 2e		|Updating high scores...|
+s_enter_your_name:
+	defb 011h		;591b	11		|.|
+	defw 0591eh		;591c	1e 59		|.Y|
+	defm "Enter your name: "		;591e	45 6e 74 65 72 20 79 6f 75 72 20 6e 61 6d 65 3a 20		|Enter your name: |
+s_high_score_undeserved:
+	defb 024h		;592f	24		|$|
+	defw 05932h		;5930	32 59		|2Y|
+	defm "You really don't deserve this but..."		;5932	59 6f 75 20 72 65 61 6c 6c 79 20 64 6f 6e 27 74 20 64 65 73 65 72 76 65 20 74 68 69 73 20 62 75 74 2e 2e 2e		|You really don't deserve this but...|
+s_high_score_not_bad:
+	defb 017h		;5956	17		|.|
+	defw 05959h		;5957	59 59		|YY|
+	defm "Not bad for a young Lad"		;5959	4e 6f 74 20 62 61 64 20 66 6f 72 20 61 20 79 6f 75 6e 67 20 4c 61 64		|Not bad for a young Lad|
+s_high_score_amazing:
+	defb 013h		;5970	13		|.|
+	defw 05973h		;5971	73 59		|sY|
+	defm "Amazing!  You rate!"		;5973	41 6d 61 7a 69 6e 67 21 20 20 59 6f 75 20 72 61 74 65 21		|Amazing!  You rate!|
+s_high_score_ladder:
+	defb 021h		;5986	21		|!|
+	defw 05989h		;5987	89 59		|.Y|
+	defm "Looks like we have a Lad-Der here"		;5989	4c 6f 6f 6b 73 20 6c 69 6b 65 20 77 65 20 68 61 76 65 20 61 20 4c 61 64 2d 44 65 72 20 68 65 72 65		|Looks like we have a Lad-Der here|
+s_high_score_lad_wiz:
+	defb 01bh		;59aa	1b		|.|
+	defw 059adh		;59ab	ad 59		|.Y|
+	defm "Yeh! Now you are a Lad-Wiz!"		;59ad	59 65 68 21 20 4e 6f 77 20 79 6f 75 20 61 72 65 20 61 20 4c 61 64 2d 57 69 7a 21		|Yeh! Now you are a Lad-Wiz!|
+s_high_score_lad_guru:
+	defb 01ch		;59c8	1c		|.|
+	defw 059cbh		;59c9	cb 59		|.Y|
+	defm "Wow! You are now a Lad-Guru!"		;59cb	57 6f 77 21 20 59 6f 75 20 61 72 65 20 6e 6f 77 20 61 20 4c 61 64 2d 47 75 72 75 21		|Wow! You are now a Lad-Guru!|
+s_high_score_lad_master:
+	defb 01ch		;59e7	1c		|.|
+	defw 059eah		;59e8	ea 59		|.Y|
+	defm "You are a true Lad-Master!!!"		;59ea	59 6f 75 20 61 72 65 20 61 20 74 72 75 65 20 4c 61 64 2d 4d 61 73 74 65 72 21 21 21		|You are a true Lad-Master!!!|
+s_high_score_yahoo:
+	defb 03ah		;5a06	3a		|:|
+	defw 05a09h		;5a07	09 5a		|.Z|
+	defm "          YAHOO! YAHOO! YAHOO! YAHOO! YAHOO! "		;5a09	20 20 20 20 20 20 20 20 20 20 59 41 48 4f 4f 21 20 59 41 48 4f 4f 21 20 59 41 48 4f 4f 21 20 59 41 48 4f 4f 21 20 59 41 48 4f 4f 21 20		|          YAHOO! YAHOO! YAHOO! YAHOO! YAHOO! |
+	defm "YAHOO! YAHOO!"		;5a36	59 41 48 4f 4f 21 20 59 41 48 4f 4f 21		|YAHOO! YAHOO!|
+s_high_score_cheated:
+	defb 01fh		;5a43	1f		|.|
+	defw 05a46h		;5a44	46 5a		|FZ|
+	defm "YOU CHEATED!!!  You don't rate."		;5a46	59 4f 55 20 43 48 45 41 54 45 44 21 21 21 20 20 59 6f 75 20 64 6f 6e 27 74 20 72 61 74 65 2e		|YOU CHEATED!!!  You don't rate.|
+s_hooka:
+	defb 006h		;5a65	06		|.|
+	defw 05a68h		;5a66	68 5a		|hZ|
+	defm "Hooka!"		;5a68	48 6f 6f 6b 61 21		|Hooka!|
+s_actor_o:
+	defb 001h		;5a6e	01		|.|
+	defw 05a71h		;5a6f	71 5a		|qZ|
+	defm "o"		;5a71	6f		|o|
+s_actor_asterisk:
+	defb 001h		;5a72	01		|.|
+	defw 05a75h		;5a73	75 5a		|uZ|
+	defm "*"		;5a75	2a		|*|
+s_get_ready:
+	defb 00ah		;5a76	0a		|.|
+	defw 05a79h		;5a77	79 5a		|yZ|
+	defm "Get ready!"		;5a79	47 65 74 20 72 65 61 64 79 21		|Get ready!|
+s_bonus_time:
+	defb 00bh		;5a83	0b		|.|
+	defw 05a86h		;5a84	86 5a		|.Z|
+	defm "Bonus time "		;5a86	42 6f 6e 75 73 20 74 69 6d 65 20		|Bonus time |
+s_score:
+	defb 00bh		;5a91	0b		|.|
+	defw 05a94h		;5a92	94 5a		|.Z|
+	defm "     Score "		;5a94	20 20 20 20 20 53 63 6f 72 65 20		|     Score |
+s_level:
+	defb 00ah		;5a9f	0a		|.|
+	defw 05aa2h		;5aa0	a2 5a		|.Z|
+	defm "     Level"		;5aa2	20 20 20 20 20 4c 65 76 65 6c		|     Level|
+s_lads:
+	defb 004h		;5aac	04		|.|
+	defw 05aafh		;5aad	af 5a		|.Z|
+	defm "Lads"		;5aaf	4c 61 64 73		|Lads|
+s_type_return_for_menu:
+	defb 024h		;5ab3	24		|$|
+	defw 05ab6h		;5ab4	b6 5a		|.Z|
+	defm "Type RETURN to return to main menu: "		;5ab6	54 79 70 65 20 52 45 54 55 52 4e 20 74 6f 20 72 65 74 75 72 6e 20 74 6f 20 6d 61 69 6e 20 6d 65 6e 75 3a 20		|Type RETURN to return to main menu: |
+s_good_luck:
+	defb 00eh		;5ada	0e		|.|
+	defw 05addh		;5adb	dd 5a		|.Z|
+	defm "Good luck Lad."		;5add	47 6f 6f 64 20 6c 75 63 6b 20 4c 61 64 2e		|Good luck Lad.|
+s_pause_hint:
+	defb 021h		;5aeb	21		|!|
+	defw 05aeeh		;5aec	ee 5a		|.Z|
+	defm "Type an ESCape to pause the game."		;5aee	54 79 70 65 20 61 6e 20 45 53 43 61 70 65 20 74 6f 20 70 61 75 73 65 20 74 68 65 20 67 61 6d 65 2e		|Type an ESCape to pause the game.|
+s_instructions_bonus_remainder:
+	defb 02fh		;5b0f	2f		|/|
+	defw 05b12h		;5b10	12 5b		|.[|
+	defm "that are left when you have finished the level."		;5b12	74 68 61 74 20 61 72 65 20 6c 65 66 74 20 77 68 65 6e 20 79 6f 75 20 68 61 76 65 20 66 69 6e 69 73 68 65 64 20 74 68 65 20 6c 65 76 65 6c 2e		|that are left when you have finished the level.|
+s_instructions_statues:
+	defb 03dh		;5b41	3d		|=|
+	defw 05b44h		;5b42	44 5b		|D[|
+	defm "statues (shown as &).  You will receive the "		;5b44	73 74 61 74 75 65 73 20 28 73 68 6f 77 6e 20 61 73 20 26 29 2e 20 20 59 6f 75 20 77 69 6c 6c 20 72 65 63 65 69 76 65 20 74 68 65 20		|statues (shown as &).  You will receive the |
+	defm "bonus time points"		;5b70	62 6f 6e 75 73 20 74 69 6d 65 20 70 6f 69 6e 74 73		|bonus time points|
+s_instructions_gold:
+	defb 02eh		;5b81	2e		|.|
+	defw 05b84h		;5b82	84 5b		|.[|
+	defm "Extra points are awarded for touching the gold"		;5b84	45 78 74 72 61 20 70 6f 69 6e 74 73 20 61 72 65 20 61 77 61 72 64 65 64 20 66 6f 72 20 74 6f 75 63 68 69 6e 67 20 74 68 65 20 67 6f 6c 64		|Extra points are awarded for touching the gold|
+s_instructions_extra_lad:
+	defb 032h		;5bb2	32		|2|
+	defw 05bb5h		;5bb3	b5 5b		|.[|
+	defm "A new Lad will be awarded for every 10,000 "		;5bb5	41 20 6e 65 77 20 4c 61 64 20 77 69 6c 6c 20 62 65 20 61 77 61 72 64 65 64 20 66 6f 72 20 65 76 65 72 79 20 31 30 2c 30 30 30 20		|A new Lad will be awarded for every 10,000 |
+	defm "points."		;5be0	70 6f 69 6e 74 73 2e		|points.|
+s_instructions_bonus_expires:
+	defb 014h		;5be7	14		|.|
+	defw 05beah		;5be8	ea 5b		|.[|
+	defm "bonus time runs out."		;5bea	62 6f 6e 75 73 20 74 69 6d 65 20 72 75 6e 73 20 6f 75 74 2e		|bonus time runs out.|
+s_instructions_treasure:
+	defb 03ch		;5bfe	3c		|<|
+	defw 05c01h		;5bff	01 5c		|.\|
+	defm "You must find and grasp the treasure (shown as "		;5c01	59 6f 75 20 6d 75 73 74 20 66 69 6e 64 20 61 6e 64 20 67 72 61 73 70 20 74 68 65 20 74 72 65 61 73 75 72 65 20 28 73 68 6f 77 6e 20 61 73 20		|You must find and grasp the treasure (shown as |
+	defm "$) BEFORE the"		;5c30	24 29 20 42 45 46 4f 52 45 20 74 68 65		|$) BEFORE the|
+s_instructions_jump_and_rocks:
+	defb 040h		;5c3d	40		|@|
+	defw 05c40h		;5c3e	40 5c		|@\|
+	defm "typing SPACE.  But beware of the falling rocks "		;5c40	74 79 70 69 6e 67 20 53 50 41 43 45 2e 20 20 42 75 74 20 62 65 77 61 72 65 20 6f 66 20 74 68 65 20 66 61 6c 6c 69 6e 67 20 72 6f 63 6b 73 20		|typing SPACE.  But beware of the falling rocks |
+	defm "called Der rocks."		;5c6f	63 61 6c 6c 65 64 20 44 65 72 20 72 6f 63 6b 73 2e		|called Der rocks.|
+s_instructions_controls:
+	defb 03eh		;5c80	3e		|>|
+	defw 05c83h		;5c81	83 5c		|.\|
+	defm "You control Lad by typing the direction buttons "		;5c83	59 6f 75 20 63 6f 6e 74 72 6f 6c 20 4c 61 64 20 62 79 20 74 79 70 69 6e 67 20 74 68 65 20 64 69 72 65 63 74 69 6f 6e 20 62 75 74 74 6f 6e 73 20		|You control Lad by typing the direction buttons |
+	defm "and jumping by"		;5cb3	61 6e 64 20 6a 75 6d 70 69 6e 67 20 62 79		|and jumping by|
+s_instructions_riches:
+	defb 015h		;5cc1	15		|.|
+	defw 05cc4h		;5cc2	c4 5c		|.\|
+	defm "treasures and riches."		;5cc4	74 72 65 61 73 75 72 65 73 20 61 6e 64 20 72 69 63 68 65 73 2e		|treasures and riches.|
+s_instructions_corridors:
+	defb 03eh		;5cd9	3e		|>|
+	defw 05cdch		;5cda	dc 5c		|.\|
+	defm "dark corridors never before seen by human eyes "		;5cdc	64 61 72 6b 20 63 6f 72 72 69 64 6f 72 73 20 6e 65 76 65 72 20 62 65 66 6f 72 65 20 73 65 65 6e 20 62 79 20 68 75 6d 61 6e 20 65 79 65 73 20		|dark corridors never before seen by human eyes |
+	defm "and find hidden"		;5d0b	61 6e 64 20 66 69 6e 64 20 68 69 64 64 65 6e		|and find hidden|
+s_instructions_intro:
+	defb 03dh		;5d1a	3d		|=|
+	defw 05d1dh		;5d1b	1d 5d		|.]|
+	defm "You are a Lad trapped in a maze.  Your mission "		;5d1d	59 6f 75 20 61 72 65 20 61 20 4c 61 64 20 74 72 61 70 70 65 64 20 69 6e 20 61 20 6d 61 7a 65 2e 20 20 59 6f 75 72 20 6d 69 73 73 69 6f 6e 20		|You are a Lad trapped in a maze.  Your mission |
+	defm "is explore the"		;5d4c	69 73 20 65 78 70 6c 6f 72 65 20 74 68 65		|is explore the|
+s_key_l_lower:
+	defb 001h		;5d5a	01		|.|
+	defw 05d5dh		;5d5b	5d 5d		|]]|
+	defm "l"		;5d5d	6c		|l|
+s_key_l_upper:
+	defb 001h		;5d5e	01		|.|
+	defw 05d61h		;5d5f	61 5d		|a]|
+	defm "L"		;5d61	4c		|L|
+s_key_i_lower:
+	defb 001h		;5d62	01		|.|
+	defw 05d65h		;5d63	65 5d		|e]|
+	defm "i"		;5d65	69		|i|
+s_key_i_upper:
+	defb 001h		;5d66	01		|.|
+	defw 05d69h		;5d67	69 5d		|i]|
+	defm "I"		;5d69	49		|I|
+s_key_c_lower:
+	defb 001h		;5d6a	01		|.|
+	defw 05d6dh		;5d6b	6d 5d		|m]|
+	defm "c"		;5d6d	63		|c|
+s_key_c_upper:
+	defb 001h		;5d6e	01		|.|
+	defw 05d71h		;5d6f	71 5d		|q]|
+	defm "C"		;5d71	43		|C|
+s_key_p_lower:
+	defb 001h		;5d72	01		|.|
+	defw 05d75h		;5d73	75 5d		|u]|
+	defm "p"		;5d75	70		|p|
+s_key_p_upper:
+	defb 001h		;5d76	01		|.|
+	defw 05d79h		;5d77	79 5d		|y]|
+	defm "P"		;5d79	50		|P|
+s_exiting:
+	defb 00ah		;5d7a	0a		|.|
+	defw 05d7dh		;5d7b	7d 5d		|}]|
+	defm "Exiting..."		;5d7d	45 78 69 74 69 6e 67 2e 2e 2e		|Exiting...|
+s_key_e_lower:
+	defb 001h		;5d87	01		|.|
+	defw 05d8ah		;5d88	8a 5d		|.]|
+	defm "e"		;5d8a	65		|e|
+s_key_e_upper:
+	defb 001h		;5d8b	01		|.|
+	defw 05d8eh		;5d8c	8e 5d		|.]|
+	defm "E"		;5d8e	45		|E|
+s_insult_quiche:
+	defb 00fh		;5d8f	0f		|.|
+	defw 05d92h		;5d90	92 5d		|.]|
+	defm "You eat quiche!"		;5d92	59 6f 75 20 65 61 74 20 71 75 69 63 68 65 21		|You eat quiche!|
+s_insult_hurry:
+	defb 01fh		;5da1	1f		|.|
+	defw 05da4h		;5da2	a4 5d		|.]|
+	defm "Come on, we don't have all day!"		;5da4	43 6f 6d 65 20 6f 6e 2c 20 77 65 20 64 6f 6e 27 74 20 68 61 76 65 20 61 6c 6c 20 64 61 79 21		|Come on, we don't have all day!|
+s_menu_prompt:
+	defb 018h		;5dc3	18		|.|
+	defw 05dc6h		;5dc4	c6 5d		|.]|
+	defm "Enter one of the abo"		;5dc6	45 6e 74 65 72 20 6f 6e 65 20 6f 66 20 74 68 65 20 61 62 6f		|Enter one of the abo|
 l5ddah:
-	defb 076h		;5dda	76		v
-	defb 065h		;5ddb	65		e
-	defb 03ah		;5ddc	3a		:
-	defb 020h		;5ddd	20		 
-l5ddeh:
-	defb 00ch		;5dde	0c		.
-	defb 0e1h		;5ddf	e1		.
-	defb 05dh		;5de0	5d		]
-	defb 050h		;5de1	50		P
-	defb 06ch		;5de2	6c		l
-	defb 061h		;5de3	61		a
-	defb 079h		;5de4	79		y
-	defb 020h		;5de5	20		 
-	defb 073h		;5de6	73		s
-	defb 070h		;5de7	70		p
-	defb 065h		;5de8	65		e
-	defb 065h		;5de9	65		e
-	defb 064h		;5dea	64		d
-	defb 03ah		;5deb	3a		:
-	defb 020h		;5dec	20		 
-l5dedh:
-	defb 002h		;5ded	02		.
-	defb 0f0h		;5dee	f0		.
-	defb 05dh		;5def	5d		]
-	defb 030h		;5df0	30		0
-	defb 030h		;5df1	30		0
-l5df2h:
-	defb 00ch		;5df2	0c		.
-	defb 0f5h		;5df3	f5		.
-	defb 05dh		;5df4	5d		]
-	defb 04ch		;5df5	4c		L
-	defb 061h		;5df6	61		a
-	defb 073h		;5df7	73		s
-	defb 074h		;5df8	74		t
-	defb 020h		;5df9	20		 
-	defb 053h		;5dfa	53		S
-	defb 063h		;5dfb	63		c
-	defb 06fh		;5dfc	6f		o
-	defb 072h		;5dfd	72		r
-	defb 065h		;5dfe	65		e
-	defb 03ah		;5dff	3a		:
-	defb 020h		;5e00	20		 
-l5e01h:
-	defb 004h		;5e01	04		.
-	defb 004h		;5e02	04		.
-	defb 05eh		;5e03	5e		^
-	defb 030h		;5e04	30		0
-	defb 030h		;5e05	30		0
-	defb 020h		;5e06	20		 
-	defb 020h		;5e07	20		 
-l5e08h:
-	defb 002h		;5e08	02		.
-	defb 00bh		;5e09	0b		.
-	defb 05eh		;5e0a	5e		^
-	defb 029h		;5e0b	29		)
-	defb 020h		;5e0c	20		 
-l5e0dh:
-	defb 00bh		;5e0d	0b		.
-	defb 010h		;5e0e	10		.
-	defb 05eh		;5e0f	5e		^
-	defb 048h		;5e10	48		H
-	defb 069h		;5e11	69		i
-	defb 067h		;5e12	67		g
-	defb 068h		;5e13	68		h
-	defb 020h		;5e14	20		 
-	defb 053h		;5e15	53		S
-	defb 063h		;5e16	63		c
-	defb 06fh		;5e17	6f		o
-	defb 072h		;5e18	72		r
+	defm "ve: "		;5dda	76 65 3a 20		|ve: |
+s_play_speed:
+	defb 00ch		;5dde	0c		|.|
+	defw 05de1h		;5ddf	e1 5d		|.]|
+	defm "Play speed: "		;5de1	50 6c 61 79 20 73 70 65 65 64 3a 20		|Play speed: |
+s_zero_hundreds:
+	defb 002h		;5ded	02		|.|
+	defw 05df0h		;5dee	f0 5d		|.]|
+	defm "00"		;5df0	30 30		|00|
+s_last_score:
+	defb 00ch		;5df2	0c		|.|
+	defw 05df5h		;5df3	f5 5d		|.]|
+	defm "Last Score: "		;5df5	4c 61 73 74 20 53 63 6f 72 65 3a 20		|Last Score: |
+s_zero_hundreds_padded:
+	defb 004h		;5e01	04		|.|
+	defw 05e04h		;5e02	04 5e		|.^|
+	defm "00  "		;5e04	30 30 20 20		|00  |
+s_score_rank_suffix:
+	defb 002h		;5e08	02		|.|
+	defw 05e0bh		;5e09	0b 5e		|.^|
+	defm ") "		;5e0b	29 20		|) |
+s_high_scores_heading:
+	defb 00bh		;5e0d	0b		|.|
+	defw 05e10h		;5e0e	10 5e		|.^|
+	defm "High Scor"		;5e10	48 69 67 68 20 53 63 6f 72		|High Scor|
 l5e19h:
-	defb 065h		;5e19	65		e
-	defb 073h		;5e1a	73		s
-l5e1bh:
-	defb 00ch		;5e1b	0c		.
-	defb 01eh		;5e1c	1e		.
-	defb 05eh		;5e1d	5e		^
-	defb 04ah		;5e1e	4a		J
-	defb 075h		;5e1f	75		u
-	defb 06dh		;5e20	6d		m
-	defb 070h		;5e21	70		p
-	defb 020h		;5e22	20		 
-	defb 03dh		;5e23	3d		=
-	defb 020h		;5e24	20		 
-	defb 053h		;5e25	53		S
-	defb 070h		;5e26	70		p
-	defb 061h		;5e27	61		a
-	defb 063h		;5e28	63		c
-	defb 065h		;5e29	65		e
-l5e2ah:
-	defb 00ah		;5e2a	0a		.
-	defb 02dh		;5e2b	2d		-
-	defb 05eh		;5e2c	5e		^
-	defb 020h		;5e2d	20		 
-	defb 020h		;5e2e	20		 
-	defb 052h		;5e2f	52		R
-	defb 069h		;5e30	69		i
-	defb 067h		;5e31	67		g
-	defb 068h		;5e32	68		h
-	defb 074h		;5e33	74		t
-	defb 020h		;5e34	20		 
-	defb 03dh		;5e35	3d		=
-	defb 020h		;5e36	20		 
-l5e37h:
-	defb 009h		;5e37	09		.
-	defb 03ah		;5e38	3a		:
-	defb 05eh		;5e39	5e		^
-	defb 020h		;5e3a	20		 
-	defb 020h		;5e3b	20		 
-	defb 04ch		;5e3c	4c		L
-	defb 065h		;5e3d	65		e
-	defb 066h		;5e3e	66		f
-	defb 074h		;5e3f	74		t
-	defb 020h		;5e40	20		 
-	defb 03dh		;5e41	3d		=
-	defb 020h		;5e42	20		 
-l5e43h:
-	defb 009h		;5e43	09		.
-	defb 046h		;5e44	46		F
-	defb 05eh		;5e45	5e		^
-	defb 020h		;5e46	20		 
-	defb 020h		;5e47	20		 
-	defb 044h		;5e48	44		D
-	defb 06fh		;5e49	6f		o
-	defb 077h		;5e4a	77		w
-	defb 06eh		;5e4b	6e		n
-	defb 020h		;5e4c	20		 
-	defb 03dh		;5e4d	3d		=
-	defb 020h		;5e4e	20		 
-l5e4fh:
-	defb 005h		;5e4f	05		.
-	defb 052h		;5e50	52		R
-	defb 05eh		;5e51	5e		^
-	defb 055h		;5e52	55		U
-	defb 070h		;5e53	70		p
-	defb 020h		;5e54	20		 
-	defb 03dh		;5e55	3d		=
-	defb 020h		;5e56	20		 
-l5e57h:
-	defb 00fh		;5e57	0f		.
-	defb 05ah		;5e58	5a		Z
-	defb 05eh		;5e59	5e		^
-	defb 045h		;5e5a	45		E
-	defb 020h		;5e5b	20		 
-	defb 03dh		;5e5c	3d		=
-	defb 020h		;5e5d	20		 
+	defm "es"		;5e19	65 73		|es|
+s_jump_key_hint:
+	defb 00ch		;5e1b	0c		|.|
+	defw 05e1eh		;5e1c	1e 5e		|.^|
+	defm "Jump = Space"		;5e1e	4a 75 6d 70 20 3d 20 53 70 61 63 65		|Jump = Space|
+s_right_key_hint:
+	defb 00ah		;5e2a	0a		|.|
+	defw 05e2dh		;5e2b	2d 5e		|-^|
+	defm "  Right = "		;5e2d	20 20 52 69 67 68 74 20 3d 20		|  Right = |
+s_left_key_hint:
+	defb 009h		;5e37	09		|.|
+	defw 05e3ah		;5e38	3a 5e		|:^|
+	defm "  Left = "		;5e3a	20 20 4c 65 66 74 20 3d 20		|  Left = |
+s_down_key_hint:
+	defb 009h		;5e43	09		|.|
+	defw 05e46h		;5e44	46 5e		|F^|
+	defm "  Down = "		;5e46	20 20 44 6f 77 6e 20 3d 20		|  Down = |
+s_up_key_hint:
+	defb 005h		;5e4f	05		|.|
+	defw 05e52h		;5e50	52 5e		|R^|
+	defm "Up = "		;5e52	55 70 20 3d 20		|Up = |
+s_menu_exit_option:
+	defb 00fh		;5e57	0f		|.|
+	defw 05e5ah		;5e58	5a 5e		|Z^|
+	defm "E = "		;5e5a	45 20 3d 20		|E = |
 l5e5eh:
-	defb 045h		;5e5e	45		E
-	defb 078h		;5e5f	78		x
-	defb 069h		;5e60	69		i
-	defb 074h		;5e61	74		t
-	defb 020h		;5e62	20		 
-	defb 04ch		;5e63	4c		L
-	defb 061h		;5e64	61		a
-	defb 064h		;5e65	64		d
-	defb 064h		;5e66	64		d
-	defb 065h		;5e67	65		e
-	defb 072h		;5e68	72		r
-l5e69h:
-	defb 010h		;5e69	10		.
-	defb 06ch		;5e6a	6c		l
-	defb 05eh		;5e6b	5e		^
-	defb 049h		;5e6c	49		I
-	defb 020h		;5e6d	20		 
-	defb 03dh		;5e6e	3d		=
-	defb 020h		;5e6f	20		 
-	defb 049h		;5e70	49		I
-	defb 06eh		;5e71	6e		n
-	defb 073h		;5e72	73		s
-	defb 074h		;5e73	74		t
-	defb 072h		;5e74	72		r
-	defb 075h		;5e75	75		u
-	defb 063h		;5e76	63		c
-	defb 074h		;5e77	74		t
-	defb 069h		;5e78	69		i
-	defb 06fh		;5e79	6f		o
-	defb 06eh		;5e7a	6e		n
-	defb 073h		;5e7b	73		s
-l5e7ch:
-	defb 014h		;5e7c	14		.
-	defb 07fh		;5e7d	7f		.
-	defb 05eh		;5e7e	5e		^
-	defb 043h		;5e7f	43		C
-	defb 020h		;5e80	20		 
-	defb 03dh		;5e81	3d		=
-	defb 020h		;5e82	20		 
-	defb 043h		;5e83	43		C
-	defb 06fh		;5e84	6f		o
-	defb 06eh		;5e85	6e		n
-	defb 066h		;5e86	66		f
-	defb 069h		;5e87	69		i
-	defb 067h		;5e88	67		g
-	defb 075h		;5e89	75		u
-	defb 072h		;5e8a	72		r
-	defb 065h		;5e8b	65		e
-	defb 020h		;5e8c	20		 
-	defb 04ch		;5e8d	4c		L
-	defb 061h		;5e8e	61		a
-	defb 064h		;5e8f	64		d
-	defb 064h		;5e90	64		d
-	defb 065h		;5e91	65		e
-	defb 072h		;5e92	72		r
-l5e93h:
-	defb 01eh		;5e93	1e		.
-	defb 096h		;5e94	96		.
-	defb 05eh		;5e95	5e		^
-	defb 04ch		;5e96	4c		L
-	defb 020h		;5e97	20		 
-	defb 03dh		;5e98	3d		=
-	defb 020h		;5e99	20		 
-	defb 043h		;5e9a	43		C
-	defb 068h		;5e9b	68		h
-	defb 061h		;5e9c	61		a
-	defb 06eh		;5e9d	6e		n
-	defb 067h		;5e9e	67		g
-	defb 065h		;5e9f	65		e
-	defb 020h		;5ea0	20		 
-	defb 06ch		;5ea1	6c		l
-	defb 065h		;5ea2	65		e
-	defb 076h		;5ea3	76		v
-	defb 065h		;5ea4	65		e
-	defb 06ch		;5ea5	6c		l
-	defb 020h		;5ea6	20		 
-	defb 06fh		;5ea7	6f		o
-	defb 066h		;5ea8	66		f
-	defb 020h		;5ea9	20		 
-	defb 064h		;5eaa	64		d
-	defb 069h		;5eab	69		i
-	defb 066h		;5eac	66		f
-	defb 066h		;5ead	66		f
-	defb 069h		;5eae	69		i
-	defb 063h		;5eaf	63		c
-	defb 075h		;5eb0	75		u
-	defb 06ch		;5eb1	6c		l
-	defb 074h		;5eb2	74		t
-	defb 079h		;5eb3	79		y
-l5eb4h:
-	defb 00dh		;5eb4	0d		.
-	defb 0b7h		;5eb5	b7		.
-	defb 05eh		;5eb6	5e		^
-	defb 050h		;5eb7	50		P
-	defb 020h		;5eb8	20		 
-	defb 03dh		;5eb9	3d		=
-	defb 020h		;5eba	20		 
-	defb 050h		;5ebb	50		P
-	defb 06ch		;5ebc	6c		l
-	defb 061h		;5ebd	61		a
-	defb 079h		;5ebe	79		y
-	defb 020h		;5ebf	20		 
-	defb 067h		;5ec0	67		g
-	defb 061h		;5ec1	61		a
-	defb 06dh		;5ec2	6d		m
-	defb 065h		;5ec3	65		e
-l5ec4h:
-	defb 00ah		;5ec4	0a		.
-	defb 0c7h		;5ec5	c7		.
-	defb 05eh		;5ec6	5e		^
-	defb 054h		;5ec7	54		T
-	defb 065h		;5ec8	65		e
-	defb 072h		;5ec9	72		r
-	defb 06dh		;5eca	6d		m
-	defb 069h		;5ecb	69		i
-	defb 06eh		;5ecc	6e		n
-	defb 061h		;5ecd	61		a
-	defb 06ch		;5ece	6c		l
-	defb 03ah		;5ecf	3a		:
-	defb 020h		;5ed0	20		 
-l5ed1h:
-	defb 00ah		;5ed1	0a		.
-	defb 0d4h		;5ed2	d4		.
-	defb 05eh		;5ed3	5e		^
-	defb 056h		;5ed4	56		V
-	defb 065h		;5ed5	65		e
-	defb 072h		;5ed6	72		r
-	defb 073h		;5ed7	73		s
-	defb 069h		;5ed8	69		i
-	defb 06fh		;5ed9	6f		o
-	defb 06eh		;5eda	6e		n
-	defb 020h		;5edb	20		 
-	defb 03ah		;5edc	3a		:
-	defb 020h		;5edd	20		 
-l5edeh:
-	defb 017h		;5ede	17		.
-	defb 0e1h		;5edf	e1		.
-	defb 05eh		;5ee0	5e		^
-	defb 028h		;5ee1	28		(
-	defb 063h		;5ee2	63		c
-	defb 029h		;5ee3	29		)
-	defb 020h		;5ee4	20		 
-	defb 031h		;5ee5	31		1
-	defb 039h		;5ee6	39		9
-	defb 038h		;5ee7	38		8
-	defb 032h		;5ee8	32		2
-	defb 020h		;5ee9	20		 
-	defb 059h		;5eea	59		Y
-	defb 061h		;5eeb	61		a
-	defb 068h		;5eec	68		h
-	defb 06fh		;5eed	6f		o
-	defb 06fh		;5eee	6f		o
-	defb 020h		;5eef	20		 
-	defb 053h		;5ef0	53		S
-	defb 06fh		;5ef1	6f		o
-	defb 066h		;5ef2	66		f
-	defb 074h		;5ef3	74		t
-	defb 077h		;5ef4	77		w
-	defb 061h		;5ef5	61		a
-	defb 072h		;5ef6	72		r
-	defb 065h		;5ef7	65		e
-l5ef8h:
-	defb 02fh		;5ef8	2f		/
-	defb 0fbh		;5ef9	fb		.
-	defb 05eh		;5efa	5e		^
-	defb 04ch		;5efb	4c		L
-	defb 04ch		;5efc	4c		L
-	defb 04ch		;5efd	4c		L
-	defb 04ch		;5efe	4c		L
-	defb 04ch		;5eff	4c		L
-	defb 04ch		;5f00	4c		L
-	defb 04ch		;5f01	4c		L
-	defb 04ch		;5f02	4c		L
-	defb 020h		;5f03	20		 
-	defb 020h		;5f04	20		 
-	defb 020h		;5f05	20		 
-	defb 061h		;5f06	61		a
-	defb 061h		;5f07	61		a
-	defb 061h		;5f08	61		a
-	defb 020h		;5f09	20		 
-	defb 061h		;5f0a	61		a
-	defb 061h		;5f0b	61		a
-	defb 020h		;5f0c	20		 
-	defb 020h		;5f0d	20		 
-	defb 020h		;5f0e	20		 
-	defb 064h		;5f0f	64		d
-	defb 064h		;5f10	64		d
-	defb 064h		;5f11	64		d
-	defb 020h		;5f12	20		 
-	defb 064h		;5f13	64		d
-	defb 064h		;5f14	64		d
-	defb 020h		;5f15	20		 
-	defb 020h		;5f16	20		 
-	defb 020h		;5f17	20		 
-	defb 064h		;5f18	64		d
-	defb 064h		;5f19	64		d
-	defb 064h		;5f1a	64		d
-	defb 020h		;5f1b	20		 
-	defb 064h		;5f1c	64		d
-	defb 064h		;5f1d	64		d
-	defb 020h		;5f1e	20		 
-	defb 020h		;5f1f	20		 
-	defb 020h		;5f20	20		 
-	defb 065h		;5f21	65		e
-	defb 065h		;5f22	65		e
-	defb 065h		;5f23	65		e
-	defb 065h		;5f24	65		e
-	defb 020h		;5f25	20		 
-	defb 020h		;5f26	20		 
-	defb 020h		;5f27	20		 
-	defb 072h		;5f28	72		r
-	defb 072h		;5f29	72		r
-l5f2ah:
-	defb 02fh		;5f2a	2f		/
-	defb 02dh		;5f2b	2d		-
-	defb 05fh		;5f2c	5f		_
-	defb 04ch		;5f2d	4c		L
-	defb 04ch		;5f2e	4c		L
-	defb 020h		;5f2f	20		 
-	defb 020h		;5f30	20		 
-	defb 020h		;5f31	20		 
-	defb 020h		;5f32	20		 
-	defb 020h		;5f33	20		 
-	defb 020h		;5f34	20		 
-	defb 020h		;5f35	20		 
-	defb 020h		;5f36	20		 
-	defb 061h		;5f37	61		a
-	defb 061h		;5f38	61		a
-	defb 020h		;5f39	20		 
-	defb 020h		;5f3a	20		 
-	defb 061h		;5f3b	61		a
-	defb 061h		;5f3c	61		a
-	defb 020h		;5f3d	20		 
-	defb 020h		;5f3e	20		 
-	defb 020h		;5f3f	20		 
-	defb 064h		;5f40	64		d
-	defb 064h		;5f41	64		d
-	defb 020h		;5f42	20		 
-	defb 020h		;5f43	20		 
-	defb 064h		;5f44	64		d
-	defb 064h		;5f45	64		d
-	defb 020h		;5f46	20		 
-	defb 020h		;5f47	20		 
-	defb 020h		;5f48	20		 
-	defb 064h		;5f49	64		d
-	defb 064h		;5f4a	64		d
-	defb 020h		;5f4b	20		 
-	defb 020h		;5f4c	20		 
-	defb 064h		;5f4d	64		d
-	defb 064h		;5f4e	64		d
-	defb 020h		;5f4f	20		 
-	defb 020h		;5f50	20		 
-	defb 020h		;5f51	20		 
-	defb 065h		;5f52	65		e
-	defb 065h		;5f53	65		e
-	defb 020h		;5f54	20		 
-	defb 020h		;5f55	20		 
-	defb 020h		;5f56	20		 
-	defb 020h		;5f57	20		 
-	defb 020h		;5f58	20		 
-	defb 020h		;5f59	20		 
-	defb 072h		;5f5a	72		r
-	defb 072h		;5f5b	72		r
-l5f5ch:
-	defb 02fh		;5f5c	2f		/
-	defb 05fh		;5f5d	5f		_
-	defb 05fh		;5f5e	5f		_
-	defb 04ch		;5f5f	4c		L
-	defb 04ch		;5f60	4c		L
-	defb 020h		;5f61	20		 
-	defb 020h		;5f62	20		 
-	defb 020h		;5f63	20		 
-	defb 020h		;5f64	20		 
-	defb 020h		;5f65	20		 
-	defb 020h		;5f66	20		 
-	defb 020h		;5f67	20		 
-	defb 020h		;5f68	20		 
-	defb 061h		;5f69	61		a
-	defb 061h		;5f6a	61		a
-	defb 020h		;5f6b	20		 
-	defb 020h		;5f6c	20		 
-	defb 061h		;5f6d	61		a
-	defb 061h		;5f6e	61		a
-	defb 020h		;5f6f	20		 
-	defb 020h		;5f70	20		 
-	defb 020h		;5f71	20		 
-	defb 064h		;5f72	64		d
-	defb 064h		;5f73	64		d
-	defb 020h		;5f74	20		 
-	defb 020h		;5f75	20		 
-	defb 064h		;5f76	64		d
-	defb 064h		;5f77	64		d
-	defb 020h		;5f78	20		 
-	defb 020h		;5f79	20		 
-	defb 020h		;5f7a	20		 
-	defb 064h		;5f7b	64		d
-	defb 064h		;5f7c	64		d
-	defb 020h		;5f7d	20		 
-	defb 020h		;5f7e	20		 
-	defb 064h		;5f7f	64		d
-	defb 064h		;5f80	64		d
-	defb 020h		;5f81	20		 
-	defb 020h		;5f82	20		 
-	defb 020h		;5f83	20		 
-	defb 065h		;5f84	65		e
-	defb 065h		;5f85	65		e
-	defb 065h		;5f86	65		e
-	defb 065h		;5f87	65		e
-	defb 065h		;5f88	65		e
-	defb 065h		;5f89	65		e
-	defb 020h		;5f8a	20		 
-	defb 020h		;5f8b	20		 
-	defb 072h		;5f8c	72		r
-	defb 072h		;5f8d	72		r
-l5f8eh:
-	defb 035h		;5f8e	35		5
-	defb 091h		;5f8f	91		.
-	defb 05fh		;5f90	5f		_
-	defb 04ch		;5f91	4c		L
-	defb 04ch		;5f92	4c		L
-	defb 020h		;5f93	20		 
-	defb 020h		;5f94	20		 
-	defb 020h		;5f95	20		 
-	defb 020h		;5f96	20		 
-	defb 020h		;5f97	20		 
-	defb 020h		;5f98	20		 
-	defb 020h		;5f99	20		 
-	defb 020h		;5f9a	20		 
-	defb 061h		;5f9b	61		a
-	defb 061h		;5f9c	61		a
-	defb 020h		;5f9d	20		 
-	defb 020h		;5f9e	20		 
-	defb 061h		;5f9f	61		a
-	defb 061h		;5fa0	61		a
-	defb 020h		;5fa1	20		 
-	defb 020h		;5fa2	20		 
-	defb 020h		;5fa3	20		 
-	defb 064h		;5fa4	64		d
-	defb 064h		;5fa5	64		d
-	defb 020h		;5fa6	20		 
-	defb 020h		;5fa7	20		 
-	defb 064h		;5fa8	64		d
+	defm "Exit Ladder"		;5e5e	45 78 69 74 20 4c 61 64 64 65 72		|Exit Ladder|
+s_menu_instructions_option:
+	defb 010h		;5e69	10		|.|
+	defw 05e6ch		;5e6a	6c 5e		|l^|
+	defm "I = Instructions"		;5e6c	49 20 3d 20 49 6e 73 74 72 75 63 74 69 6f 6e 73		|I = Instructions|
+s_menu_configure_option:
+	defb 014h		;5e7c	14		|.|
+	defw 05e7fh		;5e7d	7f 5e		|.^|
+	defm "C = Configure Ladder"		;5e7f	43 20 3d 20 43 6f 6e 66 69 67 75 72 65 20 4c 61 64 64 65 72		|C = Configure Ladder|
+s_menu_difficulty_option:
+	defb 01eh		;5e93	1e		|.|
+	defw 05e96h		;5e94	96 5e		|.^|
+	defm "L = Change level of difficulty"		;5e96	4c 20 3d 20 43 68 61 6e 67 65 20 6c 65 76 65 6c 20 6f 66 20 64 69 66 66 69 63 75 6c 74 79		|L = Change level of difficulty|
+s_menu_play_option:
+	defb 00dh		;5eb4	0d		|.|
+	defw 05eb7h		;5eb5	b7 5e		|.^|
+	defm "P = Play game"		;5eb7	50 20 3d 20 50 6c 61 79 20 67 61 6d 65		|P = Play game|
+s_terminal_heading:
+	defb 00ah		;5ec4	0a		|.|
+	defw 05ec7h		;5ec5	c7 5e		|.^|
+	defm "Terminal: "		;5ec7	54 65 72 6d 69 6e 61 6c 3a 20		|Terminal: |
+s_version_heading:
+	defb 00ah		;5ed1	0a		|.|
+	defw 05ed4h		;5ed2	d4 5e		|.^|
+	defm "Version : "		;5ed4	56 65 72 73 69 6f 6e 20 3a 20		|Version : |
+s_copyright:
+	defb 017h		;5ede	17		|.|
+	defw 05ee1h		;5edf	e1 5e		|.^|
+	defm "(c) 1982 Yahoo Software"		;5ee1	28 63 29 20 31 39 38 32 20 59 61 68 6f 6f 20 53 6f 66 74 77 61 72 65		|(c) 1982 Yahoo Software|
+s_menu_logo_row_6:
+	defb 02fh		;5ef8	2f		|/|
+	defw 05efbh		;5ef9	fb 5e		|.^|
+	defm "LLLLLLLL   aaa aa   ddd dd   ddd dd   eeee   rr"		;5efb	4c 4c 4c 4c 4c 4c 4c 4c 20 20 20 61 61 61 20 61 61 20 20 20 64 64 64 20 64 64 20 20 20 64 64 64 20 64 64 20 20 20 65 65 65 65 20 20 20 72 72		|LLLLLLLL   aaa aa   ddd dd   ddd dd   eeee   rr|
+s_menu_logo_row_5:
+	defb 02fh		;5f2a	2f		|/|
+	defw 05f2dh		;5f2b	2d 5f		|-_|
+	defm "LL        aa  aa   dd  dd   dd  dd   ee      rr"		;5f2d	4c 4c 20 20 20 20 20 20 20 20 61 61 20 20 61 61 20 20 20 64 64 20 20 64 64 20 20 20 64 64 20 20 64 64 20 20 20 65 65 20 20 20 20 20 20 72 72		|LL        aa  aa   dd  dd   dd  dd   ee      rr|
+s_menu_logo_row_4:
+	defb 02fh		;5f5c	2f		|/|
+	defw 05f5fh		;5f5d	5f 5f		|__|
+	defm "LL        aa  aa   dd  dd   dd  dd   eeeeee  rr"		;5f5f	4c 4c 20 20 20 20 20 20 20 20 61 61 20 20 61 61 20 20 20 64 64 20 20 64 64 20 20 20 64 64 20 20 64 64 20 20 20 65 65 65 65 65 65 20 20 72 72		|LL        aa  aa   dd  dd   dd  dd   eeeeee  rr|
+s_menu_logo_row_3:
+	defb 035h		;5f8e	35		|5|
+	defw 05f91h		;5f8f	91 5f		|._|
+	defm "LL        aa  aa   dd  d"		;5f91	4c 4c 20 20 20 20 20 20 20 20 61 61 20 20 61 61 20 20 20 64 64 20 20 64		|LL        aa  aa   dd  d|
 l5fa9h:
-	defb 064h		;5fa9	64		d
-	defb 020h		;5faa	20		 
-	defb 020h		;5fab	20		 
-	defb 020h		;5fac	20		 
-	defb 064h		;5fad	64		d
-	defb 064h		;5fae	64		d
-	defb 020h		;5faf	20		 
-	defb 020h		;5fb0	20		 
-	defb 064h		;5fb1	64		d
-	defb 064h		;5fb2	64		d
-	defb 020h		;5fb3	20		 
-	defb 020h		;5fb4	20		 
-	defb 020h		;5fb5	20		 
-	defb 065h		;5fb6	65		e
-	defb 065h		;5fb7	65		e
-	defb 020h		;5fb8	20		 
-	defb 020h		;5fb9	20		 
-	defb 065h		;5fba	65		e
-	defb 065h		;5fbb	65		e
-	defb 020h		;5fbc	20		 
-	defb 020h		;5fbd	20		 
-	defb 072h		;5fbe	72		r
-	defb 072h		;5fbf	72		r
-	defb 020h		;5fc0	20		 
-	defb 020h		;5fc1	20		 
-	defb 020h		;5fc2	20		 
-	defb 020h		;5fc3	20		 
-	defb 072h		;5fc4	72		r
-	defb 072h		;5fc5	72		r
-l5fc6h:
-	defb 034h		;5fc6	34		4
-	defb 0c9h		;5fc7	c9		.
-	defb 05fh		;5fc8	5f		_
-	defb 04ch		;5fc9	4c		L
-	defb 04ch		;5fca	4c		L
-	defb 020h		;5fcb	20		 
-	defb 020h		;5fcc	20		 
-	defb 020h		;5fcd	20		 
-	defb 020h		;5fce	20		 
-	defb 020h		;5fcf	20		 
-	defb 020h		;5fd0	20		 
-	defb 020h		;5fd1	20		 
-	defb 020h		;5fd2	20		 
-	defb 020h		;5fd3	20		 
-	defb 061h		;5fd4	61		a
-	defb 061h		;5fd5	61		a
-	defb 061h		;5fd6	61		a
-	defb 061h		;5fd7	61		a
-	defb 020h		;5fd8	20		 
-	defb 020h		;5fd9	20		 
-	defb 020h		;5fda	20		 
-	defb 020h		;5fdb	20		 
-	defb 020h		;5fdc	20		 
-	defb 064h		;5fdd	64		d
-	defb 064h		;5fde	64		d
-	defb 064h		;5fdf	64		d
-	defb 064h		;5fe0	64		d
-	defb 064h		;5fe1	64		d
-	defb 020h		;5fe2	20		 
-	defb 020h		;5fe3	20		 
-	defb 020h		;5fe4	20		 
-	defb 020h		;5fe5	20		 
-	defb 064h		;5fe6	64		d
-	defb 064h		;5fe7	64		d
-	defb 064h		;5fe8	64		d
-	defb 064h		;5fe9	64		d
-	defb 064h		;5fea	64		d
-	defb 020h		;5feb	20		 
-	defb 020h		;5fec	20		 
-	defb 020h		;5fed	20		 
-	defb 020h		;5fee	20		 
-	defb 065h		;5fef	65		e
-	defb 065h		;5ff0	65		e
-	defb 065h		;5ff1	65		e
-	defb 065h		;5ff2	65		e
-	defb 020h		;5ff3	20		 
-	defb 020h		;5ff4	20		 
-	defb 020h		;5ff5	20		 
-	defb 072h		;5ff6	72		r
-	defb 072h		;5ff7	72		r
-	defb 072h		;5ff8	72		r
-	defb 072h		;5ff9	72		r
-	defb 072h		;5ffa	72		r
-	defb 072h		;5ffb	72		r
-	defb 072h		;5ffc	72		r
-l5ffdh:
-	defb 022h		;5ffd	22		"
-	defb 000h		;5ffe	00		.
-	defb 060h		;5fff	60		`
-	defb 04ch		;6000	4c		L
-	defb 04ch		;6001	4c		L
-	defb 020h		;6002	20		 
-	defb 020h		;6003	20		 
-	defb 020h		;6004	20		 
-	defb 020h		;6005	20		 
-	defb 020h		;6006	20		 
-	defb 020h		;6007	20		 
-	defb 020h		;6008	20		 
-	defb 020h		;6009	20		 
-	defb 020h		;600a	20		 
-	defb 020h		;600b	20		 
-	defb 020h		;600c	20		 
-	defb 020h		;600d	20		 
-	defb 020h		;600e	20		 
-	defb 020h		;600f	20		 
-	defb 020h		;6010	20		 
-	defb 020h		;6011	20		 
-	defb 020h		;6012	20		 
-	defb 020h		;6013	20		 
-	defb 020h		;6014	20		 
-	defb 020h		;6015	20		 
-	defb 020h		;6016	20		 
-	defb 064h		;6017	64		d
-	defb 064h		;6018	64		d
-	defb 020h		;6019	20		 
-	defb 020h		;601a	20		 
-	defb 020h		;601b	20		 
-	defb 020h		;601c	20		 
-	defb 020h		;601d	20		 
-	defb 020h		;601e	20		 
-	defb 020h		;601f	20		 
-	defb 064h		;6020	64		d
-	defb 064h		;6021	64		d
-l6022h:
-	defb 009h		;6022	09		.
-	defb 025h		;6023	25		%
-	defb 060h		;6024	60		`
-	defb 050h		;6025	50		P
-	defb 052h		;6026	52		R
-	defb 04fh		;6027	4f		O
-	defb 020h		;6028	20		 
-	defb 053h		;6029	53		S
-	defb 043h		;602a	43		C
-	defb 04fh		;602b	4f		O
-	defb 052h		;602c	52		R
-	defb 045h		;602d	45		E
-l602eh:
-	defb 007h		;602e	07		.
-	defb 031h		;602f	31		1
-	defb 060h		;6030	60		`
-	defb 050h		;6031	50		P
-	defb 052h		;6032	52		R
-	defb 04fh		;6033	4f		O
-	defb 020h		;6034	20		 
-	defb 04dh		;6035	4d		M
-	defb 045h		;6036	45		E
-	defb 04eh		;6037	4e		N
-l6038h:
-	defb 009h		;6038	09		.
-	defb 03bh		;6039	3b		;
-	defb 060h		;603a	60		`
-	defb 050h		;603b	50		P
-	defb 052h		;603c	52		R
-	defb 04fh		;603d	4f		O
-	defb 020h		;603e	20		 
-	defb 04ch		;603f	4c		L
-	defb 045h		;6040	45		E
-	defb 056h		;6041	56		V
-	defb 045h		;6042	45		E
-	defb 04ch		;6043	4c		L
+	defm "d   dd  dd   ee  ee  rr    rr"		;5fa9	64 20 20 20 64 64 20 20 64 64 20 20 20 65 65 20 20 65 65 20 20 72 72 20 20 20 20 72 72		|d   dd  dd   ee  ee  rr    rr|
+s_menu_logo_row_2:
+	defb 034h		;5fc6	34		|4|
+	defw 05fc9h		;5fc7	c9 5f		|._|
+	defm "LL         aaaa     ddddd    ddddd    eeee   "		;5fc9	4c 4c 20 20 20 20 20 20 20 20 20 61 61 61 61 20 20 20 20 20 64 64 64 64 64 20 20 20 20 64 64 64 64 64 20 20 20 20 65 65 65 65 20 20 20		|LL         aaaa     ddddd    ddddd    eeee   |
+	defm "rrrrrrr"		;5ff6	72 72 72 72 72 72 72		|rrrrrrr|
+s_menu_logo_row_1:
+	defb 022h		;5ffd	22		|"|
+	defw 06000h		;5ffe	00 60		|.`|
+	defm "LL                     dd       dd"		;6000	4c 4c 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 64 64 20 20 20 20 20 20 20 64 64		|LL                     dd       dd|
+s_terminal_pro_score:
+	defb 009h		;6022	09		|.|
+	defw 06025h		;6023	25 60		|%`|
+	defm "PRO SCORE"		;6025	50 52 4f 20 53 43 4f 52 45		|PRO SCORE|
+s_terminal_pro_men:
+	defb 007h		;602e	07		|.|
+	defw 06031h		;602f	31 60		|1`|
+	defm "PRO MEN"		;6031	50 52 4f 20 4d 45 4e		|PRO MEN|
+s_terminal_pro_level:
+	defb 009h		;6038	09		|.|
+	defw 0603bh		;6039	3b 60		|;`|
+	defm "PRO LEVEL"		;603b	50 52 4f 20 4c 45 56 45 4c		|PRO LEVEL|
 l6044h:
 	defb 000h		;6044	00		.
 	defb 047h		;6045	47		G
 	defb 060h		;6046	60		`
-l6047h:
-	defb 001h		;6047	01		.
-	defb 04ah		;6048	4a		J
-	defb 060h		;6049	60		`
-	defb 059h		;604a	59		Y
+s_yes:
+	defb 001h		;6047	01		|.|
+	defw 0604ah		;6048	4a 60		|J`|
+	defm "Y"		;604a	59		|Y|
 l604bh:
 	defb 000h		;604b	00		.
 	defb 04eh		;604c	4e		N
 	defb 060h		;604d	60		`
-l604eh:
-	defb 007h		;604e	07		.
-	defb 051h		;604f	51		Q
-	defb 060h		;6050	60		`
-	defb 04ch		;6051	4c		L
-	defb 041h		;6052	41		A
-	defb 044h		;6053	44		D
-	defb 043h		;6054	43		C
-	defb 04fh		;6055	4f		O
-	defb 04eh		;6056	4e		N
-	defb 046h		;6057	46		F
-l6058h:
-	defb 023h		;6058	23		#
-	defb 05bh		;6059	5b		[
-	defb 060h		;605a	60		`
-	defb 04ch		;605b	4c		L
-	defb 069h		;605c	69		i
-	defb 06eh		;605d	6e		n
-	defb 06bh		;605e	6b		k
-	defb 069h		;605f	69		i
-	defb 06eh		;6060	6e		n
-	defb 067h		;6061	67		g
-	defb 020h		;6062	20		 
-	defb 074h		;6063	74		t
-	defb 06fh		;6064	6f		o
-	defb 020h		;6065	20		 
-	defb 063h		;6066	63		c
-	defb 06fh		;6067	6f		o
-	defb 06eh		;6068	6e		n
-	defb 066h		;6069	66		f
-	defb 069h		;606a	69		i
-	defb 067h		;606b	67		g
-	defb 075h		;606c	75		u
-	defb 072h		;606d	72		r
-	defb 061h		;606e	61		a
-	defb 074h		;606f	74		t
-	defb 069h		;6070	69		i
-	defb 06fh		;6071	6f		o
-	defb 06eh		;6072	6e		n
-	defb 020h		;6073	20		 
-	defb 070h		;6074	70		p
-	defb 072h		;6075	72		r
-	defb 06fh		;6076	6f		o
-	defb 067h		;6077	67		g
-	defb 072h		;6078	72		r
-	defb 061h		;6079	61		a
-	defb 06dh		;607a	6d		m
-	defb 02eh		;607b	2e		.
-	defb 02eh		;607c	2e		.
-	defb 02eh		;607d	2e		.
-l607eh:
-	defb 024h		;607e	24		$
-	defb 081h		;607f	81		.
-	defb 060h		;6080	60		`
-	defb 04ch		;6081	4c		L
-	defb 061h		;6082	61		a
-	defb 064h		;6083	64		d
-	defb 064h		;6084	64		d
-	defb 065h		;6085	65		e
-	defb 072h		;6086	72		r
-	defb 020h		;6087	20		 
-	defb 063h		;6088	63		c
-	defb 06fh		;6089	6f		o
-	defb 06eh		;608a	6e		n
-	defb 066h		;608b	66		f
-	defb 069h		;608c	69		i
-	defb 067h		;608d	67		g
-	defb 075h		;608e	75		u
-	defb 072h		;608f	72		r
-	defb 061h		;6090	61		a
-	defb 074h		;6091	74		t
-	defb 069h		;6092	69		i
-	defb 06fh		;6093	6f		o
-	defb 06eh		;6094	6e		n
-	defb 020h		;6095	20		 
-	defb 070h		;6096	70		p
-	defb 072h		;6097	72		r
-	defb 06fh		;6098	6f		o
-	defb 067h		;6099	67		g
-	defb 072h		;609a	72		r
-	defb 061h		;609b	61		a
-	defb 06dh		;609c	6d		m
-	defb 020h		;609d	20		 
-	defb 06dh		;609e	6d		m
-	defb 069h		;609f	69		i
-	defb 073h		;60a0	73		s
-	defb 073h		;60a1	73		s
-	defb 069h		;60a2	69		i
-	defb 06eh		;60a3	6e		n
-	defb 067h		;60a4	67		g
-l60a5h:
-	defb 01dh		;60a5	1d		.
-	defb 0a8h		;60a6	a8		.
-	defb 060h		;60a7	60		`
-	defb 055h		;60a8	55		U
-	defb 06eh		;60a9	6e		n
-	defb 061h		;60aa	61		a
-	defb 062h		;60ab	62		b
-	defb 06ch		;60ac	6c		l
-	defb 065h		;60ad	65		e
-	defb 020h		;60ae	20		 
-	defb 074h		;60af	74		t
-	defb 06fh		;60b0	6f		o
-	defb 020h		;60b1	20		 
-	defb 06ch		;60b2	6c		l
-	defb 069h		;60b3	69		i
-	defb 06eh		;60b4	6e		n
-	defb 06bh		;60b5	6b		k
-	defb 020h		;60b6	20		 
-	defb 074h		;60b7	74		t
-	defb 06fh		;60b8	6f		o
-	defb 020h		;60b9	20		 
-	defb 04ch		;60ba	4c		L
-	defb 041h		;60bb	41		A
-	defb 044h		;60bc	44		D
-	defb 043h		;60bd	43		C
-	defb 04fh		;60be	4f		O
-	defb 04eh		;60bf	4e		N
-	defb 046h		;60c0	46		F
-	defb 02eh		;60c1	2e		.
-	defb 043h		;60c2	43		C
-	defb 04fh		;60c3	4f		O
-	defb 04dh		;60c4	4d		M
-l60c5h:
-	defb 00bh		;60c5	0b		.
-	defb 0c8h		;60c6	c8		.
-	defb 060h		;60c7	60		`
-	defb 04ch		;60c8	4c		L
-	defb 041h		;60c9	41		A
-	defb 044h		;60ca	44		D
-	defb 043h		;60cb	43		C
-	defb 04fh		;60cc	4f		O
-	defb 04eh		;60cd	4e		N
-	defb 046h		;60ce	46		F
-	defb 02eh		;60cf	2e		.
-	defb 043h		;60d0	43		C
-	defb 04fh		;60d1	4f		O
-	defb 04dh		;60d2	4d		M
-l60d3h:
-	defb 015h		;60d3	15		.
-	defb 0d6h		;60d4	d6		.
-	defb 060h		;60d5	60		`
-	defb 04ch		;60d6	4c		L
-	defb 061h		;60d7	61		a
-	defb 064h		;60d8	64		d
-	defb 064h		;60d9	64		d
-	defb 065h		;60da	65		e
-	defb 072h		;60db	72		r
-	defb 020h		;60dc	20		 
-	defb 06eh		;60dd	6e		n
-	defb 06fh		;60de	6f		o
-	defb 074h		;60df	74		t
-	defb 020h		;60e0	20		 
-	defb 063h		;60e1	63		c
-	defb 06fh		;60e2	6f		o
-	defb 06eh		;60e3	6e		n
-	defb 066h		;60e4	66		f
-	defb 069h		;60e5	69		i
-	defb 067h		;60e6	67		g
-	defb 075h		;60e7	75		u
-	defb 072h		;60e8	72		r
-	defb 065h		;60e9	65		e
-	defb 064h		;60ea	64		d
-l60ebh:
-	defb 00ah		;60eb	0a		.
-	defb 0eeh		;60ec	ee		.
-	defb 060h		;60ed	60		`
-	defb 04ch		;60ee	4c		L
-	defb 041h		;60ef	41		A
-	defb 044h		;60f0	44		D
-	defb 044h		;60f1	44		D
-	defb 045h		;60f2	45		E
-	defb 052h		;60f3	52		R
-	defb 02eh		;60f4	2e		.
-	defb 044h		;60f5	44		D
-	defb 041h		;60f6	41		A
-	defb 054h		;60f7	54		T
-l60f8h:
-	defb 001h		;60f8	01		.
-	defb 0fbh		;60f9	fb		.
-	defb 060h		;60fa	60		`
-	defb 052h		;60fb	52		R
+s_ladconf_name:
+	defb 007h		;604e	07		|.|
+	defw 06051h		;604f	51 60		|Q`|
+	defm "LADCONF"		;6051	4c 41 44 43 4f 4e 46		|LADCONF|
+s_linking_config:
+	defb 023h		;6058	23		|#|
+	defw 0605bh		;6059	5b 60		|[`|
+	defm "Linking to configuration program..."		;605b	4c 69 6e 6b 69 6e 67 20 74 6f 20 63 6f 6e 66 69 67 75 72 61 74 69 6f 6e 20 70 72 6f 67 72 61 6d 2e 2e 2e		|Linking to configuration program...|
+s_config_missing:
+	defb 024h		;607e	24		|$|
+	defw 06081h		;607f	81 60		|.`|
+	defm "Ladder configuration program missing"		;6081	4c 61 64 64 65 72 20 63 6f 6e 66 69 67 75 72 61 74 69 6f 6e 20 70 72 6f 67 72 61 6d 20 6d 69 73 73 69 6e 67		|Ladder configuration program missing|
+s_config_link_error:
+	defb 01dh		;60a5	1d		|.|
+	defw 060a8h		;60a6	a8 60		|.`|
+	defm "Unable to link to LADCONF.COM"		;60a8	55 6e 61 62 6c 65 20 74 6f 20 6c 69 6e 6b 20 74 6f 20 4c 41 44 43 4f 4e 46 2e 43 4f 4d		|Unable to link to LADCONF.COM|
+s_ladconf_filename:
+	defb 00bh		;60c5	0b		|.|
+	defw 060c8h		;60c6	c8 60		|.`|
+	defm "LADCONF.COM"		;60c8	4c 41 44 43 4f 4e 46 2e 43 4f 4d		|LADCONF.COM|
+s_not_configured:
+	defb 015h		;60d3	15		|.|
+	defw 060d6h		;60d4	d6 60		|.`|
+	defm "Ladder not configured"		;60d6	4c 61 64 64 65 72 20 6e 6f 74 20 63 6f 6e 66 69 67 75 72 65 64		|Ladder not configured|
+s_data_filename:
+	defb 00ah		;60eb	0a		|.|
+	defw 060eeh		;60ec	ee 60		|.`|
+	defm "LADDER.DAT"		;60ee	4c 41 44 44 45 52 2e 44 41 54		|LADDER.DAT|
+s_key_r_upper:
+	defb 001h		;60f8	01		|.|
+	defw 060fbh		;60f9	fb 60		|.`|
+	defm "R"		;60fb	52		|R|
 l60fch:
 	defb 000h		;60fc	00		.
 	defb 0ffh		;60fd	ff		.
 	defb 060h		;60fe	60		`
-l60ffh:
-	defb 00dh		;60ff	0d		.
-	defb 002h		;6100	02		.
-	defb 061h		;6101	61		a
-	defb 070h		;6102	70		p
-	defb 062h		;6103	62		b
-	defb 064h		;6104	64		d
-	defb 071h		;6105	71		q
-	defb 050h		;6106	50		P
-	defb 062h		;6107	62		b
-	defb 064h		;6108	64		d
-	defb 062h		;6109	62		b
-	defb 050h		;610a	50		P
-	defb 070h		;610b	70		p
-	defb 06fh		;610c	6f		o
-	defb 02dh		;610d	2d		-
-	defb 05fh		;610e	5f		_
-l610fh:
-	defb 005h		;610f	05		.
-	defb 012h		;6110	12		.
-	defb 061h		;6111	61		a
-	defb 067h		;6112	67		g
-	defb 070h		;6113	70		p
-	defb 062h		;6114	62		b
-	defb 071h		;6115	71		q
-	defb 070h		;6116	70		p
-l6117h:
-	defb 00bh		;6117	0b		.
-	defb 01ah		;6118	1a		.
-	defb 061h		;6119	61		a
-	defb 020h		;611a	20		 
-	defb 02dh		;611b	2d		-
-	defb 03dh		;611c	3d		=
-	defb 024h		;611d	24		$
-	defb 07ch		;611e	7c		|
-	defb 056h		;611f	56		V
-	defb 048h		;6120	48		H
-	defb 02ah		;6121	2a		*
-	defb 05eh		;6122	5e		^
-	defb 02eh		;6123	2e		.
-	defb 026h		;6124	26		&
-l6125h:
-	defb 00bh		;6125	0b		.
-	defb 028h		;6126	28		(
-	defb 061h		;6127	61		a
-	defb 067h		;6128	67		g
-	defb 02dh		;6129	2d		-
-	defb 03dh		;612a	3d		=
-	defb 024h		;612b	24		$
-	defb 07ch		;612c	7c		|
-	defb 056h		;612d	56		V
-	defb 048h		;612e	48		H
-	defb 02ah		;612f	2a		*
-	defb 05eh		;6130	5e		^
-	defb 02eh		;6131	2e		.
-	defb 026h		;6132	26		&
-l6133h:
-	defb 001h		;6133	01		.
-	defb 036h		;6134	36		6
-	defb 061h		;6135	61		a
-	defb 020h		;6136	20		 
-l6137h:
-	defb 004h		;6137	04		.
-	defb 03ah		;6138	3a		:
-	defb 061h		;6139	61		a
-	defb 031h		;613a	31		1
-	defb 02eh		;613b	2e		.
-	defb 031h		;613c	31		1
-	defb 030h		;613d	30		0
+s_default_key_map:
+	defb 00dh		;60ff	0d		|.|
+	defw 06102h		;6100	02 61		|.a|
+	defm "pbdqPbdbPpo-_"		;6102	70 62 64 71 50 62 64 62 50 70 6f 2d 5f		|pbdqPbdbPpo-_|
+s_default_key_subset:
+	defb 005h		;610f	05		|.|
+	defw 06112h		;6110	12 61		|.a|
+	defm "gpbqp"		;6112	67 70 62 71 70		|gpbqp|
+s_actor_glyphs:
+	defb 00bh		;6117	0b		|.|
+	defw 0611ah		;6118	1a 61		|.a|
+	defm " -=$|VH*^.&"		;611a	20 2d 3d 24 7c 56 48 2a 5e 2e 26		| -=$|VH*^.&|
+s_actor_glyphs_alt:
+	defb 00bh		;6125	0b		|.|
+	defw 06128h		;6126	28 61		|(a|
+	defm "g-=$|VH*^.&"		;6128	67 2d 3d 24 7c 56 48 2a 5e 2e 26		|g-=$|VH*^.&|
+s_space:
+	defb 001h		;6133	01		|.|
+	defw 06136h		;6134	36 61		|6a|
+	defm " "		;6136	20		| |
+s_version_number:
+	defb 004h		;6137	04		|.|
+	defw 0613ah		;6138	3a 61		|:a|
+	defm "1.10"		;613a	31 2e 31 30		|1.10|
 l613eh:
 	defb 000h		;613e	00		.
 	defb 041h		;613f	41		A
@@ -17713,28 +15872,9 @@ l613eh:
 	defb 001h		;6164	01		.
 	defb 000h		;6165	00		.
 	defb 000h		;6166	00		.
-	defb 028h		;6167	28		(
-	defb 063h		;6168	63		c
-	defb 029h		;6169	29		)
-	defb 031h		;616a	31		1
-	defb 039h		;616b	39		9
-	defb 038h		;616c	38		8
-	defb 032h		;616d	32		2
-	defb 020h		;616e	20		 
-	defb 059h		;616f	59		Y
-	defb 061h		;6170	61		a
-	defb 068h		;6171	68		h
-	defb 06fh		;6172	6f		o
-	defb 06fh		;6173	6f		o
-	defb 020h		;6174	20		 
-	defb 053h		;6175	53		S
-	defb 06fh		;6176	6f		o
-	defb 066h		;6177	66		f
-	defb 074h		;6178	74		t
-	defb 077h		;6179	77		w
-	defb 061h		;617a	61		a
-	defb 072h		;617b	72		r
-	defb 065h		;617c	65		e
+; Plain ASCII footer following the compiled string pool
+s_copyright_footer:
+	defm "(c)1982 Yahoo Software"		;6167	28 63 29 31 39 38 32 20 59 61 68 6f 6f 20 53 6f 66 74 77 61 72 65		|(c)1982 Yahoo Software|
 ; Runtime entry: nonblocking keyboard poll through BDOS function 6
 keyboard_poll:
 	push hl			;617d	e5		.
@@ -18213,10 +16353,10 @@ l6439h:
 	rla			;6441	17		.
 	jp nc,l3a00h		;6442	d2 00 3a	. . :
 	call 00000h		;6445	cd 00 00	. . .
-	ld hl,l60f8h		;6448	21 f8 60	! . `
+	ld hl,s_key_r_upper	;6448	21 f8 60	! . `
 	call 00000h		;644b	cd 00 00	. . .
 	ld bc,00001h		;644e	01 01 00	. . .
-	ld de,l60ebh		;6451	11 eb 60	. . `
+	ld de,s_data_filename	;6451	11 eb 60	. . `
 	ld hl,00020h		;6454	21 20 00	!   .
 	call 00000h		;6457	cd 00 00	. . .
 	ld hl,00001h		;645a	21 01 00	! . .
@@ -18240,7 +16380,7 @@ l6439h:
 	jp nz,l3b2fh		;6480	c2 2f 3b	. / ;
 	ld hl,00001h		;6483	21 01 00	! . .
 	call 00000h		;6486	cd 00 00	. . .
-	ld hl,l60ebh		;6489	21 eb 60	! . `
+	ld hl,s_data_filename	;6489	21 eb 60	! . `
 	call 00000h		;648c	cd 00 00	. . .
 	call 00000h		;648f	cd 00 00	. . .
 	ld hl,l613eh		;6492	21 3e 61	! > a
@@ -18249,12 +16389,12 @@ l6439h:
 	ld hl,l613eh		;649b	21 3e 61	! > a
 	call 03a86h		;649e	cd 86 3a	. . :
 	call 03a89h		;64a1	cd 89 3a	. . :
-	ld hl,l60d3h		;64a4	21 d3 60	! . `
+	ld hl,s_not_configured	;64a4	21 d3 60	! . `
 	call 03a8fh		;64a7	cd 8f 3a	. . :
-	ld hl,l60f8h		;64aa	21 f8 60	! . `
+	ld hl,s_key_r_upper	;64aa	21 f8 60	! . `
 	call 03a3ch		;64ad	cd 3c 3a	. < :
 	ld bc,00001h		;64b0	01 01 00	. . .
-	ld de,l60c5h		;64b3	11 c5 60	. . `
+	ld de,s_ladconf_filename	;64b3	11 c5 60	. . `
 	ld hl,00020h		;64b6	21 20 00	!   .
 	call 03a48h		;64b9	cd 48 3a	. H :
 	ld hl,00001h		;64bc	21 01 00	! . .
@@ -18278,7 +16418,7 @@ l6439h:
 	jp nz,l3b08h		;64e2	c2 08 3b	. . ;
 	ld hl,00001h		;64e5	21 01 00	! . .
 	call 03a77h		;64e8	cd 77 3a	. w :
-	ld hl,l60c5h		;64eb	21 c5 60	! . `
+	ld hl,s_ladconf_filename	;64eb	21 c5 60	! . `
 	call 03a7dh		;64ee	cd 7d 3a	. } :
 	call 03a92h		;64f1	cd 92 3a	. . :
 	ld hl,l613eh		;64f4	21 3e 61	! > a
@@ -18287,10 +16427,10 @@ l6439h:
 	ld hl,l613eh		;64fd	21 3e 61	! > a
 	call 03ae8h		;6500	cd e8 3a	. . :
 	call 03aebh		;6503	cd eb 3a	. . :
-	ld hl,l60a5h		;6506	21 a5 60	! . `
+	ld hl,s_config_link_error	;6506	21 a5 60	! . `
 	call 03af1h		;6509	cd f1 3a	. . :
 	call 03af4h		;650c	cd f4 3a	. . :
-	ld hl,l607eh		;650f	21 7e 60	! ~ `
+	ld hl,s_config_missing	;650f	21 7e 60	! ~ `
 	call 03afah		;6512	cd fa 3a	. . :
 	call 00000h		;6515	cd 00 00	. . .
 	ld hl,00001h		;6518	21 01 00	! . .
@@ -18302,9 +16442,9 @@ l6439h:
 	ld hl,l613eh		;652a	21 3e 61	! > a
 	call 03b15h		;652d	cd 15 3b	. . ;
 	call 03b18h		;6530	cd 18 3b	. . ;
-	ld hl,l6058h		;6533	21 58 60	! X `
+	ld hl,s_linking_config	;6533	21 58 60	! X `
 	call 03b1eh		;6536	cd 1e 3b	. . ;
-	ld hl,l604eh		;6539	21 4e 60	! N `
+	ld hl,s_ladconf_name	;6539	21 4e 60	! N `
 	call 00000h		;653c	cd 00 00	. . .
 	ld de,l0f23h		;653f	11 23 0f	. # .
 	ld hl,00001h		;6542	21 01 00	! . .
@@ -18676,7 +16816,8 @@ l6800h:
 	ex de,hl		;6801	eb		.
 l6802h:
 	ld bc,l0f1ch		;6802	01 1c 0f	. . .
-l6805h:
+; Four-byte random state in a writable part of the linked runtime
+random_seed_state:
 	ld hl,000ffh		;6805	21 ff 00	! . .
 	call 03d36h		;6808	cd 36 3d	. 6 =
 	call 00000h		;680b	cd 00 00	. . .
@@ -18686,7 +16827,7 @@ l680eh:
 l6814h:
 	ld de,l0f1ch		;6814	11 1c 0f	. . .
 l6817h:
-	ld hl,l602eh		;6817	21 2e 60	! . `
+	ld hl,s_terminal_pro_men	;6817	21 2e 60	! . `
 	call 03dc2h		;681a	cd c2 3d	. . =
 	ld (l0f1fh+2),hl	;681d	22 21 0f	" ! .
 	ld hl,(l0f1fh+2)	;6820	2a 21 0f	* ! .
@@ -18771,7 +16912,7 @@ l688bh:
 	ld a,0c9h		;6895	3e c9		> .
 	ld (l67fdh+2),a		;6897	32 ff 67	2 . g
 	ld (l6802h),a		;689a	32 02 68	2 . h
-	ld (l6805h),hl		;689d	22 05 68	" . h
+	ld (random_seed_state),hl	;689d	22 05 68	" . h
 	ld hl,l6751h		;68a0	21 51 67	! Q g
 	ld (l680eh+2),hl	;68a3	22 10 68	" . h
 	call sub_66d6h		;68a6	cd d6 66	. . f
@@ -18786,8 +16927,9 @@ l68ach:
 	ret nc			;68b4	d0		.
 l68b5h:
 	call sub_6b84h		;68b5	cd 84 6b	. . k
-	jp sub_68bbh		;68b8	c3 bb 68	. . h
-sub_68bbh:
+	jp program_end		;68b8	c3 bb 68	. . h
+; Runtime entry: terminate the compiled BASIC program
+program_end:
 	call sub_6c0dh		;68bb	cd 0d 6c	. . l
 	ld hl,(l680eh+2)	;68be	2a 10 68	* . h
 	jp (hl)			;68c1	e9		.
@@ -19493,7 +17635,8 @@ l6c2dh:
 	nop			;6c2e	00		.
 	nop			;6c2f	00		.
 	add a,b			;6c30	80		.
-sub_6c31h:
+; Runtime random-number generator; updates the state above
+random_float:
 	push bc			;6c31	c5		.
 	push de			;6c32	d5		.
 	push hl			;6c33	e5		.
@@ -19501,9 +17644,9 @@ sub_6c31h:
 	jp c,l6c7bh		;6c35	da 7b 6c	. { l
 	ld a,h			;6c38	7c		|
 	or l			;6c39	b5		.
-	ld hl,(l6805h)		;6c3a	2a 05 68	* . h
+	ld hl,(random_seed_state)	;6c3a	2a 05 68	* . h
 	ex de,hl		;6c3d	eb		.
-	ld hl,(l6805h+2)	;6c3e	2a 07 68	* . h
+	ld hl,(random_seed_state+2)	;6c3e	2a 07 68	* . h
 	jp z,l6c62h		;6c41	ca 62 6c	. b l
 	push hl			;6c44	e5		.
 	push de			;6c45	d5		.
@@ -19527,9 +17670,9 @@ l6c58h:
 	add hl,bc		;6c5e	09		.
 	call c,sub_6c88h	;6c5f	dc 88 6c	. . l
 l6c62h:
-	ld (l6805h+2),hl	;6c62	22 07 68	" . h
+	ld (random_seed_state+2),hl	;6c62	22 07 68	" . h
 	ex de,hl		;6c65	eb		.
-	ld (l6805h),hl		;6c66	22 05 68	" . h
+	ld (random_seed_state),hl	;6c66	22 05 68	" . h
 	ex de,hl		;6c69	eb		.
 	ld b,000h		;6c6a	06 00		. .
 	ld c,e			;6c6c	4b		K
@@ -19546,7 +17689,7 @@ l6c7bh:
 	jp l6c62h		;6c7c	c3 62 6c	. b l
 	push hl			;6c7f	e5		.
 	ld hl,00001h		;6c80	21 01 00	! . .
-	call sub_6c31h		;6c83	cd 31 6c	. 1 l
+	call random_float	;6c83	cd 31 6c	. 1 l
 	pop hl			;6c86	e1		.
 	ret			;6c87	c9		.
 sub_6c88h:
@@ -19601,34 +17744,34 @@ l6ccdh:
 	jp (hl)			;6cd0	e9		.
 l6cd1h:
 	call 042b9h		;6cd1	cd b9 42	. . B
-	ld hl,l5bfeh		;6cd4	21 fe 5b	! . [
+	ld hl,s_instructions_treasure	;6cd4	21 fe 5b	! . [
 	call 042bfh		;6cd7	cd bf 42	. . B
 	call 042c2h		;6cda	cd c2 42	. . B
-	ld hl,l5be7h		;6cdd	21 e7 5b	! . [
+	ld hl,s_instructions_bonus_expires	;6cdd	21 e7 5b	! . [
 	call 042c8h		;6ce0	cd c8 42	. . B
 	call 042cbh		;6ce3	cd cb 42	. . B
 	ld hl,l613eh		;6ce6	21 3e 61	! > a
 	call 042d1h		;6ce9	cd d1 42	. . B
 	call 042d4h		;6cec	cd d4 42	. . B
-	ld hl,l5bb2h		;6cef	21 b2 5b	! . [
+	ld hl,s_instructions_extra_lad	;6cef	21 b2 5b	! . [
 	call 042dah		;6cf2	cd da 42	. . B
 	call 042ddh		;6cf5	cd dd 42	. . B
-	ld hl,l5b81h		;6cf8	21 81 5b	! . [
+	ld hl,s_instructions_gold	;6cf8	21 81 5b	! . [
 	call 042e3h		;6cfb	cd e3 42	. . B
 	call 042e6h		;6cfe	cd e6 42	. . B
-	ld hl,l5b41h		;6d01	21 41 5b	! A [
+	ld hl,s_instructions_statues	;6d01	21 41 5b	! A [
 	call 042ech		;6d04	cd ec 42	. . B
 	call 042efh		;6d07	cd ef 42	. . B
-	ld hl,l5b0fh		;6d0a	21 0f 5b	! . [
+	ld hl,s_instructions_bonus_remainder	;6d0a	21 0f 5b	! . [
 	call 042f5h		;6d0d	cd f5 42	. . B
 	call 042f8h		;6d10	cd f8 42	. . B
-	ld hl,l5aebh		;6d13	21 eb 5a	! . Z
+	ld hl,s_pause_hint	;6d13	21 eb 5a	! . Z
 	call 042feh		;6d16	cd fe 42	. . B
 	call 04301h		;6d19	cd 01 43	. . C
 	ld hl,l613eh		;6d1c	21 3e 61	! > a
 	call 04307h		;6d1f	cd 07 43	. . C
 	call 0430ah		;6d22	cd 0a 43	. . C
-	ld hl,l5adah		;6d25	21 da 5a	! . Z
+	ld hl,s_good_luck	;6d25	21 da 5a	! . Z
 	call 04310h		;6d28	cd 10 43	. . C
 	call 04313h		;6d2b	cd 13 43	. . C
 	ld hl,l613eh		;6d2e	21 3e 61	! > a
@@ -19640,7 +17783,7 @@ l6cd1h:
 	ld hl,l613eh		;6d40	21 3e 61	! > a
 	call 0432bh		;6d43	cd 2b 43	. + C
 	call 0432eh		;6d46	cd 2e 43	. . C
-	ld hl,l5ab3h		;6d49	21 b3 5a	! . Z
+	ld hl,s_type_return_for_menu	;6d49	21 b3 5a	! . Z
 	call 0415eh		;6d4c	cd 5e 41	. ^ A
 	ld de,00001h		;6d4f	11 01 00	. . .
 	ld hl,000ffh		;6d52	21 ff 00	! . .
@@ -19775,7 +17918,8 @@ sub_6dffh:
 	call sub_6c17h		;6e65	cd 17 6c	. . l
 	call sub_6eb1h		;6e68	cd b1 6e	. . n
 	jp l6f99h		;6e6b	c3 99 6f	. . o
-sub_6e6eh:
+; Runtime string output, with and without a trailing line ending
+print_string:
 	call sub_6c17h		;6e6e	cd 17 6c	. . l
 sub_6e71h:
 	call sub_6f03h		;6e71	cd 03 6f	. . o
@@ -19789,7 +17933,7 @@ sub_6e71h:
 	call sub_6c17h		;6e89	cd 17 6c	. . l
 	call sub_6eb1h		;6e8c	cd b1 6e	. . n
 	jp l6f4ch		;6e8f	c3 4c 6f	. L o
-sub_6e92h:
+print_string_line:
 	call sub_6c17h		;6e92	cd 17 6c	. . l
 	call sub_6f03h		;6e95	cd 03 6f	. . o
 	jp l6f4ch		;6e98	c3 4c 6f	. L o
@@ -20640,7 +18784,8 @@ l7373h:
 	jp l739bh		;7391	c3 9b 73	. . s
 	ld a,005h		;7394	3e 05		> .
 	jp l739bh		;7396	c3 9b 73	. . s
-sub_7399h:
+; Runtime string equality returns $FFFF for equal, zero otherwise
+string_equal:
 	ld a,002h		;7399	3e 02		> .
 l739bh:
 	call sub_76a6h		;739b	cd a6 76	. . v
@@ -20656,7 +18801,8 @@ l739bh:
 	jp l73bfh		;73b0	c3 bf 73	. . s
 	ld a,003h		;73b3	3e 03		> .
 	jp l73bfh		;73b5	c3 bf 73	. . s
-sub_73b8h:
+; Runtime string inequality branches through an inline 16-bit address
+branch_if_strings_unequal:
 	ld a,005h		;73b8	3e 05		> .
 	jp l73bfh		;73ba	c3 bf 73	. . s
 sub_73bdh:
@@ -21041,7 +19187,8 @@ l75ach:
 l75afh:
 	call sub_6c21h		;75af	cd 21 6c	. ! l
 	jp 068d8h		;75b2	c3 d8 68	. . h
-sub_75b5h:
+; Runtime character-code to one-character string conversion
+character_string:
 	call sub_6c17h		;75b5	cd 17 6c	. . l
 	ld a,h			;75b8	7c		|
 	and a			;75b9	a7		.
@@ -21142,7 +19289,8 @@ sub_763ah:
 	call sub_9507h		;763d	cd 07 95	. . .
 	call sub_935ch		;7640	cd 5c 93	. \ .
 	jp l96a4h		;7643	c3 a4 96	. . .
-sub_7646h:
+; Runtime integer remainder with an inline 16-bit divisor
+integer_mod_inline:
 	ex de,hl		;7646	eb		.
 	ex (sp),hl		;7647	e3		.
 	push de			;7648	d5		.
@@ -25379,7 +23527,8 @@ l8e2bh:
 	call sub_6c21h		;8e2f	cd 21 6c	. ! l
 	ld hl,0003eh		;8e32	21 3e 00	! > .
 	jp l68e3h		;8e35	c3 e3 68	. . h
-sub_8e38h:
+; Runtime string input; the menu passes count 1 and console device $FF
+input_string:
 	call sub_6c17h		;8e38	cd 17 6c	. . l
 	ld a,h			;8e3b	7c		|
 	or d			;8e3c	b2		.

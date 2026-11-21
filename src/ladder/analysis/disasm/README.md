@@ -10,8 +10,26 @@
 - Compiled-game data and text `$58DF..$617C`; runtime code starts at `$617D`.
 - The BASLIB banner `$6678..$66AA`.
 - All 34 inline 16-bit operands following `CALL $768E` (`$IMUG`). Their factors include 81 for map indexing and 100 for score handling.
+- The menu's inline branch target after `$4358` and modulus after `$4363`.
 
 For example, the climb calculation at `$4CD8` now reads as `call integer_mul_inline`, then `defw $0051`, then code resumes at `$4CDD`. The keyboard poll loop at `$4160` shows `call keyboard_poll` at `$4163`.
+
+The [start menu dispatch notes](../START_MENU_DISPATCH.md) identify the calls and choices at `$41C3..$436C`.
+The random routine at `$6C31` updates four bytes at `$6805..$6808` by
+`state = (5*state + 3) mod 2^32`; the
+[RNG rock probe](../ROCK_PROBES.md#observed-random-choice-frequencies)
+also decodes the 2-way and 3-way result buckets. The symbols
+`random_float` and `random_seed_state` name them in the listing.
+
+Most game strings use a three-byte descriptor: one byte of length followed by
+a little-endian pointer to the text. For example, `$591B` contains length 17
+and pointer `$591E` for `Enter your name: `. The formatting pass displays 91
+self-contained printable descriptors as `defb` length, `defw` pointer, and
+`defm` text. Each descriptor has a readable `s_` symbol in `ladder_110.sym`,
+so references use names such as `s_enter_your_name`. The pass keeps labels
+inside a string and leaves other data alone.
+The plain ASCII copyright footer at `$6167` is rendered separately as
+`s_copyright_footer`.
 
 The first compiled instruction at `$100E` loads `HL=$00FF` and calls `$705E`. A BASCOM 5.30 probe of `WIDTH 255` produces `LXI H,00FF; CALL $WID`; its linked `$WID` routine has the same instruction structure as Ladder `$705E`, apart from relocated addresses. The symbol file therefore names `$705E` `width_setting`.
 
@@ -25,6 +43,7 @@ z80dasm -a -l -t -c \
   -o analysis/disasm/ladder_110.asm \
   cpm/LADDER.COM
 python3 tools/label_bdos_calls.py
+python3 tools/format_disasm_strings.py
 ```
 
 The second command names calls to CP/M's `$0005` BDOS entry and annotates the function number loaded into `C`. It leaves numeric constants with the same value alone.

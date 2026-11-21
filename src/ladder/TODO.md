@@ -11,9 +11,10 @@ playable on C68 FLEX.
 - [ ] Keep terrain and actors separate, so drawing or erasing Lad and rocks
       always restores the tile underneath. Use a fixed rock pool sized for the
       largest Pascal level (eight rocks) rather than dynamic allocation.
-- [ ] Read `V` dispenser locations from the selected map. Place each rock in
-      a pending state at a dispenser, then release it over time using a
-      reproducible random seed for emulator checks.
+- [ ] Read `V` dispenser locations from the selected map. Release one rock
+      per game update until the level's active-rock limit is reached, choosing
+      a dispenser for each release. Use a reproducible seed for emulator
+      checks; see [rock probes](analysis/ROCK_PROBES.md).
 - [ ] Make rocks roll, reverse at edges and obstructions, fall through gaps,
       and react to ladders. A `*` eater removes a rock and returns it to a
       dispenser; it does not hurt Lad.
@@ -27,8 +28,8 @@ playable on C68 FLEX.
 
 - [ ] Start with five Lads. Lose one to a rock, fire, or expired bonus time;
       restart the level while lives remain, then show game over.
-- [ ] Add the level's initial bonus time and decrement it every three seconds
-      of play. Keep timing tied to the game tick at the intended 1 MHz pace.
+- [ ] Add the level's initial bonus time and decrement it every 25 game
+      updates, as measured in the [state traces](analysis/STATE_TRACE.md).
 - [ ] Show lives, level, score, and bonus time on the status line. Refresh only
       changed fields so gameplay does not stall on terminal output.
 - [ ] Award points for statues (`&`), jumping over rocks, and finishing with
@@ -43,17 +44,24 @@ playable on C68 FLEX.
 - [ ] Select a map by level number and find its `p` start, `V` dispensers,
       initial bonus time, and rock count. Copy terrain into mutable level
       state so collected statues and disappearing floors do not alter the
-      source maps.
+      source maps. Preserve that mutable terrain on a life restart; reload
+      it only when advancing to a new board, as the original does.
 - [ ] Advance on `$` through Easy Street, Long Island, Ghost Town, Tunnel
-      Vision, Point of No Return, Bug City, and GangLand. Decide the repeat
-      cycle after checking the original game; the Pascal rewrite has a
-      particular cycle and notes uncertainty about the original ending.
-- [ ] Implement disposable floor (`-`) and trampoline (`.`) behavior from
-      the Pascal source. Keep `^` fire lethal, and confirm all special tiles
+      Vision, Point of No Return, Bug City, and GangLand. Follow the
+      expanding repeat cycle confirmed for displayed levels 1–12 in the
+      [level-N probes](analysis/START_LEVEL_CHEAT.md). The shortcut sweep
+      through level 57 finds a 27-level wave and a reset after GangLand;
+      controlled GangLand treasure completions confirm that boundary at
+      levels 27, 54, and 81. A full playthrough remains to test.
+- [x] Implement original disposable floor (`-`) departure behavior, including
+      preservation during a jump apex.
+- [ ] Implement original trampoline (`.`) behavior. Keep `^` fire lethal, and confirm all special tiles
       behave sensibly on every map.
 - [ ] Check each map for exactly one start, valid dispenser positions,
       bounded movement, and a reachable treasure. Run a full seven-level
-      emulator path and play the harder maps by hand.
+      emulator path and play the harder maps by hand. Compare Pascal terrain
+      with the original tile tables; the [seven-board comparison](analysis/MAP_PARITY.md)
+      found 58 terrain-cell differences, now applied to generated FLEX maps.
 
 ## 4. Finish the terminal game
 
@@ -69,11 +77,37 @@ playable on C68 FLEX.
 
 ## Original game research
 
+Use [the gameplay validation plan](analysis/GAMEPLAY_VALIDATION_PLAN.md) to
+record repeatable probes and compare the original game, Pascal rewrite, and
+FLEX port. The [rule matrix](analysis/RULE_MATRIX.md) shows the current
+comparison. The original game's behavior decides gameplay rules.
+
 - [ ] Inventory the files in `cpm/`, record their source and checksums, and
       keep pristine copies before disassembly or patching.
 - [ ] Identify the compiler/runtime signatures in the original `LADDER.COM`.
       Resume `BASLIB.REL` matching if a promising candidate turns up; otherwise
       map code and data by observing the executable in a CP/M emulator.
-- [ ] Compare movement, timing, rock behavior, scoring, and level progression
-      against the original. Mark differences between it, the Pascal rewrite,
-      and this 6800 port before changing gameplay rules.
+- [x] Capture one state row per original-game update, including Lad and actor
+      slots, score, bonus, lives, level, input, and instruction count. See
+      [the first state traces](analysis/STATE_TRACE.md); downward actor states
+      and transitions still need decoding.
+- [ ] Probe Lad and Der Rock movement, including speed settings, jumps from
+      ladders, falls, rock release, obstacles, eaters, and collision order.
+      [The first jump probes](analysis/PHYSICS_PROBES.md) establish the
+      unblocked arc and one ladder interruption. [Rock probes](analysis/ROCK_PROBES.md)
+      establish one-per-update release, dispenser selection on Ghost Town,
+      eater recycling, and several ladder and wall turns.
+- [ ] Isolate each scoring event and measure bonus countdown and extra-life
+      thresholds in the original game. [The scoring probes](analysis/SCORING_PROBES.md)
+      confirm statue, treasure, and the first two extra-Lad thresholds;
+      a controlled rock pass also confirms two separate two-point awards.
+      [Bonus expiry probes](analysis/BONUS_TIMEOUT_PROBES.md) confirm life loss,
+      same-level restart, and score preservation. Other collision
+      configurations remain open.
+- [ ] Audit remaining guessed rules: terrain effects, input persistence, life
+      restart, map progression, and level cycling. Record original/Pascal/FLEX
+      differences before changing gameplay code. The
+      [level-N fixture](analysis/START_LEVEL_CHEAT.md) now reaches later
+      boards and confirms two complete 27-level map waves through level 54.
+      [Fire probes](analysis/TERRAIN_AND_DEATH_PROBES.md) confirm same-level
+      restart with one lost Lad and unchanged score.

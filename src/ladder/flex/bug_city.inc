@@ -1,4 +1,4 @@
-; Generated from Ladder/src/ladicons.pas by tools/make_levels.py
+; Generated from Pascal, corrected with analysis/map-parity.csv
 ; Bug City: initial bonus 37, rocks 6
         .ascii "        Bug City             HHHHHHHH                          V               "
         .ascii "                           HHH      HHH                                        "
@@ -12,7 +12,7 @@
         .ascii "/                                  H          "
         .ascii "   H                                        | $                     H          "
         .ascii "   H           H                            | H                     H          "
-        .ascii "   H       ====H=======          p          |&H    H                H          "
+        .ascii "   H       ====H========         p          |&H    H                H          "
         .ascii "   H           H             ======================H           ======          "
         .ascii "   H           H      &|                           H                    H      "
         .ascii "   H           H      &|                    H      H     }{        =====H====  "

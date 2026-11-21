@@ -2,6 +2,8 @@ baslib_banner: start 0x6678 unlabeled end 0x66ab type bytedata
 startup_record: start 0x1000 unlabeled end 0x100e type bytedata
 header: start 0x0103 unlabeled end 0x0137 type bytedata
 game_data: start 0x58df unlabeled end 0x617d type bytedata
+menu_return_branch_4358: unlabeled start 0x435b unlabeled end 0x435d type worddata
+menu_speed_modulus_4363: unlabeled start 0x4366 unlabeled end 0x4368 type worddata
 imug_operand_3cf2: unlabeled start 0x3cf5 unlabeled end 0x3cf7 type worddata
 imug_operand_3d22: unlabeled start 0x3d25 unlabeled end 0x3d27 type worddata
 imug_operand_40a0: unlabeled start 0x40a3 unlabeled end 0x40a5 type worddata

@@ -16,7 +16,10 @@ The HUD reads `Level    2`, but the map is still Easy Street: the dispenser
 `V` is at column 40, the treasure `$` and long right ladder are at column
 58, and the bottom ladder remains at column 58. Thus `$0F69` is confirmed as
 the displayed level number, not the control that selects the level-one map.
-The actual map-selection state remains to be identified.
+The later [level-N emulator fixture](START_LEVEL_CHEAT.md) reaches the
+requested board through the original level-advance and map-loading code.
+That experiment also confirms why changing only this display word is
+insufficient.
 
 The one-byte patch can be reproduced on another temporary copy with:
 

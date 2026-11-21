@@ -10,13 +10,136 @@ lads_word: equ 0x0f67
 level_word: equ 0x0f69
 bonus_word: equ 0x0f77
 actor_index_word: equ 0x0fb2
+; Start screen: poll until a key arrives, then dispatch the menu choice
+start_key_scan: equ 0x4160
+start_key_dispatch: equ 0x41c3
+menu_instructions: equ 0x4279
+menu_change_speed: equ 0x4360
+menu_play: equ 0x436f
+; Gameplay: poll input for each actor, update it, then advance the index
+game_actor_loop: equ 0x47ea
+actor_update: equ 0x48b0
+next_actor: equ 0x4bcf
+; Game string descriptors (length byte, little-endian text pointer)
+s_type_return_to_continue: equ 0x58e2
+s_updating_high_scores: equ 0x5901
+s_enter_your_name: equ 0x591b
+s_high_score_undeserved: equ 0x592f
+s_high_score_not_bad: equ 0x5956
+s_high_score_amazing: equ 0x5970
+s_high_score_ladder: equ 0x5986
+s_high_score_lad_wiz: equ 0x59aa
+s_high_score_lad_guru: equ 0x59c8
+s_high_score_lad_master: equ 0x59e7
+s_high_score_yahoo: equ 0x5a06
+s_high_score_cheated: equ 0x5a43
+s_hooka: equ 0x5a65
+s_actor_o: equ 0x5a6e
+s_actor_asterisk: equ 0x5a72
+s_get_ready: equ 0x5a76
+s_bonus_time: equ 0x5a83
+s_score: equ 0x5a91
+s_level: equ 0x5a9f
+s_lads: equ 0x5aac
+s_type_return_for_menu: equ 0x5ab3
+s_good_luck: equ 0x5ada
+s_pause_hint: equ 0x5aeb
+s_instructions_bonus_remainder: equ 0x5b0f
+s_instructions_statues: equ 0x5b41
+s_instructions_gold: equ 0x5b81
+s_instructions_extra_lad: equ 0x5bb2
+s_instructions_bonus_expires: equ 0x5be7
+s_instructions_treasure: equ 0x5bfe
+s_instructions_jump_and_rocks: equ 0x5c3d
+s_instructions_controls: equ 0x5c80
+s_instructions_riches: equ 0x5cc1
+s_instructions_corridors: equ 0x5cd9
+s_instructions_intro: equ 0x5d1a
+s_key_l_lower: equ 0x5d5a
+s_key_l_upper: equ 0x5d5e
+s_key_i_lower: equ 0x5d62
+s_key_i_upper: equ 0x5d66
+s_key_c_lower: equ 0x5d6a
+s_key_c_upper: equ 0x5d6e
+s_key_p_lower: equ 0x5d72
+s_key_p_upper: equ 0x5d76
+s_exiting: equ 0x5d7a
+s_key_e_lower: equ 0x5d87
+s_key_e_upper: equ 0x5d8b
+s_insult_quiche: equ 0x5d8f
+s_insult_hurry: equ 0x5da1
+s_menu_prompt: equ 0x5dc3
+s_play_speed: equ 0x5dde
+s_zero_hundreds: equ 0x5ded
+s_last_score: equ 0x5df2
+s_zero_hundreds_padded: equ 0x5e01
+s_score_rank_suffix: equ 0x5e08
+s_high_scores_heading: equ 0x5e0d
+s_jump_key_hint: equ 0x5e1b
+s_right_key_hint: equ 0x5e2a
+s_left_key_hint: equ 0x5e37
+s_down_key_hint: equ 0x5e43
+s_up_key_hint: equ 0x5e4f
+s_menu_exit_option: equ 0x5e57
+s_menu_instructions_option: equ 0x5e69
+s_menu_configure_option: equ 0x5e7c
+s_menu_difficulty_option: equ 0x5e93
+s_menu_play_option: equ 0x5eb4
+s_terminal_heading: equ 0x5ec4
+s_version_heading: equ 0x5ed1
+s_copyright: equ 0x5ede
+s_menu_logo_row_6: equ 0x5ef8
+s_menu_logo_row_5: equ 0x5f2a
+s_menu_logo_row_4: equ 0x5f5c
+s_menu_logo_row_3: equ 0x5f8e
+s_menu_logo_row_2: equ 0x5fc6
+s_menu_logo_row_1: equ 0x5ffd
+s_terminal_pro_score: equ 0x6022
+s_terminal_pro_men: equ 0x602e
+s_terminal_pro_level: equ 0x6038
+s_yes: equ 0x6047
+s_ladconf_name: equ 0x604e
+s_linking_config: equ 0x6058
+s_config_missing: equ 0x607e
+s_config_link_error: equ 0x60a5
+s_ladconf_filename: equ 0x60c5
+s_not_configured: equ 0x60d3
+s_data_filename: equ 0x60eb
+s_key_r_upper: equ 0x60f8
+s_default_key_map: equ 0x60ff
+s_default_key_subset: equ 0x610f
+s_actor_glyphs: equ 0x6117
+s_actor_glyphs_alt: equ 0x6125
+s_space: equ 0x6133
+s_version_number: equ 0x6137
+; Plain ASCII footer following the compiled string pool
+s_copyright_footer: equ 0x6167
 ; Runtime entry: BASCOM $WID, WIDTH setting
 width_setting: equ 0x705e
 ; Runtime entry: nonblocking keyboard poll through BDOS function 6
 keyboard_poll: equ 0x617d
+; Runtime entry: terminate the compiled BASIC program
+program_end: equ 0x68bb
+; Four-byte random state in a writable part of the linked runtime
+random_seed_state: equ 0x6805
+; Runtime random-number generator; updates the state above
+random_float: equ 0x6c31
+; Runtime string output, with and without a trailing line ending
+print_string: equ 0x6e6e
+print_string_line: equ 0x6e92
 ; Runtime entry: BASCOM $PR0A, PRINT setup
 print_setup: equ 0x6fea
+; Runtime string equality returns $FFFF for equal, zero otherwise
+string_equal: equ 0x7399
+; Runtime string inequality branches through an inline 16-bit address
+branch_if_strings_unequal: equ 0x73b8
 ; Runtime entry: BASCOM $SASA, string assignment
 string_assign: equ 0x74db
+; Runtime character-code to one-character string conversion
+character_string: equ 0x75b5
+; Runtime integer remainder with an inline 16-bit divisor
+integer_mod_inline: equ 0x7646
 ; Runtime entry: BASCOM $IMUG, HL multiplied by inline 16-bit operand
 integer_mul_inline: equ 0x768e
+; Runtime string input; the menu passes count 1 and console device $FF
+input_string: equ 0x8e38

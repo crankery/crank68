@@ -1,4 +1,4 @@
-; Generated from Ladder/src/ladicons.pas by tools/make_levels.py
+; Generated from Pascal, corrected with analysis/map-parity.csv
 ; Point of No Return: initial bonus 35, rocks 7
         .ascii "         $                                                                     "
         .ascii "         H                                                   V                 "
@@ -16,7 +16,7 @@
         .ascii "   H         ===      ===      ===       H    ---------=================H======"
         .ascii "   H                                     H                              H      "
         .ascii "   H                          &          H          &                   H      "
-        .ascii "   ==========-------------------------=======----------===================     "
+        .ascii "   ==========-------------------------=======----------==================      "
         .ascii "                                                                               "
-        .ascii "^^^*         ^^^^^^^^^^^^^^^^^^^^^^^^^*     *^^^^^^^^^^*Point of No Return*^^^^"
+        .ascii "^^^*         ^^^^^^^^^^^^^^^^^^^^^^^^^*     *^^^^^^^^^^*Point of No Retu*^^^^^^"
         .ascii "==============================================================================="

@@ -68,7 +68,7 @@ index fe71438..e5daa26 100644
          for ch in text.chars() {
              self.write(console, ch as u8);
 diff --git a/src/run.rs b/src/run.rs
-index 798f52a..ba64a0b 100644
+index 798f52a..99963b5 100644
 --- a/src/run.rs
 +++ b/src/run.rs
 @@ -1,6 +1,7 @@
@@ -79,7 +79,7 @@ index 798f52a..ba64a0b 100644
  use std::thread;
  use std::time::Duration;
  
-@@ -50,6 +51,22 @@ pub fn run<'a>(command_line: Option<Vec<&str>>, console: &mut dyn ConsoleEmulato
+@@ -50,6 +51,82 @@ pub fn run<'a>(command_line: Option<Vec<&str>>, console: &mut dyn ConsoleEmulato
          .short("z")
          .long("cpu-trace")
          .help("Traces CPU instructions execution"))
@@ -88,25 +88,98 @@ index 798f52a..ba64a0b 100644
 +        .value_name("csv")
 +        .takes_value(true)
 +        .help("Log executed LADDER.COM game-to-runtime transfers to CSV"))
++    .arg(Arg::with_name("ladder_state")
++        .long("ladder-state")
++        .value_name("csv")
++        .takes_value(true)
++        .help("Log LADDER.COM state at each completed actor update"))
++    .arg(Arg::with_name("ladder_score_events")
++        .long("ladder-score-events")
++        .value_name("csv")
++        .takes_value(true)
++        .help("Log original rock-jump score writes with call-site address"))
++    .arg(Arg::with_name("ladder_rock_events")
++        .long("ladder-rock-events")
++        .value_name("csv")
++        .takes_value(true)
++        .help("Log rock dispenser and direction decisions"))
++    .arg(Arg::with_name("ladder_rng_events")
++        .long("ladder-rng-events")
++        .value_name("csv")
++        .takes_value(true)
++        .help("Log Ladder random state before and after each generator call"))
++    .arg(Arg::with_name("ladder_map")
++        .long("ladder-map")
++        .value_name("csv")
++        .takes_value(true)
++        .help("Dump the selected Ladder board's tile codes"))
++    .arg(Arg::with_name("ladder_tile_events")
++        .long("ladder-tile-events")
++        .value_name("csv")
++        .takes_value(true)
++        .help("Log original trampoline choice values"))
++    .arg(Arg::with_name("ladder_stop_pc")
++        .long("ladder-stop-pc")
++        .value_name("HEXADDR")
++        .takes_value(true)
++        .help("Stop emulation on reaching a Ladder code address"))
++    .arg(Arg::with_name("ladder_max_updates")
++        .long("ladder-max-updates")
++        .value_name("count")
++        .takes_value(true)
++        .help("Stop after this many Ladder state rows"))
 +    .arg(Arg::with_name("ladder_inject_key")
 +        .long("ladder-inject-key")
 +        .value_name("ASCII character")
 +        .takes_value(true)
-+        .help("Inject one character at Ladder's first level-one keyboard poll"))
++        .help("Inject one character at the selected level's first gameplay poll"))
 +    .arg(Arg::with_name("ladder_inject_up_at_58")
 +        .long("ladder-inject-up-at-58")
 +        .help("Inject 8 after the lad is drawn at row 19, column 58"))
 +    .arg(Arg::with_name("ladder_inject_left_at_top")
 +        .long("ladder-inject-left-at-top")
 +        .help("Inject 4 after the lad is drawn at row 15, column 58"))
++    .arg(Arg::with_name("ladder_key_when")
++        .long("ladder-key-when")
++        .value_name("X:Y:HEX[,X:Y:HEX...]")
++        .takes_value(true)
++        .help("Inject ordered one-shot keys at specified Lad coordinates"))
++    .arg(Arg::with_name("ladder_key_at")
++        .long("ladder-key-at")
++        .value_name("UPDATE:HEX[,UPDATE:HEX...]")
++        .takes_value(true)
++        .help("Inject one-shot keys on specified state-row updates"))
++    .arg(Arg::with_name("ladder_poke_after")
++        .long("ladder-poke-after")
++        .value_name("UPDATE:HEXADDR:HEXWORD[,..]")
++        .takes_value(true)
++        .help("Write test words after a sampled Ladder update"))
++    .arg(Arg::with_name("ladder_start_level")
++        .long("ladder-start-level")
++        .value_name("1..255")
++        .takes_value(true)
++        .help("Advance through original level loader to requested starting map"))
      .arg(Arg::with_name("cpm3")
          .long("cpm3")
          .help("Report CP/M version 3.1 instead of 2.2 (enables some CP/M Plus features)"))
-@@ -107,6 +124,16 @@ pub fn run<'a>(command_line: Option<Vec<&str>>, console: &mut dyn ConsoleEmulato
+@@ -107,6 +184,60 @@ pub fn run<'a>(command_line: Option<Vec<&str>>, console: &mut dyn ConsoleEmulato
      let filename = matches.value_of("CMD");
      let params = matches.value_of("ARGS");
      let cpu_trace = matches.is_present("cpu_trace");
 +    let ladder_calls = matches.value_of("ladder_calls");
++    let ladder_state = matches.value_of("ladder_state");
++    let ladder_score_events = matches.value_of("ladder_score_events");
++    let ladder_rock_events = matches.value_of("ladder_rock_events");
++    let ladder_rng_events = matches.value_of("ladder_rng_events");
++    let ladder_map = matches.value_of("ladder_map");
++    let ladder_tile_events = matches.value_of("ladder_tile_events");
++    let ladder_stop_pc = matches.value_of("ladder_stop_pc")
++        .map(|value| u16::from_str_radix(value, 16).expect("--ladder-stop-pc needs a hex address"));
++    let ladder_max_updates = matches.value_of("ladder_max_updates")
++        .map(|value| value.parse::<u64>().expect("--ladder-max-updates needs a count"));
++    if ladder_max_updates.is_some() && ladder_state.is_none() {
++        panic!("--ladder-max-updates requires --ladder-state");
++    }
 +    let ladder_inject_key = matches.value_of("ladder_inject_key").map(|value| {
 +        let bytes = value.as_bytes();
 +        if bytes.len() != 1 || !bytes[0].is_ascii() {
@@ -116,10 +189,41 @@ index 798f52a..ba64a0b 100644
 +    });
 +    let ladder_inject_up_at_58 = matches.is_present("ladder_inject_up_at_58");
 +    let ladder_inject_left_at_top = matches.is_present("ladder_inject_left_at_top");
++    let ladder_key_when: Vec<(u16, u16, u8)> = matches.value_of("ladder_key_when")
++        .map(|schedule| schedule.split(',').map(|entry| {
++            let parts: Vec<&str> = entry.split(':').collect();
++            if parts.len() != 3 { panic!("--ladder-key-when needs X:Y:HEX entries"); }
++            (parts[0].parse::<u16>().expect("key X must be decimal"),
++             parts[1].parse::<u16>().expect("key Y must be decimal"),
++             u8::from_str_radix(parts[2], 16).expect("key must be hex byte"))
++        }).collect()).unwrap_or_default();
++    let ladder_key_at: Vec<(u64, u8)> = matches.value_of("ladder_key_at")
++        .map(|schedule| schedule.split(',').map(|entry| {
++            let parts: Vec<&str> = entry.split(':').collect();
++            if parts.len() != 2 { panic!("--ladder-key-at needs UPDATE:HEX entries"); }
++            (parts[0].parse::<u64>().expect("key update must be decimal"),
++             u8::from_str_radix(parts[1], 16).expect("key must be hex byte"))
++        }).collect()).unwrap_or_default();
++    let ladder_poke_after: Vec<(u64, u16, u16)> = matches.value_of("ladder_poke_after")
++        .map(|schedule| schedule.split(',').map(|entry| {
++            let parts: Vec<&str> = entry.split(':').collect();
++            if parts.len() != 3 { panic!("--ladder-poke-after needs UPDATE:ADDR:WORD entries"); }
++            (parts[0].parse::<u64>().expect("poke update must be decimal"),
++             u16::from_str_radix(parts[1], 16).expect("poke address must be hex"),
++             u16::from_str_radix(parts[2], 16).expect("poke value must be hex"))
++        }).collect()).unwrap_or_default();
++    if !ladder_poke_after.is_empty() && ladder_state.is_none() {
++        panic!("--ladder-poke-after requires --ladder-state");
++    }
++    let ladder_start_level = matches.value_of("ladder_start_level").map(|value| {
++        let level = value.parse::<u16>().expect("--ladder-start-level needs an integer");
++        if !(1..=255).contains(&level) { panic!("--ladder-start-level needs 1..255"); }
++        level
++    });
      let call_trace = matches.is_present("call_trace") || matches.is_present("call_trace_all");
      let call_trace_all = matches.is_present("call_trace_all");
      let cpm3 = matches.is_present("cpm3");
-@@ -307,8 +334,43 @@ pub fn run<'a>(command_line: Option<Vec<&str>>, console: &mut dyn ConsoleEmulato
+@@ -307,8 +438,193 @@ pub fn run<'a>(command_line: Option<Vec<&str>>, console: &mut dyn ConsoleEmulato
      cpu.registers().set_pc(binary_address);
      cpu.set_trace(cpu_trace);
      let mut n = 0;
@@ -128,13 +232,163 @@ index 798f52a..ba64a0b 100644
 +        writeln!(file, "seq,source,kind,target,af,bc,de,hl,sp").unwrap();
 +        file
 +    });
++    let mut ladder_state_log = ladder_state.map(|path| {
++        let mut file = BufWriter::new(File::create(path).expect("create Ladder state log"));
++        writeln!(file, "update,instructions,keys,player_x,player_y,move_0f91,move_0f93,move_0f95,move_0f97,move_0f9d,move_0f9f,timer_0fa1,timer_0fa3,score,bonus,lads,level,actors").unwrap();
++        file
++    });
++    let mut ladder_score_log = ladder_score_events.map(|path| {
++        let mut file = BufWriter::new(File::create(path).expect("create Ladder score event log"));
++        writeln!(file, "completed_updates,instructions,pc,old_score,new_score,player_x,player_y,actor_index,working_x,working_y").unwrap();
++        file
++    });
++    let mut ladder_rock_log = ladder_rock_events.map(|path| {
++        let mut file = BufWriter::new(File::create(path).expect("create Ladder rock event log"));
++        writeln!(file, "completed_updates,instructions,pc,level,slot,working_x,working_y,old_status,result,tile_here,tile_below,tile_right").unwrap();
++        file
++    });
++    let mut ladder_rng_log = ladder_rng_events.map(|path| {
++        let mut file = BufWriter::new(File::create(path).expect("create Ladder RNG event log"));
++        writeln!(file, "completed_updates,instructions,pc,seed_6805,seed_6807,hl").unwrap();
++        file
++    });
++    let mut ladder_map_log = ladder_map.map(|path| {
++        let mut file = BufWriter::new(File::create(path).expect("create Ladder map dump"));
++        writeln!(file, "level,x,y,tile").unwrap();
++        file
++    });
++    let mut ladder_tile_log = ladder_tile_events.map(|path| {
++        let mut file = BufWriter::new(File::create(path).expect("create Ladder tile event log"));
++        writeln!(file, "completed_updates,instructions,pc,level,player_x,player_y,result,move_0f9f,jump_0f97").unwrap();
++        file
++    });
++    let mut ladder_updates: u64 = 0;
++    let mut ladder_keys: Vec<u8> = Vec::new();
 +    let mut ladder_events: u64 = 0;
 +    let mut ladder_steps: u64 = 0;
 +    let mut ladder_injected = false;
 +    let mut ladder_up_injected = false;
 +    let mut ladder_left_injected = false;
++    let mut ladder_when_index: usize = 0;
++    let mut ladder_at_index: usize = 0;
      loop {
 +        let pc = cpu.registers().pc();
++        if matches!(pc, 0x6C31 | 0x6C77) {
++            if let Some(ref mut log) = ladder_rng_log {
++                let word = |address: u16| -> u16 {
++                    machine.peek(address) as u16 | ((machine.peek(address + 1) as u16) << 8)
++                };
++                writeln!(log, "{},{},{:04X},{:04X},{:04X},{:04X}",
++                    ladder_updates, ladder_steps, pc,
++                    word(0x6805), word(0x6807), cpu.registers().get16(Reg16::HL)).unwrap();
++            }
++        }
++        if ladder_stop_pc == Some(pc) {
++            let word = |address: u16| -> u16 {
++                machine.peek(address) as u16 | ((machine.peek(address + 1) as u16) << 8)
++            };
++            eprintln!("Ladder stopped at ${:04X} after {} updates and {} instructions: score={} bonus={} lads={} level={}",
++                pc, ladder_updates, ladder_steps, word(0x0F05), word(0x0F77),
++                word(0x0F67), word(0x0F69));
++            break;
++        }
++        if pc == 0x50D6 {
++            if let Some(ref mut log) = ladder_tile_log {
++                let word = |address: u16| -> u16 {
++                    machine.peek(address) as u16 | ((machine.peek(address + 1) as u16) << 8)
++                };
++                writeln!(log, "{},{},{:04X},{:04X},{:04X},{:04X},{:04X},{:04X},{:04X}",
++                    ladder_updates, ladder_steps, pc, word(0x0F69),
++                    word(0x0F89), word(0x0F8B), cpu.registers().get16(Reg16::HL),
++                    word(0x0F9F), word(0x0F97)).unwrap();
++            }
++        }
++        if matches!(pc, 0x474F | 0x496C | 0x4A63) {
++            if let Some(ref mut log) = ladder_rock_log {
++                let word = |address: u16| -> u16 {
++                    machine.peek(address) as u16 | ((machine.peek(address + 1) as u16) << 8)
++                };
++                let slot = word(0x0FB2);
++                let old_status = if slot < 11 { word(0x0E94 + 2 * slot) } else { 0xFFFF };
++                let x = word(0x0FB4);
++                let y = word(0x0FB6);
++                let tile = |x: u16, y: u16| -> u16 {
++                    if x < 81 && y < 25 { word(0x010A + 2 * (x + 81 * y)) } else { 0xFFFF }
++                };
++                writeln!(log, "{},{},{:04X},{:04X},{:04X},{:04X},{:04X},{:04X},{:04X},{:04X},{:04X},{:04X}",
++                    ladder_updates, ladder_steps, pc, word(0x0F69), slot,
++                    x, y, old_status, cpu.registers().get16(Reg16::HL),
++                    tile(x, y), tile(x, y + 1), tile(x + 1, y)).unwrap();
++            }
++        }
++        if pc == 0x47EA {
++            if let Some(target_level) = ladder_start_level {
++                let current_level = machine.peek(0x0F69) as u16
++                    | ((machine.peek(0x0F6A) as u16) << 8);
++                if current_level < target_level {
++                    eprintln!("Ladder skip level {} via original level-advance path", current_level);
++                    cpu.registers().set_pc(0x520C);
++                    continue;
++                }
++            }
++        }
++        if matches!(pc, 0x56AF | 0x56FC) {
++            if let Some(ref mut log) = ladder_score_log {
++                let word = |address: u16| -> u16 {
++                    machine.peek(address) as u16 | ((machine.peek(address + 1) as u16) << 8)
++                };
++                writeln!(log, "{},{},{:04X},{:04X},{:04X},{:04X},{:04X},{:04X},{:04X},{:04X}",
++                    ladder_updates, ladder_steps, pc, word(0x0F05),
++                    cpu.registers().get16(Reg16::HL), word(0x0F89), word(0x0F8B),
++                    word(0x0FB2), word(0x0FB4), word(0x0FB6)).unwrap();
++            }
++        }
++        if pc == 0x4C37 {
++            if ladder_updates == 0 {
++                if let Some(ref mut log) = ladder_map_log {
++                    let word = |address: u16| -> u16 {
++                        machine.peek(address) as u16 | ((machine.peek(address + 1) as u16) << 8)
++                    };
++                    for y in 1..=20u16 {
++                        for x in 1..=80u16 {
++                            let tile = word(0x010A + 2 * (x + 81 * y));
++                            writeln!(log, "{},{},{},{:04X}", word(0x0F69), x, y, tile).unwrap();
++                        }
++                    }
++                }
++            }
++            if let Some(ref mut log) = ladder_state_log {
++                let word = |address: u16| -> u16 {
++                    machine.peek(address) as u16 | ((machine.peek(address + 1) as u16) << 8)
++                };
++                let actors = (0..11).map(|slot| {
++                    let offset = 2 * slot;
++                    format!("{:04X}:{:04X}:{:04X}",
++                        word(0x0E68 + offset), word(0x0E7E + offset), word(0x0E94 + offset))
++                }).collect::<Vec<_>>().join("|");
++                ladder_updates += 1;
++                let keys = ladder_keys.iter().map(|key| format!("{:02X}", key))
++                    .collect::<Vec<_>>().join("|");
++                writeln!(log, "{},{},{},{:04X},{:04X},{:04X},{:04X},{:04X},{:04X},{:04X},{:04X},{:04X},{:04X},{:04X},{:04X},{:04X},{:04X},{}",
++                    ladder_updates, ladder_steps, keys,
++                    word(0x0F89), word(0x0F8B), word(0x0F91), word(0x0F93),
++                    word(0x0F95), word(0x0F97), word(0x0F9D), word(0x0F9F),
++                    word(0x0FA1), word(0x0FA3), word(0x0F05), word(0x0F77),
++                    word(0x0F67), word(0x0F69), actors).unwrap();
++                ladder_keys.clear();
++                for &(update, address, value) in &ladder_poke_after {
++                    if update == ladder_updates {
++                        machine.poke(address, value as u8);
++                        machine.poke(address.wrapping_add(1), (value >> 8) as u8);
++                        eprintln!("Ladder test poke after update {}: ${:04X}=${:04X}",
++                            update, address, value);
++                    }
++                }
++                if ladder_max_updates == Some(ladder_updates) {
++                    break;
++                }
++            }
++        }
 +        let mut edge = None;
 +        if ladder_log.is_some() && (0x0100..0x58DF).contains(&pc) && pc <= 0x58DB {
 +            let op = machine.peek(pc);
@@ -163,7 +417,7 @@ index 798f52a..ba64a0b 100644
  
          if cpu.is_halted() {
              println!("HALT instruction");
-@@ -317,8 +379,45 @@ pub fn run<'a>(command_line: Option<Vec<&str>>, console: &mut dyn ConsoleEmulato
+@@ -317,8 +633,71 @@ pub fn run<'a>(command_line: Option<Vec<&str>>, console: &mut dyn ConsoleEmulato
  
          let mut er = bios.execute(console, cpu.registers(), call_trace_all);
          if er == ExecutionResult::Continue {
@@ -183,8 +437,24 @@ index 798f52a..ba64a0b 100644
 +                && cpu.registers().get8(Reg8::E) == 0xFF
 +                && word_at(sp) == 0x6185
 +                && word_at(sp.wrapping_add(4)) == 0x47F0;
-+            let key = if game_poll && !ladder_injected {
++            let scheduled_key = if game_poll {
++                ladder_key_when.get(ladder_when_index).and_then(|&(x, y, key)| {
++                    if word_at(0x0F89) == x && word_at(0x0F8B) == y {
++                        Some(key)
++                    } else { None }
++                })
++            } else { None };
++            let update_key = if game_poll {
++                ladder_key_at.get(ladder_at_index).and_then(|&(update, key)| {
++                    if ladder_updates + 1 == update { Some(key) } else { None }
++                })
++            } else { None };
++            let key = if game_poll && !ladder_injected && ladder_inject_key.is_some() {
 +                ladder_inject_key
++            } else if update_key.is_some() {
++                update_key
++            } else if scheduled_key.is_some() {
++                scheduled_key
 +            } else if game_poll && ladder_inject_up_at_58
 +                && !ladder_up_injected && bios.ladder_player_at_base() {
 +                Some(b'8')
@@ -196,7 +466,11 @@ index 798f52a..ba64a0b 100644
 +            };
 +            if let Some(key) = key {
 +                cpu.registers().set16(Reg16::HL, key as u16);
-+                if !ladder_injected {
++                if update_key == Some(key) && (ladder_injected || ladder_inject_key.is_none()) {
++                    ladder_at_index += 1;
++                } else if scheduled_key == Some(key) && (ladder_injected || ladder_inject_key.is_none()) {
++                    ladder_when_index += 1;
++                } else if !ladder_injected {
 +                    ladder_injected = true;
 +                } else if key == b'8' {
 +                    ladder_up_injected = true;
@@ -208,10 +482,16 @@ index 798f52a..ba64a0b 100644
 +                er = execute_bdos(&mut bdos, &mut bios, console, &mut machine,
 +                    cpu.registers(), call_trace || call_trace_all, call_trace && !call_trace_all);
 +            }
++            if game_poll {
++                let key = cpu.registers().get8(Reg8::L);
++                if key != 0 {
++                    ladder_keys.push(key);
++                }
++            }
          }
  
          match er {
-@@ -381,6 +480,13 @@ pub fn run<'a>(command_line: Option<Vec<&str>>, console: &mut dyn ConsoleEmulato
+@@ -381,6 +760,32 @@ pub fn run<'a>(command_line: Option<Vec<&str>>, console: &mut dyn ConsoleEmulato
              }
          }
      }
@@ -219,13 +499,32 @@ index 798f52a..ba64a0b 100644
 +        log.flush().expect("flush Ladder call log");
 +        eprintln!("Ladder trace: {} transfers in {} instructions", ladder_events, ladder_steps);
 +    }
++    if let Some(mut log) = ladder_state_log {
++        log.flush().expect("flush Ladder state log");
++        eprintln!("Ladder state: {} updates in {} instructions", ladder_updates, ladder_steps);
++    }
++    if let Some(mut log) = ladder_score_log {
++        log.flush().expect("flush Ladder score event log");
++    }
++    if let Some(mut log) = ladder_rock_log {
++        log.flush().expect("flush Ladder rock event log");
++    }
++    if let Some(mut log) = ladder_rng_log {
++        log.flush().expect("flush Ladder RNG event log");
++    }
++    if let Some(mut log) = ladder_map_log {
++        log.flush().expect("flush Ladder map dump");
++    }
++    if let Some(mut log) = ladder_tile_log {
++        log.flush().expect("flush Ladder tile event log");
++    }
 +    if ladder_inject_key.is_some() && !ladder_injected {
 +        eprintln!("Ladder key was not injected: level-one poll was not reached");
 +    }
  
      match bdos.p_code() {
          None | Some(0) => 0,
-@@ -391,4 +497,4 @@ pub fn run<'a>(command_line: Option<Vec<&str>>, console: &mut dyn ConsoleEmulato
+@@ -391,4 +796,4 @@ pub fn run<'a>(command_line: Option<Vec<&str>>, console: &mut dyn ConsoleEmulato
              if lo != 0 { lo as i32 } else { 0xFF }
          }
      }

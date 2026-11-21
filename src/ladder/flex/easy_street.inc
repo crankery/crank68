@@ -1,4 +1,4 @@
-; Generated from Ladder/src/ladicons.pas by tools/make_levels.py
+; Generated from Pascal, corrected with analysis/map-parity.csv
 ; Easy Street: initial bonus 35, rocks 5
         .ascii "                                       V                 $                     "
         .ascii "                                                         H                     "
@@ -8,7 +8,7 @@
         .ascii "                H                                                              "
         .ascii "                H          H                             H                     "
         .ascii "================H==========H==================   ========H====================="
-        .ascii "                &          H                             H          |       |  "
+        .ascii "                &          H                             H                     "
         .ascii "                                                         H         Easy Street "
         .ascii "                H                                        H                     "
         .ascii "       =========H==========H=========  =======================                 "

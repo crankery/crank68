@@ -12917,9 +12917,9 @@
 			)
 			(embedded_fonts no)
 		)
-		(symbol "Connector:Barrel_Jack"
+		(symbol "Connector:Barrel_Jack_Switch"
 			(pin_names
-				(offset 1.016)
+				(hide yes)
 			)
 			(exclude_from_sim no)
 			(in_bom yes)
@@ -12936,7 +12936,7 @@
 					)
 				)
 			)
-			(property "Value" "Barrel_Jack"
+			(property "Value" "Barrel_Jack_Switch"
 				(at 0 -5.08 0)
 				(show_name no)
 				(do_not_autoplace no)
@@ -12968,7 +12968,7 @@
 					)
 				)
 			)
-			(property "Description" "DC Barrel Jack"
+			(property "Description" "DC Barrel Jack with an internal switch"
 				(at 0 0 0)
 				(show_name no)
 				(do_not_autoplace no)
@@ -13001,7 +13001,7 @@
 					)
 				)
 			)
-			(symbol "Barrel_Jack_0_1"
+			(symbol "Barrel_Jack_Switch_0_1"
 				(rectangle
 					(start -5.08 3.81)
 					(end 5.08 -3.81)
@@ -13049,6 +13049,18 @@
 						(type outline)
 					)
 				)
+				(polyline
+					(pts
+						(xy 1.27 -2.286) (xy 1.905 -1.651)
+					)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
 				(rectangle
 					(start 3.683 3.175)
 					(end -3.302 1.905)
@@ -13072,8 +13084,20 @@
 						(type none)
 					)
 				)
+				(polyline
+					(pts
+						(xy 5.08 0) (xy 1.27 0) (xy 1.27 -2.286) (xy 0.635 -1.651)
+					)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
 			)
-			(symbol "Barrel_Jack_1_1"
+			(symbol "Barrel_Jack_Switch_1_1"
 				(pin passive line
 					(at 7.62 2.54 180)
 					(length 2.54)
@@ -13103,6 +13127,24 @@
 						)
 					)
 					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 7.62 0 180)
+					(length 2.54)
+					(name ""
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "3"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -15661,6 +15703,14 @@
 		(uuid "7afde560-051e-4bf6-84c0-1712fb3b808c")
 	)
 	(no_connect
+		(at 179.07 144.78)
+		(uuid "858b421d-52b3-4108-be21-7d2f967d94f0")
+	)
+	(no_connect
+		(at 237.49 142.24)
+		(uuid "8d7576cd-3417-4d44-ba71-fe2b6afc5e9b")
+	)
+	(no_connect
 		(at 267.97 44.45)
 		(uuid "8dabdec5-4b71-4748-8616-22e7bf24d7ad")
 	)
@@ -17026,10 +17076,6 @@
 		)
 		(uuid "844920ef-66f1-4009-80a7-21741c5496fc")
 	)
-	(no_connect
-		(at 179.07 144.78)
-		(uuid "858b421d-52b3-4108-be21-7d2f967d94f0")
-	)
 	(label "D4"
 		(at 185.42 57.15 180)
 		(effects
@@ -18126,86 +18172,6 @@
 			(project "Test68"
 				(path "/ec6e6b1d-97c7-496e-845f-1ea1b57866d6"
 					(reference "#PWR027")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Connector:Barrel_Jack")
-		(at 229.87 142.24 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "231bfd91-2bcf-484f-b135-ae272cea4528")
-		(property "Reference" "J2"
-			(at 229.87 133.35 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "Power"
-			(at 229.87 135.89 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "Connector_BarrelJack:BarrelJack_Horizontal"
-			(at 231.14 143.256 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 231.14 143.256 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "DC Barrel Jack"
-			(at 229.87 142.24 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "2"
-			(uuid "a07bb3c0-38bb-4ea1-9e5b-21eba6baa1c3")
-		)
-		(pin "1"
-			(uuid "364d667a-42fa-42bf-ac55-691116b1f830")
-		)
-		(instances
-			(project "Test68"
-				(path "/ec6e6b1d-97c7-496e-845f-1ea1b57866d6"
-					(reference "J2")
 					(unit 1)
 				)
 			)
@@ -20639,6 +20605,89 @@
 			(project "Test68"
 				(path "/ec6e6b1d-97c7-496e-845f-1ea1b57866d6"
 					(reference "#PWR018")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Connector:Barrel_Jack_Switch")
+		(at 229.87 142.24 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "a6173c73-9593-403a-9684-de8be4084769")
+		(property "Reference" "J2"
+			(at 229.87 133.35 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "Power"
+			(at 229.87 135.89 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Connector_BarrelJack:BarrelJack_Horizontal"
+			(at 231.14 143.256 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 231.14 143.256 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "DC Barrel Jack with an internal switch"
+			(at 229.87 142.24 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "2"
+			(uuid "08957412-32fc-459a-9085-4c680a497d17")
+		)
+		(pin "1"
+			(uuid "c91c8eaa-1614-4624-b6da-419d74846a9e")
+		)
+		(pin "3"
+			(uuid "4dbf45b0-e4bb-4246-b9d3-c4bbb8830da4")
+		)
+		(instances
+			(project "Test68"
+				(path "/ec6e6b1d-97c7-496e-845f-1ea1b57866d6"
+					(reference "J2")
 					(unit 1)
 				)
 			)

@@ -1,6 +1,6 @@
-; Generated from Ladder/src/ladicons.pas by tools/make_levels.py
+; Generated from Pascal, corrected with analysis/map-parity.csv
 ; GangLand: initial bonus 32, rocks 6
-        .ascii "                    =Gang Land=                             V                  "
+        .ascii "                    ===========                             V         .        "
         .ascii "                   ==      _  ==                                      .        "
         .ascii "      p    H        |  [] |_| |                  &                    .  H     "
         .ascii "===========H        |     |_| |       H         ===   ===================H     "
@@ -8,9 +8,9 @@
         .ascii "           H                          H                     &            H     "
         .ascii "           H                          H                |    |            H     "
         .ascii "    H      H        ^^^&&^^^ & ^  ^^^ H           H    |    =============H     "
-        .ascii "    H======H   =======================H===========H=====          &      H     "
-        .ascii "    H                                 H           H    |         &&&     H     "
-        .ascii "    H                                 H           H    |        &&&&&    H     "
+        .ascii "    H======H   =======================H===========H=====                 H     "
+        .ascii "    H                                 H           H    |                 H     "
+        .ascii "    H                                 H           H    |                 H     "
         .ascii "    H                                 H           H    |    =============H     "
         .ascii "              =====------=================        H    |       $     $         "
         .ascii "                                         |        H    |      $$$   $$$        "

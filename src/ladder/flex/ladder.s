@@ -1,5 +1,6 @@
 ; Easy Street prototype for C68 FLEX and an ANSI/VT100 terminal.
-; Map and movement rules come from the Turbo Pascal Ladder rewrite.
+; Terrain is generated from Pascal layouts with original-game corrections.
+; Movement follows the probed original CP/M Ladder rules.
 ; SPDX-License-Identifier: GPL-2.0-or-later
         .equ outch, 0xad0f
         .equ warms, 0xad03
@@ -21,16 +22,15 @@ start:
         jsr draw_level
         jsr draw_player
 game_loop:
-        jsr poll
-        bcc no_key
-        jsr getc
-        jsr handle_key
-no_key:
         ldx #12000             ; approximate game tick; tune on hardware
 tick_wait:
         dex
         bne tick_wait
         jsr move_player
+        jsr poll
+        bcc game_loop
+        jsr getc
+        jsr handle_key
         bra game_loop
 
 handle_key:
@@ -80,21 +80,6 @@ key_jump:
         jsr is_solid
         tst solid_flag
         beq jump_key_done
-        ldaa direction
-        cmpa #1
-        beq jump_left
-        cmpa #2
-        beq jump_right
-        clr jump_dir
-        bra jump_begin
-jump_left:
-        ldaa #1
-        staa jump_dir
-        bra jump_begin
-jump_right:
-        ldaa #2
-        staa jump_dir
-jump_begin:
         ldaa #1
         staa jump_step
 jump_key_done:
@@ -141,7 +126,7 @@ left_supported:
         ldaa player_x
         cmpa #1
         bne left_in_bounds
-        jmp stop_move
+        jmp move_done
 left_in_bounds:
         deca
         staa target_x
@@ -157,7 +142,7 @@ right_supported:
         ldaa player_x
         cmpa #79
         bne right_in_bounds
-        jmp stop_move
+        jmp move_done
 right_in_bounds:
         inca
         staa target_x
@@ -166,21 +151,25 @@ right_in_bounds:
 move_horizontal:
         jsr target_tile
         jsr is_wall
-        bcs stop_move
+        bcs move_done
         ldaa target_x
         staa player_x
+        jsr clear_departed_floor
         bra move_done
+
 move_up:
+        jsr is_solid
+        tst solid_flag
+        bne up_supported
+        jmp fall_only
+up_supported:
         ldaa player_x
         staa target_x
         ldaa player_y
         staa target_y
-        jsr target_tile
-        cmpa #'H'
-        bne stop_move
         ldaa player_y
         cmpa #1
-        beq stop_move
+        beq move_done
         deca
         staa target_y
         jsr target_tile
@@ -189,14 +178,14 @@ move_up:
         cmpa #'&'
         beq climb_up
         cmpa #'$'
-        bne stop_move
+        bne move_done
 climb_up:
         dec player_y
         bra move_done
 move_down:
         ldaa player_y
         cmpa #19
-        beq stop_move
+        beq move_done
         ldaa player_x
         staa target_x
         ldaa player_y
@@ -207,21 +196,19 @@ move_down:
         inc target_y
         jsr target_tile
         cmpa #'H'
-        bne stop_move
+        bne move_done
 down_allowed:
         ldaa player_y
         inca
         staa target_y
         jsr target_tile
-        jsr is_wall
-        bcs stop_move
+        jsr is_down_blocked
+        bcs move_done
         inc player_y
         bra move_done
 fall_only:
         jsr fall_if_needed
         bra move_done
-stop_move:
-        clr direction
 move_done:
         ldaa player_x
         cmpa old_x
@@ -245,6 +232,7 @@ moved:
         rts
 level_done:
         clr direction
+        clr jump_step
         ldaa #1
         staa won_level
         ldx #win_text
@@ -259,6 +247,27 @@ fire_reset:
         clr jump_step
         jmp draw_player
 
+; Ordinary sideways movement consumes '-' below the departed cell.
+; A jump's horizontal apex uses move_jump and leaves that floor intact.
+clear_departed_floor:
+        ldaa old_x
+        staa target_x
+        staa cursor_col
+        ldaa old_y
+        inca
+        staa target_y
+        staa cursor_row
+        jsr target_tile
+        cmpa #'-'
+        bne floor_clear_done
+        ldaa #' '
+        staa 0,x
+        jsr cursor_to
+        ldaa #' '
+        jsr outch
+floor_clear_done:
+        rts
+
 fall_if_needed:
         jsr is_solid
         tst solid_flag
@@ -270,8 +279,8 @@ fall_if_needed:
 fall_done:
         rts
 
-; Pascal's moving jump: up/up, across/across, down/down.
-; A standing jump is up/up, pause, down/down.
+; Original jump: up/up, two apex steps, down/down.
+; Horizontal motion is applied on each step of a moving jump.
 move_jump:
         ldaa player_x
         staa target_x
@@ -287,51 +296,68 @@ jump_not_up:
         bcs jump_vertical_done
         inc target_y
 jump_vertical_done:
-        tst jump_dir
-        beq jump_target_ready
-        ldaa jump_dir
+        ldaa direction
         cmpa #1
-        bne jump_to_right
-        dec target_x
-        bra jump_target_ready
-jump_to_right:
+        beq jump_to_left
+        cmpa #2
+        bne jump_target_ready
         inc target_x
+        bra jump_target_ready
+jump_to_left:
+        dec target_x
 jump_target_ready:
         ldaa target_x
-        beq jump_blocked
+        beq jump_wall
         cmpa #80
-        bcc jump_blocked
+        bcc jump_wall
         ldaa target_y
         beq jump_blocked
         cmpa #20
         bcc jump_blocked
         jsr target_tile
-        jsr is_wall
-        bcs jump_blocked
+        cmpa #'|'
+        beq jump_wall
+        cmpa #'='
+        beq jump_blocked
+        cmpa #'H'
+        beq jump_ladder
         ldaa target_x
         staa player_x
         ldaa target_y
         staa player_y
         inc jump_step
-        ldaa jump_dir
-        bne jump_six_step
-        ldaa jump_step
-        cmpa #6
-        bcs jump_return
-        bra jump_finished
-jump_six_step:
         ldaa jump_step
         cmpa #7
         bcs jump_return
-jump_finished:
         clr jump_step
 jump_return:
         rts
 jump_blocked:
         clr jump_step
         jmp fall_if_needed
+jump_ladder:
+        ldaa target_x
+        staa player_x
+        ldaa target_y
+        staa player_y
+        clr jump_step
+        rts
+jump_wall:
+        ldaa direction
+        cmpa #1
+        beq jump_wall_right
+        cmpa #2
+        bne jump_return
+        ldaa #1
+        staa direction
+        rts
+jump_wall_right:
+        ldaa #2
+        staa direction
+        rts
 
-; Return solid_flag=1 if on a ladder or standing on a supporting tile.
+; Return solid_flag=1 if on a ladder or above support codes 1 through 5.
+; A ladder one row below does not support Lad: he falls into it.
 is_solid:
         clr solid_flag
         ldaa player_x
@@ -350,9 +376,11 @@ is_solid:
         beq solid_yes
         cmpa #'-'
         beq solid_yes
-        cmpa #'H'
+        cmpa #'$'
         beq solid_yes
         cmpa #'|'
+        beq solid_yes
+        cmpa #'V'
         bne solid_done
 solid_yes:
         ldaa #1
@@ -360,16 +388,21 @@ solid_yes:
 solid_done:
         rts
 
-; A contains tile; carry means it blocks Lad movement.
+; Horizontal movement blocks solid floor and wall. A disposable floor
+; can be entered sideways, but blocks a downward climb.
 is_wall:
         cmpa #'='
         beq wall_yes
         cmpa #'|'
         beq wall_yes
-        cmpa #'-'
-        beq wall_yes
         clc
         rts
+is_down_blocked:
+        cmpa #'-'
+        beq wall_yes
+        cmpa #'V'
+        beq wall_yes
+        jmp is_wall
 wall_yes:
         sec
         rts
@@ -528,7 +561,6 @@ target_x:     .byte 0
 target_y:     .byte 0
 direction:    .byte 0
 jump_step:    .byte 0
-jump_dir:     .byte 0
 won_level:    .byte 0
 solid_flag:   .byte 0
 cursor_col:   .byte 0
