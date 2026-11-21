@@ -10,7 +10,7 @@ GAL_JEDECS := $(patsubst pld/%.gal,build/pld/%.jed,$(GAL_SOURCES))
 GAL_FUSE_MAPS := $(patsubst pld/%.gal,build/pld/%.fus,$(GAL_SOURCES))
 GAL_PIN_REPORTS := $(patsubst pld/%.gal,build/pld/%.pin,$(GAL_SOURCES))
 
-.PHONY: all system pld fonts test run session program-avr program-avr-dry-run
+.PHONY: all system pld fonts test run run-c68bios session program-avr program-avr-dry-run
 all: system
 
 $(GALASM): $(GALASM_SOURCES)
@@ -50,6 +50,11 @@ session: system
 
 run: session
 	build/system/emu --load build/system/mikbug2.rom@E000 --sram-image $(SRAM_SESSION) --sd-image build/session-sd-$(DRIVE_LAYOUT).dsk $(if $(TCP_PORT),--tcp-console $(TCP_PORT)) $(if $(filter 1,$(TRACE)),--trace) $(if $(filter 1,$(THROTTLE)),--throttle)
+
+# Try the new C68 BIOS without changing the packaged MIKBUG default.
+run-c68bios: session
+	$(MAKE) -C roms/c68bios all
+	build/system/emu --load roms/c68bios/c68.rom@E000 --sram-image $(SRAM_SESSION) --sd-image build/session-sd-$(DRIVE_LAYOUT).dsk $(if $(TCP_PORT),--tcp-console $(TCP_PORT)) $(if $(filter 1,$(TRACE)),--trace) $(if $(filter 1,$(THROTTLE)),--throttle)
 
 # Only these explicit targets contact (or display commands for) the programmer.
 program-avr: system

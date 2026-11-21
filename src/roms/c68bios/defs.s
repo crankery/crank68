@@ -7,6 +7,7 @@
         .equ io_end, 0xe0ff
         .equ bios_start, 0xe100
         .equ bios_end, 0xffff
+        .equ warm_flag, 0x9b20  ; four RAM bytes outside FLEX user RAM
 
 ; device settings
         .equ acia_rdrf_mask, 0x1

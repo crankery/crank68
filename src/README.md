@@ -45,6 +45,11 @@ command still starts from physical SRAM before FLEX selects its configured
 drives. Use `make DRIVE_LAYOUT=sd-first test` to run its driver and FMS tests
 without the SRAM boot smoke test.
 
+`make run-c68bios` tries the separate C68 BIOS ROM. It boots FLEX from SRAM
+automatically and enters its monitor on NMI; see
+[`roms/c68bios/README.md`](roms/c68bios/README.md). The normal `make run`
+continues to use MIKBUG2.
+
 For a raw TCP terminal, run `make run TCP_PORT=6800` and connect PuTTY in Raw
 mode to `127.0.0.1:6800`. The emulator waits for the connection before running
 the CPU. This uses the same persistent SRAM and SD session images. Continuous

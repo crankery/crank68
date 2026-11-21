@@ -32,6 +32,11 @@ SECTIONS
         *(.strings)
     } > ROM
 
+    .boot 0xFFC0 :
+    {
+        *(.boot)
+    } > ROM
+
     .vectors 0xFFF8 :
     {
         *(.vectors)

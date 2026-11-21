@@ -6,18 +6,63 @@
     .global swi_handler
     .global nmi_handler
     .global rst_handler
+    .global flexboot
 
     .section ".bios","acr"
 
     .include "defs.s"
 
 rst_handler:
+    sei
+    lds #ram_end
+    ; A retained RAM signature distinguishes RESET/MON from a cold start.
+    ldaa warm_flag
+    cmpa #'C'
+    bne cold_start
+    ldaa warm_flag+1
+    cmpa #'6'
+    bne cold_start
+    ldaa warm_flag+2
+    cmpa #'8'
+    bne cold_start
+    ldaa warm_flag+3
+    cmpa #'!'
+    bne cold_start
+    jmp monitor_start
+cold_start:
+    ; Give the operator about one second at 1 MHz to choose the monitor.
+    clra
+    staa bank_reg
+    jsr acia0_init
+    ldx #st_banner_msg
+    jsr putns
+    ldaa #'C'
+    staa warm_flag
+    ldaa #'6'
+    staa warm_flag+1
+    ldaa #'8'
+    staa warm_flag+2
+    ldaa #'!'
+    staa warm_flag+3
+    ldx #55000
+startup_key_window:
+    ldab acia0_reg
+    bitb #acia_rdrf_mask
+    bne startup_monitor
+    dex
+    bne startup_key_window
+    jmp flexboot
+startup_monitor:
+    ldaa acia0_data         ; consume the key that selected the monitor
+    jmp monitor             ; banner is already on the screen
+
+monitor_start:
+    sei
     ; stack goes at the end of ram
     lds #ram_end     
 
-    ; clear condition codes
+    ; start with bank zero; leave IRQ masked after the non-returning NMI.
     clra
-    tap
 
     ; initialize bank register to known state
     staa bank_reg   
@@ -26,17 +71,19 @@ rst_handler:
     jsr acia0_init
 
     ; output the bios banner
+    ldx #s_crlf
+    jsr puts
     ldx #st_banner_msg
     jsr putns
 
-; fall through to monitor
+    jmp monitor
 
 ; ------------------------------------------------------------
 ; monitor entry
 ; ------------------------------------------------------------
 
 monitor:
-    ldx s_crlf
+    ldx #s_crlf
     jsr puts
 
     ; prompt
@@ -49,22 +96,8 @@ monitor:
     ldx #s_crlf
     jsr puts
 
-    ; print it out
-    ;lda #'?'
-    ;jsr putc
-    ;ldx #bios_tmp
-    ;jsr puts
-    ;jsr put_crlf
-
     jsr parse_command
 
-    ; pretend we're displaying memory somewhere
-    ; x should hold the address to display
-    ;ldx #0xe100
-    ; a contains the count to output
-    ;ldaa #16 
-    ;jsr show_memory
-    
     ; monitor loop
     bra monitor
 
@@ -74,7 +107,9 @@ parse_command:
 ; skip leading spaces
 .skip_spaces:
         ldaa    0,x
-        beq     .done
+        bne     .nonempty
+        rts
+.nonempty:
         cmpa    #' '
         bne     .got_cmd
         inx
@@ -87,11 +122,55 @@ parse_command:
         cmpa    #'H'
         beq     .cmd_help
 
-        ; show memory
-        cmpa    #'S'
-        beq     .cmd_show
+        ; F alone boots FLEX; F800 is a hex address to examine.
+        cmpa    #'F'
+        bne     .address
+        ldab    1,x
+        beq     .cmd_boot
 
-        ; unknown command
+.address:
+        ; An address alone examines one byte; a dot adds an inclusive end.
+        jsr     parse_hex16_x
+        bcs     .unknown
+        stx     zp_input
+        ldx     zp_value
+        stx     zp_ptr
+        ldx     zp_input
+        jsr     skip_spaces
+        ldaa    0,x
+        beq     .cmd_show_single
+        cmpa    #'.'
+        bne     .unknown
+        inx
+        jsr     skip_spaces
+        jsr     parse_hex16_x
+        bcs     .unknown
+        stx     zp_input
+        ldx     zp_value
+        stx     zp_end
+        ldx     zp_input
+        jsr     skip_spaces
+        ldaa    0,x
+        bne     .unknown
+        ; Reject a backwards range rather than wrapping through memory.
+        ldaa    zp_ptr
+        cmpa    zp_end
+        bhi     .unknown
+        blo     .cmd_show_range
+        ldaa    zp_ptr+1
+        cmpa    zp_end+1
+        bhi     .unknown
+.cmd_show_range:
+        ldaa    #1
+        jmp     show_memory
+
+.cmd_show_single:
+        ldx     zp_ptr
+        stx     zp_end
+        clra
+        jmp     show_memory
+
+.unknown:
         ldx     #s_monitor_unknown
         jsr     puts
         rts
@@ -101,23 +180,14 @@ parse_command:
         jsr     putns
         rts
 
-.cmd_show:
-        inx                     ; move past 'S'
-        jsr     parse_hex16_x   ; returns X = parsed value
-        ldx #0xe100
-        ldaa    #16
-        jsr     show_memory
+.cmd_boot:
+        jmp flexboot
 
-.done:
-        rts
-
-; print out the memory at a location in memory
-; this one will print the header
-; address is in x, count is in a
+; Display zp_ptr through zp_end, inclusive, in rows of sixteen bytes.
+; A is nonzero for a range, which also gets an ASCII column.
 show_memory:
-    stx zp_ptr
-    staa zp_count
-
+    staa zp_range
+.line:
     ; print the address high
     ldaa zp_ptr
     jsr put_hex_byte
@@ -129,26 +199,154 @@ show_memory:
     ldaa #':'
     jsr putc
 
-.0:
+    ldaa #16
+    staa zp_count
+    clr zp_row_count
+    ldx #zp_ascii_row
+    stx zp_ascii_ptr
+.next_byte:
     ldaa #' '
     jsr putc
 
     ldx zp_ptr
     ldaa 0, x
+    psha
+    jsr put_hex_byte
+    pula
+
+    ; Keep a printable copy. Read each memory location only once: device
+    ; registers may change or have side effects on a second read.
+    anda #0x7f
+    cmpa #' '
+    bcs .unprintable
+    cmpa #0x7f
+    bne .save_ascii
+.unprintable:
+    ldaa #'.'
+.save_ascii:
+    ldx zp_ascii_ptr
+    staa 0,x
+    inx
+    stx zp_ascii_ptr
+    inc zp_row_count
+
+    ldx zp_ptr
+    cpx zp_end
+    beq .last
     inx
     stx zp_ptr
-    jsr put_hex_byte
-    
     dec zp_count
-    bne .0
+    bne .next_byte
 
+    jsr print_row_end
+    bra .line
+.last:
+    jsr print_row_end
+    rts
+
+; Print the optional ASCII column at a fixed position, then end the row.
+print_row_end:
+    ldaa zp_range
+    beq .newline
+    ldaa #16
+    suba zp_row_count
+    staa zp_count
+    beq .divider
+.pad:
+    ldaa #' '
+    jsr putc
+    jsr putc
+    jsr putc
+    dec zp_count
+    bne .pad
+.divider:
+    ldaa #' '
+    jsr putc
+    jsr putc
+    ldaa #'|'
+    jsr putc
+    ldx #zp_ascii_row
+    ldaa zp_row_count
+    staa zp_count
+.ascii_char:
+    ldaa 0,x
+    jsr putc
+    inx
+    dec zp_count
+    bne .ascii_char
+    ldaa #'|'
+    jsr putc
+.newline:
     ldx #s_crlf
     jsr puts
     rts
 
+; X points to a hex address. Return X after 1-4 digits and the value in
+; zp_value. Carry is set for an absent or overlong address.
 parse_hex16_x:
+    clr zp_value
+    clr zp_value+1
+    clr zp_digits
+.digit:
+    ldaa 0,x
+    jsr hex_nibble
+    bcs .end
+    staa zp_nibble
+    ldaa zp_digits
+    cmpa #4
+    beq .parse_bad
+    inc zp_digits
+    asl zp_value+1
+    rol zp_value
+    asl zp_value+1
+    rol zp_value
+    asl zp_value+1
+    rol zp_value
+    asl zp_value+1
+    rol zp_value
+    ldaa zp_value+1
+    oraa zp_nibble
+    staa zp_value+1
+    inx
+    bra .digit
+.end:
+    ldaa zp_digits
+    beq .parse_bad
+    clc
+    rts
+.parse_bad:
+    sec
     rts
 
+; Convert ASCII hex in A to a nibble; carry set if it is not hex.
+hex_nibble:
+    cmpa #'0'
+    bcs .nibble_bad
+    cmpa #'9'
+    bhi .letter
+    suba #'0'
+    clc
+    rts
+.letter:
+    cmpa #'A'
+    bcs .nibble_bad
+    cmpa #'F'
+    bhi .nibble_bad
+    suba #'A'-10
+    clc
+    rts
+.nibble_bad:
+    sec
+    rts
+
+skip_spaces:
+    ldaa 0,x
+    cmpa #' '
+    bne .spaces_done
+    inx
+    bra skip_spaces
+.spaces_done:
+    rts
 
 ; acia0_init
 ; reset the acia
@@ -360,4 +558,25 @@ swi_handler:
     rti
 
 nmi_handler:
-    rti
+    ; NMI abandons the interrupted program, including FLEX's RAM workspace.
+    jmp monitor_start
+
+; Keep this entry at the former MIKBUG $FFC0 address. No monitor RAM or
+; stack is needed: the boot sector takes ownership after the jump to $0100.
+    .section ".boot","acr"
+flexboot:
+    sei
+    ldaa #3
+    staa acia0_reg
+    ldaa #0x11
+    staa acia0_reg
+    clr bank_reg+2              ; $E002: select SRAM page zero
+    lds #0x01ff
+    ldx #0xc100
+flexcopy:
+    dex
+    ldaa 0,x
+    psha
+    cpx #0xc000
+    bne flexcopy
+    jmp 0x0100

@@ -316,8 +316,12 @@ The original system images and `SAVE.LOW` are omitted. `LINK` and `NEWDISK`
 target the original boot/floppy hardware; `PRINT.CMD` and `PRINT.SYS` require
 unsupported printing support, so they are omitted too. Imported utilities
 are historical binaries; CAT is exercised in the emulator,
-but the full command set has not been individually tested. VERSION expects
-the original system file and reports error 21 with this custom system image.
+but the full command set has not been individually tested. `VERSION` requires
+a file argument: bare `VERSION` or `0.VERSION` reports error 21 because no
+target file was supplied. In the emulator, `VERSION CAT` reports `VERSION #1`,
+while `VERSION LADDER` reports `#248`; the historical version field is not a
+useful build identifier for newly packaged commands. Use `LIST 0.BUILD.TXT`
+for this system image's build information.
 
 ## Verification
 

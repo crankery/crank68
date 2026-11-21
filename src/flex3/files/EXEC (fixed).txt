@@ -1,0 +1,35 @@
+In the process of testing my FDC for Sphere (see previous email), I came up
+against a bug in FLEX's EXEC.CMD batch file runner utility. Not sure if this
+has been found/fixed before but I took a run at it anyway. Below is the
+explanation and attached is a fixed executable binary.
+
+
+Setup: Create a text file with multiple command lines in it (any commands),
+and run it with EXEC under FLEX 3.0 (6800)
+
+Expected: Execution of each command line in turn and a return to prompt.
+
+Actual behavior: The first command in the file is executed correctly, then
+EXEC quits with "EX ABORTED". 
+
+ 
+Explanation: EXEC relies on the system call DOCMND (Call DOS as a subroutine)
+at address $AD4B. This routine is defined (per TSC's Advanced Flex Programmer's
+Manual) to indicate any error as a nonzero value in the B reg. The EXEC code
+does not check B explicitly however; instead it assumes that the Z flag will
+be set correspondingly, and follows the JSR DOCMD with a BEQ instruction. This
+happens to work in earlier builds of the OS, including FLEX 2.1. But the
+instructions within the DOCMD routine shuffled around a tiny bit in General
+FLEX 3.0 such that the Z flag does not match the value in the B register on
+exit. As a result, EXEC thinks the system call has failed and bails out, even
+though it has actually succeeded.
+
+
+This appears to be a bug in EXEC and not in the OS, because the EXEC code is
+making an assumption about a behavior that isn't defined. If I were working
+at TSC in 1980, I'd tweak the OS code to restore the earlier behavior because
+there's no downside. But since this OS has been frozen in time for 45 years,
+I fixed the bug in EXEC instead, by inserting a TST B after the JSR and before
+the BEQ.
+
+Ben Zotto

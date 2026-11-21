@@ -12,9 +12,10 @@
     .global st_monitor_help
 
 st_banner_msg:
-    .byte 0x02
-    .string "C68 BIOS"
+    .byte 0x03
+    .string "C68 BIOS v0.01"
     .string "Dave Hamilton 2026"
+    .include "build_tag.inc"
 
 s_crlf:
     .string "\r\n"
@@ -25,6 +26,6 @@ s_monitor_unknown:
 st_monitor_help:
     .byte   0x04
     .string "H (?)               - Display help"
-    .string "S [address]         - Show memory contents"
-    .string "G [address]         - Run the program at address"
-    .string "D [address] [value] - Deposit value at address"
+    .string "F                   - Boot FLEX from SRAM"
+    .string "address             - Examine one byte"
+    .string "start.end           - Examine inclusive range"
