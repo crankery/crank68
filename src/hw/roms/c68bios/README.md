@@ -13,8 +13,11 @@ Before boot, it prints `C68 BIOS v0.01` and `Dave Hamilton 2026`. The monitor's
 source hash. NMI prints the banner on a new line when it opens the monitor.
 Set `SOURCE_DATE_EPOCH` before building
 to choose a reproducible build date.
-Reset copies the first 256-byte boot sector to `$0100` and jumps to it, using
-the same boot contract as MIKBUG2. The handoff is also available at `$FFC0`.
+Cold start and monitor entry select SRAM page zero in both `$C000–$CFFF`
+(`$E002`) and `$D000–$DFFF` (`$E003`) windows. FLEX handoff selects both
+pages again, then copies the first 256-byte boot sector to `$0100` and jumps
+to it, using the same boot contract as MIKBUG2. The handoff is also available
+at `$FFC0`.
 The raw SRAM image must already contain a bootable FLEX disk.
 
 From `src`, try it with:
@@ -28,6 +31,10 @@ make run-c68bios THROTTLE=1 TCP_PORT=6800
 transport API, so FLEX's SD drive is unavailable. It does not replace the
 default MIKBUG ROM in `make run` or the packaged system. FLEX keeps using its
 own polling console at `$E010/$E011`.
+The IO board schematic decodes its two ACIAs and two PIAs at offsets
+`$0/$4/$8/$C` within the selected slot. With the board set to slot 1, these
+start at `$E010/$E014/$E018/$E01C`. The emulator uses the same layout;
+C68 BIOS uses only the first ACIA.
 
 NMI abandons the running program and opens the C68 BIOS monitor. The monitor
 offers `H`/`?` for help, `F` to boot FLEX again, hexadecimal addresses to
@@ -36,7 +43,7 @@ the next address, and `addressG` to run code. A program reached through `G`
 returns to the monitor with `RTS`; reset or NMI also re-enters the monitor.
 An empty `address:` sets the continuation address without writing a byte.
 Range dumps show 16 bytes per row with
-an ASCII column. The high bit is ignored; controls and DEL appear as `.`.
+an ASCII column. The high bit is ignored; controls and DEL appear as spaces.
 FLEX's `MON`
 command goes through the reset vector and enters the warm monitor. Returning
 to a suspended FLEX session is not

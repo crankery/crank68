@@ -32,7 +32,8 @@ rst_handler:
 cold_start:
     ; Give the operator about one second at 1 MHz to choose the monitor.
     clra
-    staa bank_reg
+    staa sram_page_low
+    staa sram_page_high
     jsr acia0_init
     clr zp_deposit_valid
     ldx #st_banner_msg
@@ -77,11 +78,10 @@ monitor_start:
     ; stack goes at the end of ram
     lds #ram_end     
 
-    ; start with bank zero; leave IRQ masked after the non-returning NMI.
+    ; Select SRAM page zero in both windows; leave IRQ masked after NMI.
     clra
-
-    ; initialize bank register to known state
-    staa bank_reg   
+    staa sram_page_low
+    staa sram_page_high
 
     ; initialize console / serial hardware
     jsr acia0_init
@@ -211,7 +211,7 @@ parse_command:
         ldx     #s_crlf
         jsr     puts
         ldx     #st_monitor_help
-        jsr     putns
+        jsr     put_help
         rts
 
 .cmd_boot:
@@ -318,7 +318,7 @@ show_memory:
     cmpa #0x7f
     bne .save_ascii
 .unprintable:
-    ldaa #'.'
+    ldaa #' '
 .save_ascii:
     ldx zp_ascii_ptr
     staa 0,x
@@ -508,6 +508,32 @@ putns:
     bne .1      ; print out the next string 
     rts
 
+; Counted help rows: command string, space count, description string.
+put_help:
+    ldaa 0,x
+.row:
+    psha
+    inx
+    jsr puts
+    inx
+    ldaa 0,x
+    staa zp_count
+    ldaa #' '
+.help_pad:
+    jsr putc
+    dec zp_count
+    bne .help_pad
+    inx
+    jsr puts
+    stx zp_ptr
+    ldx #s_crlf
+    jsr puts
+    ldx zp_ptr
+    pula
+    deca
+    bne .row
+    rts
+
 ; output A in 2 digit hex format
 put_hex_byte:
     psha
@@ -666,7 +692,9 @@ flexboot:
     staa acia0_reg
     ldaa #0x11
     staa acia0_reg
-    clr bank_reg+2              ; $E002: select SRAM page zero
+    clra
+    staa sram_page_low           ; $E002: select page zero for the boot sector
+    staa sram_page_high          ; $E003: establish the other window too
     lds #0x01ff
     ldx #0xc100
 flexcopy:

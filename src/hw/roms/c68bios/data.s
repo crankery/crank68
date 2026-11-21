@@ -32,10 +32,24 @@ s_build_tag:
 
 st_monitor_help:
     .byte   0x07
-    .string "H (?)               - Display help"
-    .string "F                   - Boot FLEX from SRAM"
-    .string "address             - Examine one byte"
-    .string "start.end           - Examine inclusive range"
-    .string "address: bytes      - Write hex bytes to memory"
-    .string ": bytes             - Continue at next address"
-    .string "addressG            - Run code (RTS returns here)"
+    .string "H (?)"
+    .byte 15
+    .string "- Display help"
+    .string "F"
+    .byte 19
+    .string "- Boot FLEX from SRAM"
+    .string "address"
+    .byte 13
+    .string "- Examine one byte"
+    .string "start.end"
+    .byte 11
+    .string "- Examine inclusive range"
+    .string "address: bytes"
+    .byte 6
+    .string "- Write hex bytes to memory"
+    .string ": bytes"
+    .byte 13
+    .string "- Continue at next address"
+    .string "addressG"
+    .byte 12
+    .string "- Run code (RTS returns here)"

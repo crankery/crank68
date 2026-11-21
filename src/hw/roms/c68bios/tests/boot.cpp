@@ -34,11 +34,16 @@ struct Bus : IBus {
     std::array<uint8_t,65536> ram{};
     std::vector<uint8_t> disk;
     uint8_t page = 0;
+    uint8_t high_page = 0;
+    unsigned low_page_zero_writes = 0;
+    unsigned high_page_zero_writes = 0;
     int input = -1;
     std::string output;
     uint8_t read8(uint16_t address) override {
         if (address >= 0xC000 && address < 0xD000)
             return disk[size_t(page) * 4096 + (address & 4095)];
+        if (address >= 0xD000 && address < 0xE000)
+            return disk[size_t(high_page) * 4096 + (address & 4095)];
         if (address == 0xE001) return 0x11;
         if (address == 0xE070 || address == 0xE071) return 0xff;
         if (address == 0xE010) return 2 | (input >= 0 ? 1 : 0);
@@ -57,9 +62,22 @@ struct Bus : IBus {
             disk[size_t(page) * 4096 + (address & 4095)] = value;
             return;
         }
-        if (address == 0xE000 || address == 0xE010) return;
+        if (address >= 0xD000 && address < 0xE000) {
+            disk[size_t(high_page) * 4096 + (address & 4095)] = value;
+            return;
+        }
+        if (address == 0xE010) return;
         if (address == 0xE070 || address == 0xE071) return;
-        if (address == 0xE002) { page = value; return; }
+        if (address == 0xE002) {
+            page = value;
+            low_page_zero_writes += value == 0;
+            return;
+        }
+        if (address == 0xE003) {
+            high_page = value;
+            high_page_zero_writes += value == 0;
+            return;
+        }
         if (address == 0xE011) { output += char(value); return; }
         if (address == 0xE060) return;
         if (address >= 0xE000 && address < 0xE100)
@@ -76,6 +94,8 @@ int main(int argc, char **argv) {
         std::copy(rom.begin(), rom.end(), bus.ram.begin() + 0xE000);
         const uint16_t inwait = symbol(argc > 3 ? argv[3] :
                                        "../../../os/flex2/build/c68flex.lst", "C68INW");
+        bus.page = 37;
+        bus.high_page = 91;
         cpu.reset();
         const std::string date = "11,01,26\r";
         size_t next = 0;
@@ -88,6 +108,8 @@ int main(int argc, char **argv) {
                 cpu.s_.pc == inwait) { booted = true; break; }
         }
         check(booted, "reset did not boot FLEX and reach its console");
+        check(bus.low_page_zero_writes >= 2 && bus.high_page_zero_writes >= 2,
+              "cold start or FLEX handoff did not select both SRAM page zeros");
         const auto startup = bus.output.find("C68 BIOS v0.01\r\nDave Hamilton 2026\r\n\r\nStarting OS...\r\n");
         check(startup != std::string::npos && startup < bus.output.find("+++"),
               "startup countdown missing before FLEX");
@@ -107,6 +129,8 @@ int main(int argc, char **argv) {
                 bus.output.back() == ':') { monitor = true; break; }
         }
         check(monitor, "FLEX NMI did not enter monitor");
+        check(bus.page == 0 && bus.high_page == 0,
+              "NMI monitor did not select both SRAM page zeros");
         check(bus.output.find("+++\r\nC68 BIOS v0.01", prompt_before_nmi) ==
               prompt_before_nmi, "NMI banner did not start on the next line");
         const size_t prior_output = bus.output.size();
@@ -126,6 +150,8 @@ int main(int argc, char **argv) {
                 cpu.s_.pc == inwait) { rebooted = true; break; }
         }
         check(rebooted, "monitor F command did not reboot FLEX");
+        check(bus.low_page_zero_writes >= 4 && bus.high_page_zero_writes >= 4,
+              "monitor F command did not select both SRAM page zeros");
 
         const size_t before_mon = bus.output.size();
         const std::string mon_command = "MON\r";
@@ -141,7 +167,11 @@ int main(int argc, char **argv) {
                 bus.output.back() == ':') { mon_entered = true; break; }
         }
         check(mon_entered, "FLEX MON did not enter warm monitor");
+        check(bus.page == 0 && bus.high_page == 0,
+              "FLEX MON did not select both SRAM page zeros");
         const size_t before_reset = bus.output.size();
+        bus.page = 37;
+        bus.high_page = 91;
         cpu.reset();
         bool reset_entered = false;
         for (unsigned step = 0; step < 100000; ++step) {
@@ -150,6 +180,8 @@ int main(int argc, char **argv) {
                 bus.output.back() == ':') { reset_entered = true; break; }
         }
         check(reset_entered, "warm hardware reset did not enter monitor promptly");
+        check(bus.page == 0 && bus.high_page == 0,
+              "warm hardware reset did not select both SRAM page zeros");
 
         auto monitor_command = [&](const std::string &line,
                                    const std::string &expected) {
@@ -172,16 +204,27 @@ int main(int argc, char **argv) {
         monitor_command("300\r", "0300: C1\r\n");
         monitor_command("300.311\r",
                         "0300: C1 12 13 14 15 16 17 18"
-                        " 19 1A 1B 1C 1D 1E 1F 20  | A.............. \r\n"
+                        " 19 1A 1B 1C 1D 1E 1F 20  | A" +
+                        std::string(15, ' ') + "\r\n"
                         "0310: E1 22" + std::string(42, ' ') +
                         "  | a\"\r\n");
         monitor_command("F800\r", "F800: 00\r\n");
         monitor_command("300.2FF\r", "Unknown command");
         const size_t help_start=bus.output.size();
-        monitor_command("H\r", "Build ");
+        monitor_command("H\r", "addressG            - Run code (RTS returns here)");
         check(std::regex_search(bus.output.substr(help_start),
               std::regex(R"(C68 BIOS v0\.01\r\nDave Hamilton 2026\r\nBuild [0-9]{8} [0-9a-f]{8}\r\n\r\nH \(\?\))")),
               "help header, build tag, or blank line is wrong");
+        check(bus.output.find(
+                  "H (?)               - Display help\r\n"
+                  "F                   - Boot FLEX from SRAM\r\n"
+                  "address             - Examine one byte\r\n"
+                  "start.end           - Examine inclusive range\r\n"
+                  "address: bytes      - Write hex bytes to memory\r\n"
+                  ": bytes             - Continue at next address\r\n"
+                  "addressG            - Run code (RTS returns here)\r\n",
+                  help_start) != std::string::npos,
+              "help columns or command descriptions are wrong");
         monitor_command("400: 86 2A B7 05 00 39\r", ":");
         check(std::equal(bus.ram.begin()+0x400, bus.ram.begin()+0x406,
                          std::array<uint8_t,6>{0x86,0x2a,0xb7,0x05,0x00,0x39}.begin()),

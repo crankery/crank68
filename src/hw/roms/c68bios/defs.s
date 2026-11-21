@@ -1,8 +1,10 @@
 ; address bus overview
         .equ ram_start, 0x0000
         .equ ram_end, 0xbfff
-        .equ bank_start, 0xc000
-        .equ bank_end, 0xdfff
+        .equ sram_window_low_start, 0xc000
+        .equ sram_window_low_end, 0xcfff
+        .equ sram_window_high_start, 0xd000
+        .equ sram_window_high_end, 0xdfff
         .equ io_start, 0xe000
         .equ io_end, 0xe0ff
         .equ bios_start, 0xe100

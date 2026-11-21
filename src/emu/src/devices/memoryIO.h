@@ -24,20 +24,18 @@ public:
           config_switches_(0x0, 0x1),
           rtc_(),
           acia_1_0_(0x1, 0x0),
-          pia_2_0_(0x2, 0x0),
-          pia_2_1_(0x2, 0x4),
-          acia_2_0_(0x2, 0x8),
-          acia_2_1_(0x2, 0xA)
+          acia_1_1_(0x1, 0x4),
+          pia_1_0_(0x1, 0x8),
+          pia_1_1_(0x1, 0xC)
     {
         devices_.push_back(&banked_memory_latch_);
         devices_.push_back(&banked_memory_high_latch_);
         devices_.push_back(&config_switches_);
         devices_.push_back(&rtc_);
         devices_.push_back(&acia_1_0_);
-        devices_.push_back(&pia_2_0_);
-        devices_.push_back(&pia_2_1_);
-        devices_.push_back(&acia_2_0_);
-        devices_.push_back(&acia_2_1_);
+        devices_.push_back(&acia_1_1_);
+        devices_.push_back(&pia_1_0_);
+        devices_.push_back(&pia_1_1_);
     }
 
     auto &bankedMemoryLatch() { return banked_memory_latch_; }
@@ -83,14 +81,11 @@ public:
     Switches config_switches_;
     Rtc rtc_;
 
-    // slot 1, terminal card
+    // IO board in slot 1: U2B decodes A3:A2 as ACIA 1, ACIA 2, PIA 1, PIA 2.
     Acia acia_1_0_;
-
-    // slot 2, io card
-    Pia pia_2_0_;
-    Pia pia_2_1_;
-    Acia acia_2_0_;
-    Acia acia_2_1_;
+    Acia acia_1_1_;
+    Pia pia_1_0_;
+    Pia pia_1_1_;
 
 private:
     static const uint16_t StartAddress = 0xE000;

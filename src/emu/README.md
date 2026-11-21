@@ -11,6 +11,12 @@ The CPU runs as fast as the host permits by default. Pass `--throttle` to
 limit it to roughly 1 MHz, or use `make run THROTTLE=1` from `src`.
 The CPU still pauses when a TCP console is disconnected.
 
+The emulated IO board uses slot 1, matching the corrected 74LS139 decode in
+the board schematic: ACIA 1 at `$E010/$E011`, ACIA 2 at `$E014/$E015`,
+PIA 1 at `$E018–$E01B`, and PIA 2 at `$E01C–$E01F`. The first ACIA is the
+console. The board's slot comparator is configurable on hardware; the
+emulator uses slot 1.
+
 The SRAM card provides 1 MiB (two 512K × 8 chips), mapped through two
 independent 4 KiB windows:
 

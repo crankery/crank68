@@ -12,11 +12,11 @@
 
 ## Bring-up and host integration
 
-- [ ] Audit the real IO board address decode before connecting the SD bridge.
-  With U1's default slot `01`, U2B appears to select PIA 1 at `$E014–$E017`
-  (and PIA 2 at `$E01C–$E01F`), but `hw/roms/mikbug2/sdcard.s` and the emulator
-  currently use `$E020–$E023` for PIA 1. Confirm against the assembled board,
-  then align the ROM, FLEX driver, emulator and tests to the actual address.
+- [ ] Bench-confirm the IO board's corrected U2B decode before using the legacy
+  PIA SD bridge. With the board in slot `01`, ACIA 1 starts at `$E010`, ACIA 2
+  at `$E014`, PIA 1 at `$E018`, and PIA 2 at `$E01C`. The emulator now uses
+  those addresses; the current MIKBUG SD transport uses the separate Instore
+  interface at `$E080/$E081`.
 - [ ] Bench-test the latches, strobe timing and CA1/CB1 flag clearing.
 - [x] Implement the FLEX drive-2 backend and MIKBUG ROM transport, including
   protocol-v2 payload checksums. CPU/protocol and FMS tests pass; hardware
