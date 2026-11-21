@@ -12,6 +12,7 @@
 #include "pia.h"
 #include "sdDirect.h"
 #include "switches.h"
+#include "rtc.h"
 
 class MemoryIO : public Mem
 {
@@ -21,6 +22,7 @@ public:
           banked_memory_latch_(0x0, 0x2),
           banked_memory_high_latch_(0x0, 0x3),
           config_switches_(0x0, 0x1),
+          rtc_(),
           acia_1_0_(0x1, 0x0),
           pia_2_0_(0x2, 0x0),
           pia_2_1_(0x2, 0x4),
@@ -30,6 +32,7 @@ public:
         devices_.push_back(&banked_memory_latch_);
         devices_.push_back(&banked_memory_high_latch_);
         devices_.push_back(&config_switches_);
+        devices_.push_back(&rtc_);
         devices_.push_back(&acia_1_0_);
         devices_.push_back(&pia_2_0_);
         devices_.push_back(&pia_2_1_);
@@ -78,6 +81,7 @@ public:
     Latch banked_memory_latch_;
     Latch banked_memory_high_latch_;
     Switches config_switches_;
+    Rtc rtc_;
 
     // slot 1, terminal card
     Acia acia_1_0_;

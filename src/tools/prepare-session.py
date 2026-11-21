@@ -28,6 +28,11 @@ ram_session = 'session.dsk' if args.drive_layout == 'sram-first' else 'session-s
 seed(root / 'build/system/flex2.dsk', root / 'build' / ram_session)
 seed(root / 'build/system/FLEX.DSK', root / f'build/session-sd-{args.drive_layout}.dsk')
 sync_flex(root / 'build/system/flex2.dsk', root / 'build' / ram_session, 16)
+sync_flex(root / 'build/system/flex2.dsk', root / 'build' / ram_session, 16,
+          b'DATE', b'CMD', bytes.fromhex('cea19f8d10'))
 if args.drive_layout == 'sd-first':
     sync_flex(root / 'build/system/flex2.dsk',
               root / 'build/session-sd-sd-first.dsk', 32)
+    sync_flex(root / 'build/system/flex2.dsk',
+              root / 'build/session-sd-sd-first.dsk', 32,
+              b'DATE', b'CMD', bytes.fromhex('cea19f8d10'))

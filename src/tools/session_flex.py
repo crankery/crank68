@@ -1,4 +1,4 @@
-"""Refresh FLEX2.SYS inside a saved disk without replacing its other files."""
+"""Refresh packaged system files inside a saved disk without replacing user files."""
 from hashlib import sha256
 import os
 from pathlib import Path
@@ -13,7 +13,7 @@ def sector_offset(image, link, sectors_per_track):
     return (track * sectors_per_track + sector - 1) * 256
 
 
-def flex_sectors(image, sectors_per_track):
+def flex_sectors(image, sectors_per_track, stem=b'FLEX2', extension=b'SYS'):
     directory = bytes((0, 5))
     visited = set()
     entry = None
@@ -25,8 +25,8 @@ def flex_sectors(image, sectors_per_track):
         block = image[offset:offset + 256]
         for at in range(16, 256, 24):
             candidate = block[at:at + 24]
-            if (candidate[:8].rstrip(b'\0') == b'FLEX2' and
-                    candidate[8:11].rstrip(b'\0') == b'SYS'):
+            if (candidate[:8].rstrip(b'\0') == stem and
+                    candidate[8:11].rstrip(b'\0') == extension):
                 entry = candidate
                 break
         if entry is not None:
@@ -54,15 +54,21 @@ def flex_sectors(image, sectors_per_track):
     return sectors
 
 
-def sync_flex(factory_path, session_path, session_sectors_per_track):
+def sync_flex(factory_path, session_path, session_sectors_per_track,
+              stem=b'FLEX2', extension=b'SYS', old_marker=None):
     factory = factory_path.read_bytes()[:512 * 1024]
     session = bytearray(session_path.read_bytes())
-    source = flex_sectors(factory, 16)
-    target = flex_sectors(session, session_sectors_per_track)
+    source = flex_sectors(factory, 16, stem, extension)
+    target = flex_sectors(session, session_sectors_per_track, stem, extension)
+    filename = (stem + b'.' + extension).decode('ascii')
     if source is None or target is None:
-        raise ValueError(f'FLEX2.SYS is missing from {factory_path} or {session_path}')
+        raise ValueError(f'{filename} is missing from {factory_path} or {session_path}')
     if len(source) != len(target):
-        raise ValueError(f'FLEX2.SYS changed sector count in {session_path}; manual migration needed')
+        raise ValueError(f'{filename} changed sector count in {session_path}; manual migration needed')
+    if old_marker is not None:
+        old_payload = b''.join(session[dst+4:dst+256] for dst in target)
+        if old_marker not in old_payload:
+            return  # Already updated, or locally modified.
 
     old = bytes(session)
     changed = False
@@ -87,4 +93,4 @@ def sync_flex(factory_path, session_path, session_sectors_per_track):
         updated.write(session)
         temporary = Path(updated.name)
     os.replace(temporary, session_path)
-    print(f'Updated FLEX2.SYS in {session_path.name}; backup: {backup.name}')
+    print(f'Updated {filename} in {session_path.name}; backup: {backup.name}')

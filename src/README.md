@@ -1,11 +1,15 @@
 # C68 system build
 
+Source is grouped by purpose: `hw/` holds ROMs, GALs, board firmware, and video;
+`os/` holds FLEX; `apps/` holds BASIC, Ladder, Rogue, and Z68. Earlier
+experiments remain in `_deprecated/` for reference.
+
 > The ROM, FLEX, emulator, and AVR firmware in this build use the
-> [Instore](../Instore/) direct SD interface. The separate PIA SD daughterboard
-> in [sd](sd/) and the VERA adapter remain as historical sources.
+> [Instore](../hw/Instore/) direct SD interface. The separate PIA SD daughterboard
+> in [sd](hw/sd/) and the VERA adapter remain as historical sources.
 
 From this directory (`src`), run `make`. It builds and verifies FLEX, MIKBUG2,
-every `pld/*.gal`, the Instore SD AVR firmware and the emulator, then gathers matching outputs in
+every `hw/pld/*.gal`, the Instore SD AVR firmware and the emulator, then gathers matching outputs in
 `build/system/`:
 
 | File | Use |
@@ -16,7 +20,7 @@ every `pld/*.gal`, the Instore SD AVR firmware and the emulator, then gathers ma
 | `instore_sd.hex` | Instore ATmega328P-PU firmware, compiled for internal 8 MHz |
 | `avr-fuses.conf` | Minipro fuses for the internal 8 MHz clock |
 | `emu` | Host emulator executable |
-| `pld/*.jed` | JEDEC programming files for all GALasm sources in `pld/` |
+| `pld/*.jed` | JEDEC programming files for all GALasm sources in `hw/pld/` |
 | `pld/*.fus`, `pld/*.pin` | Fuse maps and pin reports for those GALs |
 | `MANIFEST.txt` | File sizes and SHA-256 hashes for the packaged set |
 
@@ -47,7 +51,7 @@ without the SRAM boot smoke test.
 
 `make run-c68bios` tries the separate C68 BIOS ROM. It boots FLEX from SRAM
 automatically and enters its monitor on NMI; see
-[`roms/c68bios/README.md`](roms/c68bios/README.md). The normal `make run`
+[`hw/roms/c68bios/README.md`](hw/roms/c68bios/README.md). The normal `make run`
 continues to use MIKBUG2.
 
 For a raw TCP terminal, run `make run TCP_PORT=6800` and connect PuTTY in Raw
@@ -61,12 +65,12 @@ pace the CPU at roughly 1 MHz.
 runs FLEX image verification, direct SD protocol tests and AVR compilation. The test suite boots the real emulator and catalogs the SD drive
 through FLEX in the selected layout. The AVR hex is for ISP programming of an
 internal-8-MHz target;
-the build does not set clock fuses. See [Instore SD firmware](instore_sd/README.md) and
-[MIKBUG ROM API](roms/mikbug2/README.md#sd-bridge-rom-api).
+the build does not set clock fuses. See [Instore SD firmware](hw/instore_sd/README.md) and
+[MIKBUG ROM API](hw/roms/mikbug2/README.md#sd-bridge-rom-api).
 
 For the socketed ATmega328P-PU in its narrow DIP-28 package,
 `make program-avr-dry-run` prints the Minipro commands. `make program-avr`
-explicitly writes the firmware and [fuses](instore_sd/fuses.conf), then verifies
+explicitly writes the firmware and [fuses](hw/instore_sd/fuses.conf), then verifies
 both. Ordinary `make`, `make run`, and `make test` do not contact a programmer.
 The Instore board has no dedicated ISP header; program the removed chip in a
 socket before installing it.

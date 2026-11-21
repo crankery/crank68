@@ -4,8 +4,8 @@
 #include <string>
 
 #include "memoryIODevice.h"
-#include "../../../instore_sd/firmware/instore_sd/src/protocol.h"
-#include "../../../instore_sd/firmware/instore_sd/src/direct_link.h"
+#include "../../../hw/instore_sd/firmware/instore_sd/src/protocol.h"
+#include "../../../hw/instore_sd/firmware/instore_sd/src/direct_link.h"
 
 class DirectSdStorage
 {

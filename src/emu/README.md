@@ -28,7 +28,7 @@ emulator process; CPU reset does not clear them.
 Add `--sram-image flex.sram` to your usual emulator command, for example:
 
 ```sh
-build/bin/emu --load ../roms/mikbug2/mikbug2_trim.bin@E100 --sram-image flex.sram
+build/bin/emu --load ../hw/roms/mikbug2/mikbug2_trim.bin@E100 --sram-image flex.sram
 ```
 
 An existing image must be exactly 1,048,576 bytes. A missing image starts
@@ -43,6 +43,15 @@ Existing `--load file@address` loads through the CPU memory map; it does not
 load the full SRAM image or change I/O latches.
 
 ## Direct SD interface
+
+The emulated Ricoh RP5C01A calendar uses an address latch at `$E070` and a
+4-bit data port at `$E071`. Select register `$D` and write mode `$8` to read
+the host's local calendar in BCD nibbles: day at registers `$7/$8`, month at
+`$9/$A`, and two-digit year at `$B/$C`. Mode `$01` exposes the 24-hour and leap
+year registers; modes `$10/$11` provide the chip's two 13-nibble RAM banks.
+Calendar writes are ignored because host time is authoritative. FLEX uses its
+original date prompt when the device is absent, such as on hardware without
+the clock.
 
 Add `--sd-image FLEX.DSK` to connect the Instore SD registers at `$E080/$E081`
 to a host image through the direct-register protocol. The image must already
@@ -63,7 +72,7 @@ stdin/stdout. The listener binds to **127.0.0.1** and accepts one client.
 Example from this directory, using your existing working SRAM image:
 
 ```sh
-build/bin/emu --load ../roms/mikbug2/mikbug2_trim.bin@E100 --sram-image ../flex2/build/session.dsk --tcp-console 6800
+build/bin/emu --load ../hw/roms/mikbug2/mikbug2_trim.bin@E100 --sram-image ../os/flex2/build/session.dsk --tcp-console 6800
 ```
 
 In PuTTY (or another terminal emulator), select **Raw**, host `127.0.0.1`,

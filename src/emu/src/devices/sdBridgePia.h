@@ -4,7 +4,7 @@
 #include <string>
 
 #include "pia.h"
-#include "../../../sd/firmware/sd_bridge/src/protocol.h"
+#include "../../../hw/sd/firmware/sd_bridge/src/protocol.h"
 
 class SdImageStorage
 {

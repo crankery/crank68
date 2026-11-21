@@ -29,26 +29,27 @@ with tempfile.TemporaryDirectory(prefix='crank68-sd-emu-') as directory:
                                    stdout=subprocess.PIPE, stderr=errors)
         output = bytearray()
 
-        def until(marker):
+        def until(*markers):
             deadline = time.monotonic() + 90
-            while marker not in output:
+            while not any(marker in output for marker in markers):
                 if process.poll() is not None:
                     raise RuntimeError(f'Emulator exited {process.returncode}: '
                                        f'{output[-600:]!r}, {(work / "stderr.log").read_text()}')
                 remaining = deadline - time.monotonic()
                 if remaining <= 0:
-                    raise TimeoutError(f'Waiting for {marker!r}: {output[-600:]!r}')
+                    raise TimeoutError(f'Waiting for {markers!r}: {output[-600:]!r}')
                 readable, _, _ = select.select([process.stdout], [], [], min(remaining, 0.5))
                 if readable:
                     output.extend(os.read(process.stdout.fileno(), 4096))
+            return next(marker for marker in markers if marker in output)
 
         try:
             until(b'MIKBUG 2/C68')
             process.stdin.write(b'f\r')
             process.stdin.flush()
-            until(b'DATE (MM,DD,YY)?')
-            process.stdin.write(b'11,03,26\r')
-            process.stdin.flush()
+            if until(b'DATE (MM,DD,YY)?', b'+++') == b'DATE (MM,DD,YY)?':
+                process.stdin.write(b'11,03,26\r')
+                process.stdin.flush()
             until(b'+++')
             process.stdin.write(f'cat {drive}\r'.encode())
             process.stdin.flush()

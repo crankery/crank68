@@ -1,0 +1,36 @@
+; RP5C01A through address latch $E070 and 4-bit data port $E071.
+; A missing device returns $FF at the data port, so retain manual entry.
+C68DATE LDAA #$D
+ STAA $E070
+ LDAA #8
+ STAA $E071
+ LDAA $E071
+ CMPA #8
+ BNE C68DATEPROMPT
+ LDAA #$A
+ BSR C68BCD
+ STAA DATE
+ LDAA #8
+ BSR C68BCD
+ STAA DATE+1
+ LDAA #$C
+ BSR C68BCD
+ STAA DATE+2
+ JMP C68DATESET
+C68DATEPROMPT LDX #DPROMP
+ JMP DATE1+3
+; A = address of tens nibble. Return binary value in A.
+C68BCD TAB
+ STAA $E070
+ LDAA $E071
+ ASLA
+ STAA TEMP1
+ ASLA
+ ASLA
+ ADDA TEMP1
+ STAA TEMP1
+ DECB
+ STAB $E070
+ LDAA $E071
+ ADDA TEMP1
+ RTS

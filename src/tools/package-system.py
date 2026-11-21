@@ -31,19 +31,19 @@ def main():
     parser.add_argument('--drive-layout', choices=('sram-first', 'sd-first'), default='sram-first')
     args = parser.parse_args()
 
-    spec = importlib.util.spec_from_file_location('extract_image', ROOT / 'sd/tools/extract_image.py')
+    spec = importlib.util.spec_from_file_location('extract_image', ROOT / 'hw/sd/tools/extract_image.py')
     image_tool = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(image_tool)
 
     sources = {
-        'mikbug2.rom': ROOT / 'roms/mikbug2/mikbug2.rom',
-        'fonts-28c256.bin': ROOT / 'video/fonts/build/fonts-28c256.bin',
-        'flex2.dsk': ROOT / 'flex2/build/flex2.dsk',
-        'instore_sd.hex': ROOT / 'instore_sd/build/instore_sd.ino.hex',
-        'avr-fuses.conf': ROOT / 'instore_sd/fuses.conf',
+        'mikbug2.rom': ROOT / 'hw/roms/mikbug2/mikbug2.rom',
+        'fonts-28c256.bin': ROOT / 'hw/video/fonts/build/fonts-28c256.bin',
+        'flex2.dsk': ROOT / 'os/flex2/build/flex2.dsk',
+        'instore_sd.hex': ROOT / 'hw/instore_sd/build/instore_sd.ino.hex',
+        'avr-fuses.conf': ROOT / 'hw/instore_sd/fuses.conf',
         'emu': ROOT / 'emu/build/bin/emu',
     }
-    for source in sorted((ROOT / 'pld').glob('*.gal')):
+    for source in sorted((ROOT / 'hw/pld').glob('*.gal')):
         for suffix in ('.jed', '.fus', '.pin'):
             name = source.stem + suffix
             sources[f'pld/{name}'] = ROOT / 'build/pld' / name
