@@ -273,7 +273,7 @@ int main(int argc, char **argv) {
         monitor_command("F800\r", "F800: 00\r\n");
         monitor_command("300.2FF\r", "Unknown command");
         const size_t help_start=bus.output.size();
-        monitor_command("H\r", "addressG            - Run code (RTS returns here)");
+        monitor_command("H\r", "addressU            - Enter binary upload mode");
         check(std::regex_search(bus.output.substr(help_start),
               std::regex(R"(C68 BIOS v0\.01\r\nDave Hamilton 2026\r\nBuild [0-9]{8} [0-9a-f]{8}\r\n\r\nH \(\?\))")),
               "help header, build tag, or blank line is wrong");
@@ -285,7 +285,8 @@ int main(int argc, char **argv) {
                   "start.end           - Examine inclusive range\r\n"
                   "address: bytes      - Write hex bytes to memory\r\n"
                   ": bytes             - Continue at next address\r\n"
-                  "addressG            - Run code (RTS returns here)\r\n",
+                  "addressG            - Run code (RTS returns here)\r\n"
+                  "addressU            - Enter binary upload mode\r\n",
                   help_start) != std::string::npos,
               "help columns or command descriptions are wrong");
         monitor_command("400: 86 2A B7 05 00 39\r", ":");
@@ -308,6 +309,57 @@ int main(int argc, char **argv) {
         monitor_command("400G\r", ":");
         check(bus.ram[0x500]==0x2a,
               "G did not run code and return via RTS");
+
+        // Drive the actual monitor through the ACIA, one byte at a time.
+        auto exchange = [&](const std::string &packet, char response) {
+            const size_t before = bus.output.size();
+            size_t sent = 0;
+            for (unsigned step = 0; step < 1000000; ++step) {
+                if (bus.input < 0 && sent < packet.size())
+                    bus.input = uint8_t(packet[sent++]);
+                cpu.step();
+                if (sent == packet.size() && bus.input < 0 &&
+                    bus.output.size() > before && bus.output.back() == response)
+                    return;
+            }
+            throw std::runtime_error("upload exchange timed out");
+        };
+        exchange("C000U\r", 'K');
+        exchange(std::string("W\xE0\x02\x07", 4), 'K');
+        check(bus.page == 7, "upload W did not select SRAM bank");
+        exchange(std::string("A\xC0\x00", 3), 'K');
+        auto crc_packet = [](const std::string &data) {
+            uint16_t crc = 0xffff;
+            for (unsigned char value : data) {
+                crc ^= uint16_t(value) << 8;
+                for (int bit = 0; bit < 8; ++bit)
+                    crc = uint16_t((crc << 1) ^ ((crc & 0x8000) ? 0x1021 : 0));
+            }
+            std::string result = "B" + data;
+            result += char(crc >> 8);
+            result += char(crc & 0xff);
+            return result;
+        };
+        std::string payload(1, '\0'); // zero encodes a 256-byte block
+        for (int i = 0; i < 256; ++i) payload += char(i);
+        std::string bad = crc_packet(payload);
+        bad.back() ^= 1;
+        const auto original = std::vector<uint8_t>(bus.disk.begin() + 7 * 4096,
+                                                    bus.disk.begin() + 7 * 4096 + 256);
+        exchange(bad, 'C');
+        check(std::equal(original.begin(), original.end(),
+                         bus.disk.begin() + 7 * 4096),
+              "bad CRC changed SRAM");
+        exchange(crc_packet(payload), 'K');
+        for (int i = 0; i < 256; ++i)
+            check(bus.disk[7 * 4096 + i] == i, "256-byte upload mismatch");
+        exchange(crc_packet(std::string("\x01\xA5", 2)), 'K');
+        check(bus.disk[7 * 4096 + 256] == 0xa5,
+              "block did not advance target by 256 bytes");
+        exchange("Q", 'K');
+        for (unsigned step = 0; step < 10000 && bus.output.back() != ':'; ++step)
+            cpu.step();
+        check(bus.output.back() == ':', "upload did not return to monitor");
 
         Bus key_bus(argc > 2 ? argv[2] : "../../../os/flex2/build/flex2.dsk");
         Cpu key_cpu(key_bus);
@@ -335,6 +387,29 @@ int main(int argc, char **argv) {
         check(key_bus.output.find("C68 BIOS v0.01",
               key_bus.output.find("C68 BIOS v0.01") + 1) == std::string::npos,
               "startup key printed the banner twice");
+
+        Bus last_dot_bus(argc > 2 ? argv[2] : "../../../os/flex2/build/flex2.dsk");
+        Cpu last_dot_cpu(last_dot_bus);
+        std::copy(rom.begin(), rom.end(), last_dot_bus.ram.begin() + 0xE000);
+        last_dot_cpu.reset();
+        for (unsigned step = 0; step < 3000000 &&
+                 last_dot_bus.output.find("Starting OS...") == std::string::npos;
+             ++step)
+            last_dot_cpu.step();
+        check(last_dot_bus.output.find("Starting OS...") != std::string::npos &&
+              last_dot_bus.output.find("DATE (MM,DD,YY)") == std::string::npos,
+              "third startup dot did not leave a key window");
+        last_dot_bus.input = 'x';
+        bool last_dot_monitor = false;
+        for (unsigned step = 0; step < 3000000; ++step) {
+            last_dot_cpu.step();
+            if (!last_dot_bus.output.empty() && last_dot_bus.output.back() == ':') {
+                last_dot_monitor = true;
+                break;
+            }
+        }
+        check(last_dot_monitor && last_dot_bus.input < 0,
+              "key after third dot did not enter the monitor");
         std::cout << "C68 BIOS boot, monitor examine, NMI, MON, and warm reset passed.\n";
     } catch (const std::exception &error) {
         std::cerr << error.what() << '\n';

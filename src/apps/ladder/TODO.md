@@ -32,8 +32,10 @@ playable on C68 FLEX.
 - [ ] Start with five Lads. Lose one to a rock, fire, or expired bonus time;
       restart the level while lives remain, then show game over.
       Rock and fire deaths now consume lives; bonus expiry remains.
-- [ ] Add the level's initial bonus time and decrement it every 25 game
+- [ ] Add the level's initial bonus countdown and decrement it every 25 game
       updates, as measured in the [state traces](analysis/STATE_TRACE.md).
+      Use the remaining value for statue and treasure points; tally the
+      treasure bonus with the original `Hooka!` flash for each point.
 - [ ] Show lives, level, score, and bonus time on the status line. Refresh only
       changed fields so gameplay does not stall on terminal output.
 - [ ] Award points for statues (`&`), jumping over rocks, and finishing with
@@ -74,9 +76,9 @@ playable on C68 FLEX.
 - [x] Return to the start menu after the last Lad dies; Play starts a fresh run.
 - [ ] Add pause/resume and a full level-complete flow. Always
       restore the cursor when returning to FLEX.
-- [ ] Add optional sound and a small high-score table once scoring is stable.
-      Decide whether to use a new FLEX data file or read the CP/M `LADDER.DAT`
-      format; do not overwrite the original file during experiments.
+- [x] Save five high scores, short names, and FLEX dates in `LADDER.HIS` on the
+      command's drive without touching the original CP/M `LADDER.DAT`.
+- [ ] Add optional sound.
 - [ ] Revisit ladder entry and speed choices after the core game is present.
       The current pace is intentionally left alone for now.
 - [ ] Keep `LADDER.CMD` within FLEX application RAM (`$0300`–`$7DFF`) and

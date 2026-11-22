@@ -30,7 +30,7 @@ rst_handler:
     bne cold_start
     jmp monitor_start
 cold_start:
-    ; Give the operator about one second at 1 MHz to choose the monitor.
+    ; Give the operator about two seconds at 1 MHz to choose the monitor.
     clr nmi_valid
     clra
     staa sram_page_low
@@ -54,15 +54,15 @@ cold_start:
     ldaa #3
     staa zp_count
 startup_dot:
-    ldx #18000
+    ldaa #'.'
+    jsr putc
+    ldx #36000
 startup_key_window:
     ldab acia0_reg
     bitb #acia_rdrf_mask
     bne startup_monitor
     dex
     bne startup_key_window
-    ldaa #'.'
-    jsr putc
     dec zp_count
     bne startup_dot
     ldx #s_crlf
@@ -191,7 +191,7 @@ parse_command:
         jmp     .cmd_go
 .check_range:
         cmpa    #'.'
-        bne     .unknown
+        bne     .check_upload
         inx
         jsr     skip_spaces
         jsr     parse_hex16_x
@@ -214,6 +214,15 @@ parse_command:
 .cmd_show_range:
         ldaa    #1
         jmp     show_memory
+
+.check_upload:
+        cmpa    #'U'
+        bne     .unknown
+        inx
+        jsr     skip_spaces
+        ldaa    0,x
+        bne     .unknown
+        jmp     upload_start
 
 .cmd_show_single:
         ldx     zp_ptr
@@ -271,6 +280,119 @@ parse_command:
         bne     .unknown
         ldx     zp_ptr
         jsr     0,x             ; RTS returns to the monitor
+        rts
+
+; Binary upload mode. The first acknowledgement follows the monitor CRLF.
+; A hi lo sets the target address. B count data crc_hi crc_lo writes 1..256
+; bytes (count 0 means 256). W hi lo value writes one arbitrary address.
+; Q returns to the monitor. K acknowledges success, C means bad block CRC,
+; and ? means an unknown command. CRC-16/CCITT-FALSE covers count and data.
+upload_start:
+        ldx     zp_ptr
+        stx     zp_end             ; upload target survives calls to getc/putc
+        ldaa    #'K'
+        jsr     putc
+upload_command:
+        jsr     getc
+        cmpa    #'A'
+        bne     .not_address
+        jmp     upload_set_address
+.not_address:
+        cmpa    #'B'
+        beq     .block
+        cmpa    #'W'
+        beq     .write_byte
+        cmpa    #'Q'
+        bne     .unknown_upload
+        jmp     upload_quit
+.unknown_upload:
+        ldaa    #'?'
+        jsr     putc
+        jmp     upload_command
+upload_set_address:
+        jsr     getc
+        staa    zp_end
+        jsr     getc
+        staa    zp_end+1
+        jmp     upload_ok
+.write_byte:
+        jsr     getc
+        staa    zp_ptr
+        jsr     getc
+        staa    zp_ptr+1
+        jsr     getc
+        ldx     zp_ptr
+        staa    0,x
+        jmp     upload_ok
+.block:
+        ldaa    #0xff
+        staa    zp_upload_crc
+        staa    zp_upload_crc+1
+        jsr     getc
+        staa    zp_upload_size
+        jsr     upload_crc_byte
+        ldx     #bios_tmp
+.receive:
+        jsr     getc
+        staa    0,x
+        inx
+        jsr     upload_crc_byte
+        dec     zp_upload_size
+        bne     .receive
+        jsr     getc
+        cmpa    zp_upload_crc
+        bne     .bad_crc_high
+        jsr     getc
+        cmpa    zp_upload_crc+1
+        bne     .bad_crc
+        ; The full block is valid. Count zero denotes 256 bytes.
+        ldx     #bios_tmp
+.commit:
+        ldaa    0,x
+        stx     zp_input
+        ldx     zp_end
+        staa    0,x
+        inx
+        stx     zp_end
+        ldx     zp_input
+        inx
+        dec     zp_upload_size
+        bne     .commit
+        jmp     upload_ok
+.bad_crc_high:
+        jsr     getc              ; consume low CRC byte as well
+.bad_crc:
+        ldaa    #'C'
+        jsr     putc
+        jmp     upload_command
+upload_ok:
+        ldaa    #'K'
+        jsr     putc
+        jmp     upload_command
+upload_quit:
+        ldaa    #'K'
+        jsr     putc
+        rts
+
+; CRC-16/CCITT-FALSE, polynomial $1021, initial $FFFF, no reflection/xorout.
+upload_crc_byte:
+        eora    zp_upload_crc
+        staa    zp_upload_crc
+        ldaa    #8
+        staa    zp_upload_bit
+.bit:
+        asl     zp_upload_crc+1
+        rol     zp_upload_crc
+        bcc     .next
+        ldaa    zp_upload_crc
+        eora    #0x10
+        staa    zp_upload_crc
+        ldaa    zp_upload_crc+1
+        eora    #0x21
+        staa    zp_upload_crc+1
+.next:
+        dec     zp_upload_bit
+        bne     .bit
         rts
 
 ; Validate every byte token before writing any memory. Empty address: sets

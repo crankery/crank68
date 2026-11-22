@@ -1,39 +1,37 @@
-; Easy Street prototype for C68 FLEX and an ANSI/VT100 terminal.
+; Seven Ladder boards for C68 FLEX and an ANSI/VT100 terminal.
 ; Terrain is generated from Pascal layouts with original-game corrections.
 ; Movement follows the probed original CP/M Ladder rules.
-; SPDX-License-Identifier: GPL-2.0-or-later
+; SPDX-License-Identifier: GPL-3.0-only
+; Crankery's original C68 additions are also MIT licensed; see LICENSE-MIT.
         .equ outch, 0xad0f
         .equ warms, 0xad03
         .equ getc, 0xbf00
         .equ poll, 0xbf2a
+        .equ fms, 0xb406
+        .equ flex_date, 0xac0e
+        .equ command_drive, 0xa843
 
         .org 0x0300
 start:
         sts saved_sp
+        jsr highscore_init
         ldaa #1
         staa play_speed
-        ldx #12000
+        staa selected_level
+        ldx #24000
         stx tick_delay
 menu_entry:
         jsr start_screen
 new_game:
-        ldaa #6
-        staa player_x
-        ldaa #19
-        staa player_y
-        clr direction
-        clr jump_step
-        clr won_level
-        clr game_over
-        clr death_flag
         ldaa #5
         staa lives
-        jsr init_rocks
-        ldx #clear_text
-        jsr print
-        jsr draw_level
-        jsr draw_player
-        jsr show_lives
+        clr score
+        clr score+1
+        jsr restore_statues
+        ldaa selected_level
+        staa level_number
+        clr game_over
+        jsr start_level
 game_loop:
         ldx tick_delay         ; approximate game tick; tune on hardware
 tick_wait:
@@ -63,11 +61,72 @@ input_poll:
         jsr handle_key
         bra game_loop
 
+start_level:
+        clr direction
+        clr jump_step
+        clr won_level
+        clr death_flag
+        ldx #level_configs
+        ldab level_number
+        decb
+level_config_next:
+        tstb
+        beq level_config_found
+        inx
+        inx
+        inx
+        inx
+        inx
+        inx
+        inx
+        inx
+        inx
+        inx
+        decb
+        bra level_config_next
+level_config_found:
+        stx active_config
+        ldaa 0,x
+        staa active_map
+        ldaa 1,x
+        staa active_map+1
+        ldaa 2,x
+        staa active_rows
+        ldaa 3,x
+        staa active_rows+1
+        ldaa 4,x
+        staa active_status
+        ldaa 5,x
+        staa active_status+1
+        ldaa 8,x
+        staa rock_limit
+        ldaa 9,x
+        staa bonus_points
+        jsr init_rocks
+        ldx #clear_text
+        jsr print
+        jsr draw_level
+        jsr reset_player
+        jsr draw_player
+        jsr show_lives
+        jsr show_score
+        rts
+
+reset_player:
+        ldx active_config
+        ldaa 6,x
+        staa player_x
+        ldaa 7,x
+        staa player_y
+        clr direction
+        clr jump_step
+        rts
+
 handle_key:
         cmpa #'q'
-        beq quit
+        beq quit_to_menu
         cmpa #'Q'
-        beq quit
+        beq quit_to_menu
         cmpa #'h'
         beq key_left
         cmpa #'a'
@@ -114,6 +173,9 @@ key_jump:
         staa jump_step
 jump_key_done:
         rts
+quit_to_menu:
+        lds saved_sp
+        jmp menu_entry
 quit:
         ldx #exit_text
         jsr print
@@ -121,6 +183,7 @@ quit:
         jmp warms
 
         .include "menu.inc"
+        .include "highscore.inc"
 
 move_player:
         tst won_level
@@ -259,10 +322,21 @@ moved:
         jsr target_tile
         cmpa #'$'
         beq level_done
+        cmpa #'&'
+        beq statue_collected
         cmpa #'^'
         beq fire_reset
         rts
 level_done:
+        jsr show_hooka
+        jsr add_bonus
+        ldaa level_number
+        cmpa #7
+        bcc final_treasure
+        inc level_number
+        jsr start_level
+        rts
+final_treasure:
         clr direction
         clr jump_step
         ldaa #1
@@ -270,6 +344,11 @@ level_done:
         ldx #win_text
         jsr print_at_prompt
         rts
+statue_collected:
+        ldx target_ptr
+        ldaa #' '
+        staa 0,x
+        jmp add_bonus
 fire_reset:
         ldaa #1
         staa death_flag
@@ -284,19 +363,16 @@ restart_after_death:
         jsr home_cursor
         jsr draw_level
         jsr show_lives
+        jsr show_score
 restart_active:
         jsr init_rocks
-        ldaa #6
-        staa player_x
-        ldaa #19
-        staa player_y
-        clr direction
-        clr jump_step
+        jsr reset_player
         jmp draw_player
 restart_game_over:
         jsr show_lives
         ldaa #1
         staa game_over
+        jsr highscore_finish
         ldx #game_over_text
         jsr print_at_prompt
         ldab #6
@@ -336,6 +412,15 @@ death_pause_loop:
         dex
         bne death_pause_loop
         rts
+
+; The original treasure tally flashes "Hooka!" while paying bonus points.
+; This port awards the bonus at once, so show one short flash before advancing.
+show_hooka:
+        ldx #hooka_text
+        jsr print_at_prompt
+        jsr death_pause
+        ldx #hooka_clear_text
+        jmp print_at_prompt
 
 ; Ordinary sideways movement consumes '-' below the departed cell.
 ; A jump's horizontal apex uses move_jump and leaves that floor intact.
@@ -499,7 +584,7 @@ wall_yes:
 
 ; Look up target_x,target_y (1-based). Return character in A.
 target_tile:
-        ldx #row_pointers
+        ldx active_rows
         ldab target_y
         decb
 target_row:
@@ -520,13 +605,14 @@ target_col:
         decb
         bra target_col
 col_found:
+        stx target_ptr
         ldaa 0,x
         rts
 
         .include "rocks.inc"
 
 draw_level:
-        ldx #level_map
+        ldx active_map
         ldaa #20
         staa rows_left
 draw_row:
@@ -548,7 +634,7 @@ draw_literal:
         jsr outch
         dec rows_left
         bne draw_row
-        ldx #status_text
+        ldx active_status
         jsr print
         rts
 
@@ -601,6 +687,76 @@ show_lives:
         ldaa lives
         adda #'0'
         jmp outch
+add_bonus:
+        ldaa score+1
+        adda bonus_points
+        staa score+1
+        ldaa score
+        adca #0
+        staa score
+        jmp show_score
+show_score:
+        ldaa #21
+        staa cursor_row
+        ldaa #30
+        staa cursor_col
+        jsr cursor_to
+        ldx #score_text
+        jsr print
+        ldx score
+        stx score_work
+        ldx #10000
+        jsr score_digit
+        ldx #1000
+        jsr score_digit
+        ldx #100
+        jsr score_digit
+        ldx #10
+        jsr score_digit
+        ldx #1
+        jmp score_digit
+score_digit:
+        stx score_divisor
+        clr digit
+score_digit_loop:
+        ldaa score_work+1
+        suba score_divisor+1
+        staa score_low_tmp
+        ldaa score_work
+        sbca score_divisor
+        bcs score_digit_print
+        staa score_work
+        ldaa score_low_tmp
+        staa score_work+1
+        inc digit
+        bra score_digit_loop
+score_digit_print:
+        ldaa digit
+        adda #'0'
+        jmp outch
+
+; Restore collected statues when a new game starts. Life restarts keep them
+; removed, along with the score already earned.
+restore_statues:
+        ldx #statue_addresses
+        stx restore_cursor
+        ldaa #28
+        staa restore_count
+restore_statue_next:
+        ldx restore_cursor
+        ldaa 0,x
+        staa target_ptr
+        ldaa 1,x
+        staa target_ptr+1
+        inx
+        inx
+        stx restore_cursor
+        ldx target_ptr
+        ldaa #'&'
+        staa 0,x
+        dec restore_count
+        bne restore_statue_next
+        rts
 cursor_to:
         ldaa #27
         jsr outch
@@ -649,11 +805,35 @@ clear_text: .byte 27
         .byte 27
         .ascii "[H"
         .byte 0
-status_text:
-        .ascii "Easy Street   h/j/k/l or WASD move   SPACE jump   Q quit"
+easy_status_text:
+        .ascii "Easy Street   "
+        .byte 0
+long_status_text:
+        .ascii "Long Island   "
+        .byte 0
+ghost_status_text:
+        .ascii "Ghost Town   "
+        .byte 0
+tunnel_status_text:
+        .ascii "Tunnel Vision   "
+        .byte 0
+point_status_text:
+        .ascii "Point of No Return   "
+        .byte 0
+bug_status_text:
+        .ascii "Bug City   "
+        .byte 0
+gang_status_text:
+        .ascii "GangLand   "
         .byte 0
 win_text:
-        .ascii "You found the treasure! Press Q to leave.             "
+        .ascii "You found the treasure! Press Q for menu.              "
+        .byte 0
+hooka_text:
+        .ascii "Hooka!"
+        .byte 0
+hooka_clear_text:
+        .ascii "      "
         .byte 0
 game_over_text:
         .ascii "Game over. Returning to menu...                        "
@@ -663,6 +843,9 @@ death_glyphs:
         .byte 0
 lives_text:
         .ascii "Lads: "
+        .byte 0
+score_text:
+        .ascii "Score: "
         .byte 0
 exit_text:
         .byte 27
@@ -684,8 +867,23 @@ won_level:    .byte 0
 game_over:    .byte 0
 death_flag:   .byte 0
 lives:        .byte 0
+score:        .word 0
+bonus_points: .byte 0
+score_work:   .word 0
+score_divisor: .word 0
+score_low_tmp: .byte 0
+restore_count: .byte 0
+restore_cursor: .word 0
+target_ptr:   .word 0
+level_number: .byte 0
+selected_level: .byte 1
+rock_limit:   .byte 0
+active_map:   .word 0
+active_rows:  .word 0
+active_status: .word 0
+active_config: .word 0
 play_speed:   .byte 1
-tick_delay:   .word 12000
+tick_delay:   .word 24000
 menu_action:  .byte 0
 menu_idle_state: .byte 0
 menu_idle_count: .word 0
@@ -715,6 +913,41 @@ rng2:         .byte 0x33
 rock_slots:   .byte 0,0,0,0,0,0,0,0,0,0,0,0
               .byte 0,0,0,0,0,0,0,0,0,0,0,0
 
+; Map pointer, row pointer table, status text, player X/Y, rock limit, bonus.
+level_configs:
+        .word level_map,row_pointers,easy_status_text
+        .byte 6,19,5,35
+        .word long_island_map,long_island_rows,long_status_text
+        .byte 18,19,8,45
+        .word ghost_town_map,ghost_town_rows,ghost_status_text
+        .byte 6,3,5,35
+        .word tunnel_vision_map,tunnel_vision_rows,tunnel_status_text
+        .byte 77,17,5,36
+        .word point_of_no_return_map,point_of_no_return_rows,point_status_text
+        .byte 74,4,7,35
+        .word bug_city_map,bug_city_rows,bug_status_text
+        .byte 34,9,6,37
+        .word gangland_map,gangland_rows,gang_status_text
+        .byte 7,3,6,32
+
+statue_addresses:
+        .word level_map+(8*79+16)
+        .word long_island_map+(1*79+67),long_island_map+(6*79+25)
+        .word ghost_town_map+(5*79+41),ghost_town_map+(9*79+62)
+        .word ghost_town_map+(11*79+13)
+        .word tunnel_vision_map+(4*79+37),tunnel_vision_map+(4*79+38)
+        .word tunnel_vision_map+(9*79+27),tunnel_vision_map+(12*79+58)
+        .word point_of_no_return_map+(4*79+9),point_of_no_return_map+(11*79+18)
+        .word point_of_no_return_map+(12*79+46),point_of_no_return_map+(15*79+30)
+        .word point_of_no_return_map+(15*79+52)
+        .word bug_city_map+(8*79+45),bug_city_map+(10*79+22)
+        .word bug_city_map+(11*79+22),bug_city_map+(12*79+7)
+        .word bug_city_map+(14*79+51),bug_city_map+(15*79+44)
+        .word gangland_map+(2*79+49),gangland_map+(5*79+60)
+        .word gangland_map+(7*79+23),gangland_map+(7*79+24)
+        .word gangland_map+(7*79+29),gangland_map+(16*79+53)
+        .word gangland_map+(18*79+27)
+
 row_pointers:
         .word level_map+0,level_map+79,level_map+158,level_map+237
         .word level_map+316,level_map+395,level_map+474,level_map+553
@@ -723,3 +956,51 @@ row_pointers:
         .word level_map+1264,level_map+1343,level_map+1422,level_map+1501
 level_map:
         .include "easy_street.inc"
+long_island_rows:
+        .word long_island_map+0,long_island_map+79,long_island_map+158,long_island_map+237
+        .word long_island_map+316,long_island_map+395,long_island_map+474,long_island_map+553
+        .word long_island_map+632,long_island_map+711,long_island_map+790,long_island_map+869
+        .word long_island_map+948,long_island_map+1027,long_island_map+1106,long_island_map+1185
+        .word long_island_map+1264,long_island_map+1343,long_island_map+1422,long_island_map+1501
+long_island_map:
+        .include "long_island.inc"
+ghost_town_rows:
+        .word ghost_town_map+0,ghost_town_map+79,ghost_town_map+158,ghost_town_map+237
+        .word ghost_town_map+316,ghost_town_map+395,ghost_town_map+474,ghost_town_map+553
+        .word ghost_town_map+632,ghost_town_map+711,ghost_town_map+790,ghost_town_map+869
+        .word ghost_town_map+948,ghost_town_map+1027,ghost_town_map+1106,ghost_town_map+1185
+        .word ghost_town_map+1264,ghost_town_map+1343,ghost_town_map+1422,ghost_town_map+1501
+ghost_town_map:
+        .include "ghost_town.inc"
+tunnel_vision_rows:
+        .word tunnel_vision_map+0,tunnel_vision_map+79,tunnel_vision_map+158,tunnel_vision_map+237
+        .word tunnel_vision_map+316,tunnel_vision_map+395,tunnel_vision_map+474,tunnel_vision_map+553
+        .word tunnel_vision_map+632,tunnel_vision_map+711,tunnel_vision_map+790,tunnel_vision_map+869
+        .word tunnel_vision_map+948,tunnel_vision_map+1027,tunnel_vision_map+1106,tunnel_vision_map+1185
+        .word tunnel_vision_map+1264,tunnel_vision_map+1343,tunnel_vision_map+1422,tunnel_vision_map+1501
+tunnel_vision_map:
+        .include "tunnel_vision.inc"
+point_of_no_return_rows:
+        .word point_of_no_return_map+0,point_of_no_return_map+79,point_of_no_return_map+158,point_of_no_return_map+237
+        .word point_of_no_return_map+316,point_of_no_return_map+395,point_of_no_return_map+474,point_of_no_return_map+553
+        .word point_of_no_return_map+632,point_of_no_return_map+711,point_of_no_return_map+790,point_of_no_return_map+869
+        .word point_of_no_return_map+948,point_of_no_return_map+1027,point_of_no_return_map+1106,point_of_no_return_map+1185
+        .word point_of_no_return_map+1264,point_of_no_return_map+1343,point_of_no_return_map+1422,point_of_no_return_map+1501
+point_of_no_return_map:
+        .include "point_of_no_return.inc"
+bug_city_rows:
+        .word bug_city_map+0,bug_city_map+79,bug_city_map+158,bug_city_map+237
+        .word bug_city_map+316,bug_city_map+395,bug_city_map+474,bug_city_map+553
+        .word bug_city_map+632,bug_city_map+711,bug_city_map+790,bug_city_map+869
+        .word bug_city_map+948,bug_city_map+1027,bug_city_map+1106,bug_city_map+1185
+        .word bug_city_map+1264,bug_city_map+1343,bug_city_map+1422,bug_city_map+1501
+bug_city_map:
+        .include "bug_city.inc"
+gangland_rows:
+        .word gangland_map+0,gangland_map+79,gangland_map+158,gangland_map+237
+        .word gangland_map+316,gangland_map+395,gangland_map+474,gangland_map+553
+        .word gangland_map+632,gangland_map+711,gangland_map+790,gangland_map+869
+        .word gangland_map+948,gangland_map+1027,gangland_map+1106,gangland_map+1185
+        .word gangland_map+1264,gangland_map+1343,gangland_map+1422,gangland_map+1501
+gangland_map:
+        .include "gangland.inc"

@@ -34,6 +34,7 @@ tests/boot: tests/boot.cpp $(EMU_SRCS)
 test: $(TARGET) tests/boot
 	$(MAKE) -C ../../../os/flex2 image
 	./tests/boot
+	$(PYTHON) -m unittest discover -s tests -p 'test_upload.py'
 
 $(TARGET): $(OUTS) $(LINKER_SCRIPT)
 	$(VLINK_BIN) -b rawbin -T $(LINKER_SCRIPT) -M$(NAME).map -o $(TARGET) $(OUTS)

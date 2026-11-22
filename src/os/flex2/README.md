@@ -70,6 +70,8 @@ The packaged `DATE.CMD` displays years `00–79` as 2000–2079 and `80–99` as
 display convention rather than an unambiguous four-digit date format. `make run`
 updates an unmodified historical `DATE.CMD` in an existing session disk and
 backs up that disk first; a locally changed command is left alone.
+See [TODO.md](TODO.md) for a future RTC refresh option and the possible
+pre-prompt refresh point.
 Command and filename lookup accepts lowercase at the FLEX prompt, including
 `cat 1` and `z68 1.zork1.dat`. The input line retains its typed case for
 programs to inspect.
@@ -160,6 +162,18 @@ For a sparse load:
 ```sh
 python3 tools/load_ramdisk.py /dev/tty.usbserial-XXXX --skip-free-payload
 ```
+
+With C68 BIOS, use its binary uploader to fill the same 1 MiB image over
+serial or the emulator's TCP console. From `src`:
+
+```sh
+python3 hw/roms/c68bios/tools/upload.py --serial /dev/tty.usbserial-XXXX \
+  --sram-image os/flex2/build/flex2.dsk
+```
+
+Use `--start-pair N` to resume at a page pair or `--pairs 1` for a single
+pair. C68 BIOS acknowledges CRC checked blocks, but has no readback command
+for the full pair comparison available through MIKBUG `P`.
 
 For example, from this directory:
 

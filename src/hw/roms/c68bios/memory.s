@@ -14,6 +14,9 @@
         .global zp_ascii_row
         .global zp_deposit_ptr
         .global zp_deposit_valid
+        .global zp_upload_crc
+        .global zp_upload_size
+        .global zp_upload_bit
 
 zp_count:
         .space 1
@@ -40,6 +43,12 @@ zp_ascii_row:
 zp_deposit_ptr:
         .space 2
 zp_deposit_valid:
+        .space 1
+zp_upload_crc:
+        .space 2
+zp_upload_size:
+        .space 1
+zp_upload_bit:
         .space 1
 
 ; bios storage

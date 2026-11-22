@@ -482,8 +482,7 @@ void run()
             auto &acia=machine_.memory_io_->acia_1_0_;
             if (!acia.terminalOutAciaInReady()) {
             if (auto value=tcp_console_->read()) {
-                if (*value==nmi_key_) machine_.cpu_->requestNmi();
-                else acia.terminalOutAciaIn(*value);
+                acia.terminalOutAciaIn(*value);
             }
             }
             if (auto value=acia.terminalInAciaOut()) tcp_console_->write(*value);
@@ -673,9 +672,19 @@ int main(int argc, char **argv)
     // dump all memory on exit
     dump_memory_binary("emu_memorydump.bin", 0x0000, 0xFFFF);
 
+    if (tcp_console_) {
+        try { tcp_console_->restoreCursor(); }
+        catch (const std::exception &e) {
+            std::fprintf(stderr, "TCP console cleanup: %s\n", e.what());
+        }
+    }
+
     // go back to normal terminal io mode
     // the shell gets really unusable if you forget to do this
     reset_terminal_mode();
+
+    if (!tcp_console_ && isatty(STDOUT_FILENO))
+        std::fputs("\x1b[?25h", stdout);
 
     printf("\r\n---\r\r\n(exit)\r\n");
 

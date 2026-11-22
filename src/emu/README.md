@@ -105,11 +105,15 @@ normal exit saves the SRAM image as before. Ctrl-] received over TCP is guest
 input, not a shutdown command. Breakpoint messages and continuation keys remain
 on the launching terminal. Without `--tcp-console`, the existing local console
 continues to work.
+If the connected guest has hidden the cursor, a normal emulator shutdown sends
+the ANSI show-cursor sequence before closing the connection. A forced kill or
+an earlier terminal disconnect cannot restore a terminal that is no longer
+connected; run `printf '\033[?25h'` there if needed.
 
-Press **Ctrl-\\** (Control plus backslash) to pulse the emulated 6800 NMI pin.
-In TCP mode, this works from either the connected raw terminal or the launching
-terminal. The key is consumed by the emulator and is not sent to the guest
-ACIA. The CPU stacks its state and follows the NMI vector at `$FFFC`.
+Press **Ctrl-\\** (Control plus backslash) in the emulator's launching
+terminal to pulse the emulated 6800 NMI pin. TCP input passes all byte values,
+including Ctrl-\\ (`$1C`), to the guest ACIA so binary uploads work. The CPU
+stacks its state and follows the NMI vector at `$FFFC`.
 MIKBUG now vectors directly to its NMI handler. While MIKBUG owns RAM it
 displays the interrupted registers; if FLEX has replaced its workspace, it
 reinitializes the monitor and abandons the running FLEX session.

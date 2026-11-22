@@ -1,6 +1,6 @@
 ; Easy Street rock actors. Each slot is X, Y, state (0 inactive,
-; 1/2 downward, 3 left, 4 right). The eighth slot capacity is reserved
-; for later boards; Easy Street releases at most five.
+; 1/2 downward, 3 left, 4 right). Easy Street releases at most five;
+; Long Island uses all eight slots.
 
 init_rocks:
         clr rock_count
@@ -17,7 +17,7 @@ release_rock:
         ldaa #0xff
         staa rock_skip
         ldaa rock_count
-        cmpa #5
+        cmpa rock_limit
         bcc release_done
         ldx #rock_slots
         clr rock_slot
@@ -29,7 +29,7 @@ release_find:
         inx
         inc rock_slot
         ldaa rock_slot
-        cmpa #5
+        cmpa rock_limit
         bcs release_find
         rts
 release_found:
@@ -56,7 +56,7 @@ move_rocks:
         clr rock_slot
 rock_loop:
         ldaa rock_slot
-        cmpa #5
+        cmpa rock_limit
         bcc rocks_draw
         cmpa rock_skip
         beq rock_next
@@ -106,7 +106,7 @@ check_player_rocks:
         clr rock_slot
 check_rock_loop:
         ldaa rock_slot
-        cmpa #5
+        cmpa rock_limit
         bcc check_rocks_done
         jsr load_rock
         tst rock_state
@@ -166,7 +166,7 @@ draw_all_rocks:
         clr rock_slot
 draw_rock_loop:
         ldaa rock_slot
-        cmpa #5
+        cmpa rock_limit
         bcc draw_rocks_done
         jsr load_rock
         tst rock_state

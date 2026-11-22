@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <deque>
 #include <optional>
+#include <string>
 
 // Single-client, loopback-only raw TCP serial transport. No terminal editing,
 // case conversion or protocol negotiation occurs here. All I/O is nonblocking.
@@ -21,6 +22,7 @@ public:
     std::optional<uint8_t> read();
     bool writable() const { return output_.size() < BufferLimit; }
     void write(uint8_t value);
+    void restoreCursor();
 
 private:
     int listener_ = -1;
@@ -28,5 +30,7 @@ private:
     uint16_t port_ = 0;
     std::deque<uint8_t> input_;
     std::deque<uint8_t> output_;
+    std::string recent_output_;
+    bool cursor_hidden_ = false;
     void disconnect();
 };

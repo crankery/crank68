@@ -61,9 +61,7 @@ with tempfile.TemporaryDirectory(prefix='crank68-tcp-') as temporary:
             with client:
                 client.settimeout(5)
                 assert receive(client, len(banner)) == banner, 'Startup banner lost'
-                client.sendall(b'\x1c')  # Ctrl-\\ pulses NMI, not guest input.
-                assert receive(client, 1) == b'!', 'TCP NMI key did not vector'
-                payload = b'aAzZ\x00\x08\x1b[31m\x1d\xff'
+                payload = b'aAzZ\x00\x08\x1b[31m\x1c\x1d\xff'
                 client.sendall(payload)
                 assert receive(client, len(payload)) == payload, 'ACIA bytes were transformed'
             time.sleep(0.05)  # Allow the emulator to detect the disconnect.
@@ -71,8 +69,12 @@ with tempfile.TemporaryDirectory(prefix='crank68-tcp-') as temporary:
                 client.settimeout(5)
                 client.sendall(b'Reconnect')
                 assert receive(client, 9) == b'Reconnect', 'Reconnect reset or lost the guest'
-            process.send_signal(signal.SIGTERM)
-            assert process.wait(timeout=5) == 0, (root / 'stderr.log').read_text()
+                client.sendall(b'\x1b[?25l')
+                assert receive(client, 6) == b'\x1b[?25l', 'Guest cursor hide was lost'
+                process.send_signal(signal.SIGTERM)
+                assert receive(client, 6) == b'\x1b[?25h', 'Shutdown left cursor hidden'
+                assert client.recv(1) == b'', 'Console stayed open after shutdown'
+                assert process.wait(timeout=5) == 0, (root / 'stderr.log').read_text()
             assert (root / 'session.dsk').stat().st_size == 1048576, 'Exit did not save SRAM'
         finally:
             if process.poll() is None:

@@ -120,7 +120,7 @@ build/rogue.bin: ../../apps/rogue/rogue.s Makefile
 ../../apps/ladder/flex/easy_street.inc: ../../apps/ladder/tools/make_levels.py ../../apps/ladder/Ladder/src/ladicons.pas
 	$(PYTHON) ../../apps/ladder/tools/make_levels.py
 
-build/ladder.bin: ../../apps/ladder/flex/ladder.s ../../apps/ladder/flex/menu.inc ../../apps/ladder/flex/rocks.inc ../../apps/ladder/flex/easy_street.inc Makefile
+build/ladder.bin: ../../apps/ladder/flex/ladder.s ../../apps/ladder/flex/menu.inc ../../apps/ladder/flex/highscore.inc ../../apps/ladder/flex/rocks.inc $(addprefix ../../apps/ladder/,$(LEVEL_INCS)) Makefile
 	@mkdir -p build
 	$(VASM_STD_BIN) -I../../apps/ladder/flex -Fbin -L build/ladder.lst -o $@ $<
 

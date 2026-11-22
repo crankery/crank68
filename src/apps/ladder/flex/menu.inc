@@ -1,5 +1,4 @@
 ; The opening menu follows the original Ladder logo and option layout.
-; Only options supported by this Easy Street port are shown.
 start_screen:
         jsr draw_start_screen
 menu_wait:
@@ -39,6 +38,10 @@ menu_key:
         beq menu_key_play
         cmpa #'P'
         beq menu_key_play
+        cmpa #'q'
+        beq menu_key_exit
+        cmpa #'Q'
+        beq menu_key_exit
         cmpa #'e'
         beq menu_key_exit
         cmpa #'E'
@@ -51,8 +54,22 @@ menu_key:
         beq menu_key_speed
         cmpa #'L'
         beq menu_key_speed
+        cmpa #'1'
+        bcs menu_key_done
+        cmpa #'8'
+        bcc menu_key_done
+        suba #'0'
+        staa selected_level
+        clr highscore_eligible
+        bra menu_key_start
+menu_key_done:
         rts
 menu_key_play:
+        ; P always starts at the first board.
+        ldaa #1
+        staa selected_level
+        staa highscore_eligible
+menu_key_start:
         ldaa #1
         bra menu_key_store
 menu_key_exit:
@@ -75,9 +92,10 @@ draw_start_screen:
         clr menu_idle_state
         ldx #0
         stx menu_idle_count
+        jsr show_highscores
         jmp show_menu_speed
 show_menu_speed:
-        ldaa #11
+        ldaa #12
         staa cursor_row
         ldaa #52
         staa cursor_col
@@ -96,25 +114,25 @@ change_speed:
 speed_select:
         cmpa #1
         bne speed_2
-        ldx #12000
+        ldx #24000
         bra speed_store
 speed_2:
         cmpa #2
         bne speed_3
-        ldx #6000
+        ldx #12000
         bra speed_store
 speed_3:
         cmpa #3
         bne speed_4
-        ldx #3000
+        ldx #6000
         bra speed_store
 speed_4:
         cmpa #4
         bne speed_5
-        ldx #1500
+        ldx #3000
         bra speed_store
 speed_5:
-        ldx #750
+        ldx #1500
 speed_store:
         stx tick_delay
         rts
@@ -185,24 +203,30 @@ menu_text:
         .byte 13,10
         .ascii "               LLLLLLLL   aaa aa   ddd dd   ddd dd   eeee   rr"
         .byte 13,10,13,10
-        .ascii "                                       Version: C68 FLEX"
+        .ascii "(c) 1982 Yahoo Software              Version: C68 FLEX"
         .byte 13,10
-        .ascii "(c) 1982 Yahoo Software              Terminal: ANSI/VT100"
+        .ascii "C68 additions:                       Terminal: ANSI/VT100"
+        .byte 13,10
+        .ascii "Copyright (c) Crankery 2026 - MIT License"
         .byte 13,10
         .ascii "                                       Play speed: "
         .byte 13,10
         .ascii "                                       Up K/W  Down J/S  Left H/A  Right L/D"
         .byte 13,10
         .ascii "                                       Jump = Space   Stop = Other"
+        .byte 13,10
+        .ascii "                                       Q = Leave game for this menu"
         .byte 13,10,13,10
-        .ascii "P = Play game"
+        .ascii "P = Play from Easy Street (scores)"
+        .byte 13,10
+        .ascii "1-7 = Practice from that level"
         .byte 13,10
         .ascii "L = Change level of difficulty"
         .byte 13,10
         .ascii "I = Instructions"
         .byte 13,10
-        .ascii "E = Exit Ladder"
-        .byte 13,10,13,10,13,10,13,10
+        .ascii "Q = Quit to FLEX"
+        .byte 13,10,13,10
         .ascii "Enter one of the above: "
         .byte 0
 menu_quiche:

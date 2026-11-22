@@ -53,6 +53,8 @@ void TcpConsole::disconnect() {
     client_=-1;
     input_.clear();
     output_.clear();
+    recent_output_.clear();
+    cursor_hidden_=false;
 }
 void TcpConsole::poll() {
     // Reject extra clients rather than letting them take over a live console.
@@ -106,4 +108,16 @@ std::optional<uint8_t> TcpConsole::read() {
 void TcpConsole::write(uint8_t value) {
     if (!writable()) throw std::runtime_error("TCP console output queue is full");
     output_.push_back(value);
+    recent_output_.push_back(static_cast<char>(value));
+    if (recent_output_.size()>6) recent_output_.erase(0,1);
+    if (recent_output_=="\x1b[?25l") cursor_hidden_=true;
+    if (recent_output_=="\x1b[?25h") cursor_hidden_=false;
+}
+void TcpConsole::restoreCursor() {
+    if (!connected() || !cursor_hidden_) return;
+    // The guest may have stopped mid-screen update. Prioritize returning the
+    // connected terminal to a usable state before closing the socket.
+    output_.clear();
+    for (const char c : std::string("\x1b[?25h")) output_.push_back(c);
+    poll();
 }

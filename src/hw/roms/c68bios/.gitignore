@@ -2,3 +2,4 @@
 *.lst
 *.rom
 *.bin
+__pycache__/

@@ -39,7 +39,7 @@ s_build_tag:
     .include "build_tag.inc"
 
 st_monitor_help:
-    .byte   0x08
+    .byte   0x09
     .string "H (?)"
     .byte 15
     .string "- Display help"
@@ -64,3 +64,6 @@ st_monitor_help:
     .string "addressG"
     .byte 12
     .string "- Run code (RTS returns here)"
+    .string "addressU"
+    .byte 12
+    .string "- Enter binary upload mode"
