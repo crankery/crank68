@@ -1,6 +1,58 @@
-; Easy Street rock actors. Each slot is X, Y, state (0 inactive,
-; 1/2 downward, 3 left, 4 right). Easy Street releases at most five;
-; Long Island uses all eight slots.
+; Rock actors. Each slot is X, Y, state (0 inactive,
+; 1/2 downward, 3 left, 4 right). Long Island uses all eight slots.
+
+; Find Lad's start and up to three V tiles in the selected 79x20 map. Store
+; release coordinates one row below each dispenser, in map order.
+find_dispensers:
+        clr dispenser_count
+        ldx #dispenser_coords
+        stx dispenser_write
+        ldx active_map
+        ldaa #1
+        staa dispenser_y
+        ldaa #20
+        staa rows_left
+dispenser_row:
+        ldaa #1
+        staa dispenser_x
+        ldaa #79
+        staa cols_left
+dispenser_col:
+        ldaa 0,x
+        cmpa #'p'
+        bne dispenser_check_v
+        ldaa dispenser_x
+        staa start_x
+        ldaa dispenser_y
+        staa start_y
+        bra dispenser_next
+dispenser_check_v:
+        cmpa #'V'
+        bne dispenser_next
+        ldaa dispenser_count
+        cmpa #3
+        bcc dispenser_next
+        stx dispenser_scan
+        ldx dispenser_write
+        ldaa dispenser_x
+        staa 0,x
+        ldaa dispenser_y
+        inca
+        staa 1,x
+        inx
+        inx
+        stx dispenser_write
+        inc dispenser_count
+        ldx dispenser_scan
+dispenser_next:
+        inx
+        inc dispenser_x
+        dec cols_left
+        bne dispenser_col
+        inc dispenser_y
+        dec rows_left
+        bne dispenser_row
+        rts
 
 init_rocks:
         clr rock_count
@@ -33,15 +85,47 @@ release_find:
         bcs release_find
         rts
 release_found:
-        ldaa #40
+        stx rock_ptr
+        jsr choose_dispenser
+        ldaa 0,x
+        ldab 1,x
+        ldx rock_ptr
         staa 0,x
+        stab 1,x
         ldaa #2
-        staa 1,x
         staa 2,x
         inc rock_count
         ldaa rock_slot
         staa rock_skip
 release_done:
+        rts
+
+; Return a pointer to a release coordinate pair. One dispenser needs no draw.
+choose_dispenser:
+        ldaa dispenser_count
+        cmpa #2
+        bcs dispenser_first
+        beq dispenser_two
+        jsr rng_three
+        bra dispenser_index
+dispenser_two:
+        jsr rng_next
+        ldaa rng2
+        bpl dispenser_first
+        ldaa #1
+        bra dispenser_index
+dispenser_first:
+        clra
+dispenser_index:
+        ldx #dispenser_coords
+        tsta
+        beq dispenser_chosen
+dispenser_advance:
+        inx
+        inx
+        deca
+        bne dispenser_advance
+dispenser_chosen:
         rts
 
 move_rocks:

@@ -46,7 +46,8 @@ zero-Lads decision, before high-score handling begins.
 
 The Pascal rewrite also treats bonus expiry as a death and restarts the
 level, but uses a three-second interval rather than the original's 25 game
-updates. FLEX has no bonus or life-loss handling yet.
+updates. FLEX now counts 25 game updates, consumes a Lad at zero, preserves
+score, and resets the countdown phase on a life restart.
 
 ## Countdown phase after a restart or new board
 
@@ -83,7 +84,7 @@ counter reloads to 25 on update 100. The statue pays 31 points on update
 bonus falls again on update 125, exactly 25 updates after the previous
 decrement. The Pascal `&` handler calls `UpdateScore` and clears the
 tile without changing `bonusTimeTicks`, so it preserves its own timer
-phase too. FLEX has no bonus clock yet.
+phase too. FLEX now keeps the same 25-update phase through a statue award.
 
 ## Update rate versus elapsed time
 
@@ -130,7 +131,8 @@ Code at `$4C06..$4C15` decrements the bonus and calls the death path
 only when the result is **exactly zero**. It does not treat a negative
 signed value as expired. Pascal's `RemainingBonusTime <= 0` check would
 expire a negative value on its next decrement, although Pascal's board
-cycle differs long before level 109. FLEX has no bonus timer yet.
+cycle differs long before level 109. FLEX has a bonus timer for its seven
+playable boards, but does not yet support the original later-level bonus wrap.
 
 Reproduce with `--start-level 109 --speed 1 --updates 28
 --name negative_bonus`, passed to `tools/run_ladder_state.py` with

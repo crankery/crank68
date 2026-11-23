@@ -30,7 +30,11 @@ def main() -> None:
                        if TILE.get(char, 0) != original[x, y]]
         if differences:
             raise AssertionError(f'{name}: {differences[:5]}')
-        print(f'{name}: 1580 terrain cells match')
+        dispensers = [(x, y) for y, row in enumerate(rows, 1)
+                      for x, char in enumerate(row, 1) if char == 'V']
+        if not 1 <= len(dispensers) <= 3 or any(y == 20 for _, y in dispensers):
+            raise AssertionError(f'{name}: invalid dispensers {dispensers}')
+        print(f'{name}: 1580 terrain cells match; dispensers {dispensers}')
 
 
 if __name__ == '__main__':

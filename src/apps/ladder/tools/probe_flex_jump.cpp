@@ -36,14 +36,19 @@ static std::map<std::string, uint16_t> read_symbols(const std::string &path) {
     }
     for (const char *name : {"move_jump", "player_x", "player_y", "direction",
                              "jump_step", "level_map", "move_down", "move_player",
-                             "key_jump", "old_x", "old_y", "game_loop",
+                             "key_jump", "old_x", "old_y", "game_loop", "start_level",
                              "restart_after_death", "death_flag", "lives",
                              "death_pause", "death_ptr", "death_char", "death_glyphs",
                              "game_over", "move_rocks", "rock_slots", "rock_count", "rng0",
                              "rng_three", "rng_next", "start_screen", "menu_key",
                              "menu_entry", "saved_sp",
                              "menu_action", "change_speed", "play_speed", "tick_delay",
-                             "menu_idle_tick", "menu_idle_count", "menu_idle_state"})
+                             "menu_idle_tick", "menu_idle_count", "menu_idle_state",
+                             "bonus_tick", "bonus_remaining", "bonus_ticks", "bonus_points",
+                             "reset_bonus", "add_bonus", "score", "active_map",
+                             "active_rows", "active_status", "row_pointers",
+                             "easy_status_text", "active_config", "level_configs",
+                             "rock_limit", "level_number"})
         require(symbols.count(name) == 1, std::string("missing symbol ") + name);
     return symbols;
 }
@@ -58,6 +63,20 @@ public:
         bus.bytes[0xAD0F] = 0x39; // FLEX outch stub: RTS.
         bus.bytes[at("death_pause")] = 0x39; // Skip real-time delay in CPU probes.
         bus.bytes[at("lives")] = 5;
+        bus.bytes[at("bonus_points")] = 35;
+        bus.bytes[at("bonus_remaining")] = 35;
+        bus.bytes[at("bonus_ticks")] = 25;
+        bus.bytes[at("rock_limit")] = 5;
+        bus.bytes[at("level_number")] = 1;
+        const auto set_word = [this](const char *name, uint16_t value) {
+            bus.bytes[at(name)] = uint8_t(value >> 8);
+            bus.bytes[at(name) + 1] = uint8_t(value);
+        };
+        set_word("active_map", at("level_map"));
+        set_word("active_rows", at("row_pointers"));
+        set_word("active_status", at("easy_status_text"));
+        set_word("active_config", at("level_configs"));
+        step("find_dispensers");
     }
 
     void position(uint8_t x, uint8_t y, uint8_t direction) {
@@ -81,6 +100,10 @@ public:
                 "death glyph sequence did not finish");
     }
     void set_rock_count(uint8_t count) { bus.bytes[at("rock_count")] = count; }
+    void set_rock_limit(uint8_t limit) { bus.bytes[at("rock_limit")] = limit; }
+    void set_level_number(uint8_t level) { bus.bytes[at("level_number")] = level; }
+    uint8_t level_number() const { return bus.bytes[at("level_number")]; }
+    uint8_t won_level() const { return bus.bytes[at("won_level")]; }
     void set_rock(int slot, uint8_t x, uint8_t y, uint8_t state) {
         require(slot >= 0 && slot < 5, "invalid rock slot");
         const uint16_t address = at("rock_slots") + 3 * slot;
@@ -101,6 +124,24 @@ public:
         require(bus.bytes[at("lives")] == value, name + ": wrong lives");
     }
     void set_lives(uint8_t value) { bus.bytes[at("lives")] = value; }
+    void set_bonus(uint8_t remaining, uint8_t ticks = 25) {
+        bus.bytes[at("bonus_remaining")] = remaining;
+        bus.bytes[at("bonus_ticks")] = ticks;
+    }
+    uint8_t bonus() const { return bus.bytes[at("bonus_remaining")]; }
+    uint8_t bonus_ticks() const { return bus.bytes[at("bonus_ticks")]; }
+    void set_score(uint16_t value) {
+        bus.bytes[at("score")] = uint8_t(value >> 8);
+        bus.bytes[at("score") + 1] = uint8_t(value);
+    }
+    uint16_t score() const {
+        return uint16_t(bus.bytes[at("score")]) << 8 | bus.bytes[at("score") + 1];
+    }
+    uint8_t death_flag() const { return bus.bytes[at("death_flag")]; }
+    void set_tick_delay(uint16_t value) {
+        bus.bytes[at("tick_delay")] = uint8_t(value >> 8);
+        bus.bytes[at("tick_delay") + 1] = uint8_t(value);
+    }
     void expect_game_over(uint8_t value, const std::string &name) const {
         require(bus.bytes[at("game_over")] == value, name + ": wrong game-over flag");
     }
@@ -165,12 +206,22 @@ public:
     }
 
     void set_tile(uint8_t x, uint8_t y, char tile) {
-        bus.bytes[at("level_map") + (y - 1) * 79 + (x - 1)] = uint8_t(tile);
+        bus.bytes[active_map_address() + (y - 1) * 79 + (x - 1)] = uint8_t(tile);
     }
 
     char tile_at(uint8_t x, uint8_t y) const {
-        return char(bus.bytes[at("level_map") + (y - 1) * 79 + (x - 1)]);
+        return char(bus.bytes[active_map_address() + (y - 1) * 79 + (x - 1)]);
     }
+
+    char source_tile_at(uint16_t map, uint8_t x, uint8_t y) const {
+        return char(bus.bytes[map + (y - 1) * 79 + (x - 1)]);
+    }
+
+    void set_source_tile(uint16_t map, uint8_t x, uint8_t y, char tile) {
+        bus.bytes[map + (y - 1) * 79 + (x - 1)] = uint8_t(tile);
+    }
+
+    uint16_t symbol(const char *name) const { return at(name); }
 
     void step(const char *routine = "move_jump") {
         // RTS pops the sentinel address; JSR calls use the same stack.
@@ -222,6 +273,10 @@ public:
 
 private:
     uint16_t at(const std::string &name) const { return symbols.at(name); }
+    uint16_t active_map_address() const {
+        return uint16_t(bus.bytes[at("active_map")]) << 8 |
+               bus.bytes[at("active_map") + 1];
+    }
     RamBus bus;
     Cpu cpu;
     const std::map<std::string, uint16_t> &symbols;
@@ -350,6 +405,7 @@ int main(int argc, char **argv) {
                 p.set_tile(73, 18, ' ');
                 p.set_tile(73, 19, glyphs[code]);
                 p.set_tile(73, 20, '=');
+                if (code == 9) p.set_rng(0); // Isolate falling support from the bounce.
                 p.step("move_player");
                 if (code == 8) {
                     p.restart_if_dead();
@@ -403,6 +459,7 @@ int main(int argc, char **argv) {
                 p.position(73, 19, 0);
                 p.set_tile(73, 18, glyphs[code]);
                 p.set_tile(73, 20, '=');
+                if (code == 9) p.set_rng(0); // Keep jump-phase check independent of bounce.
                 p.step("move_player");
                 if (code == 8) {
                     p.restart_if_dead();
@@ -412,7 +469,9 @@ int main(int argc, char **argv) {
                     p.expect(73, 19, 0, 0, "jump into solid floor");
                 else if (code == 4)
                     p.expect(73, 19, 0, 1, "jump into wall pauses");
-                else if (code == 3 || code == 6)
+                else if (code == 3)
+                    p.expect(18, 19, 0, 0, "treasure starts Long Island");
+                else if (code == 6)
                     p.expect(73, 18, 0, 0, "jump entry interrupts or wins");
                 else
                     p.expect(73, 18, 0, 2,
@@ -441,13 +500,14 @@ int main(int argc, char **argv) {
                 p.set_tile(73, 19, ' ');
                 p.set_tile(74, 19, glyphs[code]);
                 p.set_tile(73, 20, '=');
+                if (code == 9) p.set_rng(0); // Keep entry check independent of bounce.
                 p.step("move_player");
                 if (code == 8) {
                     p.restart_if_dead();
                     p.expect(6, 19, 0, 0, "horizontal fire contact");
                 }
                 else if (code == 3)
-                    p.expect(74, 19, 0, 0, "horizontal treasure entry");
+                    p.expect(18, 19, 0, 0, "horizontal treasure starts Long Island");
                 else
                     p.expect(code == 2 || code == 4 ? 73 : 74, 19, 2, 0,
                              "horizontal destination code " + std::to_string(code));
@@ -461,13 +521,14 @@ int main(int argc, char **argv) {
                 p.set_jump_step(0);
                 p.set_tile(58, 18, 'H');
                 p.set_tile(58, 19, glyphs[code]);
+                if (code == 9) p.set_rng(0); // Keep descent check independent of bounce.
                 p.step("move_player");
                 if (code == 8) {
                     p.restart_if_dead();
                     p.expect(6, 19, 0, 0, "downward fire contact");
                 }
                 else if (code == 3)
-                    p.expect(58, 19, 0, 0, "downward treasure entry");
+                    p.expect(18, 19, 0, 0, "downward treasure starts Long Island");
                 else
                     p.expect(58, code == 1 || code == 2 || code == 4 || code == 5
                                  ? 18 : 19, 4, 0,
@@ -582,6 +643,57 @@ int main(int argc, char **argv) {
             p.tick(); p.expect(11, 18, 2, 0, "one-row fall");
             p.tick(); p.expect(12, 18, 2, 0, "right request resumes after fall");
         }
+        for (uint32_t seed : {0u, 0x111111u, 0x222222u}) {
+            Probe p(binary, symbols);
+            p.position(53, 7, 2);
+            p.set_jump_step(0);
+            p.set_tile(53, 7, ' ');
+            p.set_tile(54, 7, '.');
+            p.set_tile(55, 7, ' ');
+            p.set_tile(55, 6, ' ');
+            for (uint8_t x : {53, 54, 55}) p.set_tile(x, 8, '=');
+            p.set_rng(seed);
+            p.step("move_player");
+            if (seed == 0) {
+                p.expect(54, 7, 2, 0, "trampoline keeps direction");
+                p.step("move_player");
+                p.expect(55, 7, 2, 0, "keep outcome continues right");
+            } else if (seed == 0x111111u) {
+                p.expect(54, 7, 1, 0, "trampoline reverses direction");
+                p.step("move_player");
+                p.expect(53, 7, 1, 0, "reverse outcome moves left");
+            } else {
+                p.expect(54, 7, 2, 1, "trampoline starts moving jump");
+                p.step("move_player");
+                p.expect(55, 6, 2, 2, "jump outcome rises right");
+            }
+        }
+        {
+            Probe p(binary, symbols);
+            p.set_level_number(2);
+            p.step("start_level");
+            p.position(53, 7, 2);
+            p.set_jump_step(0);
+            p.set_rng(0x111111);
+            p.step("move_player");
+            p.expect(54, 7, 1, 0, "Long Island trampoline reverses Lad");
+        }
+        {
+            Probe p(binary, symbols);
+            p.position(54, 7, 0);
+            p.set_jump_step(0);
+            p.set_tile(54, 7, '.');
+            p.set_tile(54, 6, ' ');
+            p.set_tile(54, 8, '=');
+            p.set_rng(0x111111);
+            p.step("move_player");
+            p.expect(54, 7, 0, 0, "stopped trampoline reversal stays stopped");
+            p.set_rng(0x222222);
+            p.step("move_player");
+            p.expect(54, 7, 0, 1, "stationary trampoline retries and jumps");
+            p.step("move_player");
+            p.expect(54, 6, 0, 2, "stopped trampoline jump rises in place");
+        }
         {
             Probe p(binary, symbols);
             p.position(6, 19, 0);
@@ -596,6 +708,31 @@ int main(int argc, char **argv) {
             p.expect_rock(0, 40, 3, 4, "landing pauses and picks direction");
             for (int i = 0; i < 5; ++i) p.step("move_rocks");
             p.expect_rock_count(5, "Easy Street rock cap");
+        }
+        {
+            Probe p(binary, symbols);
+            p.set_level_number(3); // Ghost Town has three dispensers.
+            p.step("start_level");
+            p.set_rng(0);
+            p.step("release_rock");
+            p.expect_rock(0, 29, 2, 2, "first Ghost Town dispenser");
+            p.set_rng(0x111111);
+            p.step("release_rock");
+            p.expect_rock(1, 45, 2, 2, "second Ghost Town dispenser");
+            p.set_rng(0x222222);
+            p.step("release_rock");
+            p.expect_rock(2, 57, 2, 2, "third Ghost Town dispenser");
+        }
+        {
+            Probe p(binary, symbols);
+            p.set_level_number(5); // Point of No Return has dispensers on two rows.
+            p.step("start_level");
+            p.set_rng(0);
+            p.step("release_rock");
+            p.expect_rock(0, 62, 3, 2, "first lower-row dispenser");
+            p.set_rng(0x200000);
+            p.step("release_rock");
+            p.expect_rock(1, 30, 6, 2, "second lower-row dispenser");
         }
         {
             Probe p(binary, symbols);
@@ -617,6 +754,28 @@ int main(int argc, char **argv) {
             p.expect_rock_count(4, "eater frees capacity");
             p.step("move_rocks");
             p.expect_rock(0, 40, 2, 2, "eaten slot released next tick");
+        }
+        {
+            Probe p(binary, symbols);
+            p.position(79, 19, 0);
+            p.set_rock_count(5);
+            p.set_rock(0, 78, 19, 4);
+            p.set_tile(79, 19, '*');
+            p.step("move_rocks");
+            p.expect_rock(0, 79, 19, 4, "rock reaches Lad on eater");
+            require(p.death_flag() == 1, "arrival on eater must kill Lad");
+        }
+        {
+            Probe p(binary, symbols);
+            p.position(6, 19, 0);
+            p.set_rock_count(5);
+            p.set_rock(0, 79, 19, 4);
+            p.set_tile(79, 19, '*');
+            p.step("move_rocks");
+            p.expect_rock(0, 79, 19, 0, "eater deactivates rock");
+            p.position(79, 19, 0);
+            p.step("check_player_rocks");
+            require(p.death_flag() == 0, "eaten rock must not kill Lad");
         }
         {
             Probe p(binary, symbols);
@@ -714,11 +873,11 @@ int main(int argc, char **argv) {
             for (int speed = 2; speed <= 5; ++speed) {
                 p.step("change_speed");
                 require(p.play_speed() == speed &&
-                        p.tick_delay() == uint16_t(12000 >> (speed - 1)),
+                        p.tick_delay() == uint16_t(24000 >> (speed - 1)),
                         "menu speed cycle");
             }
             p.step("change_speed");
-            require(p.play_speed() == 1 && p.tick_delay() == 12000,
+            require(p.play_speed() == 1 && p.tick_delay() == 24000,
                     "menu speed wraps to one");
             p.set_menu_idle(29999, 0);
             p.step("menu_idle_tick");
@@ -727,7 +886,124 @@ int main(int argc, char **argv) {
             p.step("menu_idle_tick");
             require(p.menu_idle_state() == 0, "menu idle taunt cycle wraps");
         }
-        std::cout << "FLEX movement and rock CPU probes passed\n";
+        {
+            Probe p(binary, symbols);
+            for (int update = 1; update < 25; ++update) p.step("bonus_tick");
+            require(p.bonus() == 35 && p.bonus_ticks() == 1,
+                    "bonus holds through update 24");
+            p.step("bonus_tick");
+            require(p.bonus() == 34 && p.bonus_ticks() == 25,
+                    "bonus falls on update 25 and reloads the phase");
+            p.set_score(42);
+            p.step("add_bonus");
+            require(p.score() == 76, "score uses remaining bonus");
+            p.step("reset_bonus");
+            require(p.bonus() == 35 && p.bonus_ticks() == 25,
+                    "new board resets bonus and phase");
+        }
+        {
+            Probe p(binary, symbols);
+            p.set_level_number(2);
+            const uint16_t map = p.symbol("long_island_map");
+            p.set_source_tile(map, 18, 19, ' ');
+            p.set_source_tile(map, 1, 1, 'p');
+            p.step("start_level");
+            p.expect(1, 1, 0, 0, "Long Island start comes from p tile");
+            require(p.bonus() == 45 && p.bonus_ticks() == 25,
+                    "Long Island loads its own starting bonus");
+        }
+        {
+            Probe p(binary, symbols);
+            p.set_score(0);
+            p.step("start_level");
+            const std::array<std::pair<uint8_t, uint8_t>, 7> goals{{
+                {58, 1}, {75, 1}, {73, 1}, {6, 18}, {10, 1}, {47, 7}, {62, 15}
+            }};
+            const std::array<std::pair<uint8_t, uint8_t>, 6> next_starts{{
+                {18, 19}, {6, 3}, {77, 17}, {74, 4}, {34, 9}, {7, 3}
+            }};
+            for (size_t board = 0; board < goals.size(); ++board) {
+                const auto [x, y] = goals[board];
+                require(p.tile_at(x, y) == '$', "board treasure missing");
+                p.position(x - 1, y, 2);
+                p.set_jump_step(3); // Apex step moves horizontally onto '$'.
+                p.step("move_player");
+                if (board < next_starts.size()) {
+                    require(p.level_number() == board + 2,
+                            "treasure did not advance displayed level");
+                    p.expect(next_starts[board].first, next_starts[board].second,
+                             0, 0, "next board starts at its p tile");
+                } else {
+                    require(p.level_number() == 7 && p.won_level() == 1,
+                            "GangLand treasure did not complete seven boards");
+                }
+            }
+            require(p.score() == 255, "seven treasures tally their bonuses");
+        }
+        {
+            Probe p(binary, symbols);
+            p.step("start_level");
+            require(p.tile_at(17, 9) == '&', "Easy Street statue loaded");
+            p.position(17, 10, 0);
+            p.step("move_player");
+            p.expect(17, 9, 0, 2, "Lad collects Easy Street statue");
+            require(p.tile_at(17, 9) == ' ', "collection removes statue");
+            require(p.source_tile_at(p.symbol("level_map"), 17, 9) == '&',
+                    "collected statue leaves source map intact");
+            p.step("restart_after_death");
+            require(p.tile_at(17, 9) == ' ', "collected statue survives life restart");
+            p.step("start_level");
+            require(p.tile_at(17, 9) == '&', "new board reloads statue");
+        }
+        {
+            Probe p(binary, symbols);
+            p.set_level_number(4);
+            p.step("start_level");
+            p.position(12, 3, 2);
+            p.set_jump_step(0);
+            p.step("move_player");
+            p.expect(13, 3, 2, 0, "leave Tunnel Vision floor");
+            require(p.tile_at(12, 4) == ' ', "departure removes floor");
+            require(p.source_tile_at(p.symbol("tunnel_vision_map"), 12, 4) == '-',
+                    "removed floor leaves source map intact");
+            p.step("restart_after_death");
+            require(p.tile_at(12, 4) == ' ', "removed floor survives life restart");
+            p.step("start_level");
+            require(p.tile_at(12, 4) == '-', "new board reloads floor");
+        }
+        {
+            Probe p(binary, symbols);
+            p.position(6, 19, 0);
+            p.set_jump_step(0);
+            p.set_rock_limit(0);
+            p.set_tick_delay(1);
+            for (int update = 1; update < 25; ++update) p.tick();
+            require(p.bonus() == 35 && p.bonus_ticks() == 1,
+                    "whole-loop bonus holds through update 24");
+            p.tick();
+            require(p.bonus() == 34 && p.bonus_ticks() == 25,
+                    "whole-loop bonus falls on update 25");
+        }
+        {
+            Probe p(binary, symbols);
+            p.position(6, 19, 0);
+            p.set_jump_step(0);
+            p.set_tick_delay(1);
+            p.set_score(42);
+            p.set_bonus(1, 1);
+            p.tick();
+            p.expect_lives(4, "bonus expiry costs one Lad");
+            require(p.score() == 42 && p.bonus() == 35 && p.bonus_ticks() == 24,
+                    "bonus expiry keeps score and restarts timer");
+            p.expect_game_over(0, "bonus expiry restarts current board");
+            for (int update = 1; update < 24; ++update) p.step("bonus_tick");
+            require(p.bonus() == 35 && p.bonus_ticks() == 1,
+                    "restarted bonus holds until the next 25-update boundary");
+            p.step("bonus_tick");
+            require(p.bonus() == 34 && p.bonus_ticks() == 25,
+                    "restarted bonus phase matches original timeout probe");
+        }
+        std::cout << "FLEX movement, rock, and bonus CPU probes passed\n";
         return 0;
     } catch (const std::exception &error) {
         std::cerr << error.what() << '\n';

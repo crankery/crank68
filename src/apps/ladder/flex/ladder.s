@@ -27,7 +27,6 @@ new_game:
         staa lives
         clr score
         clr score+1
-        jsr restore_statues
         ldaa selected_level
         staa level_number
         clr game_over
@@ -39,6 +38,9 @@ tick_wait:
         bne tick_wait
         tst game_over
         bne input_poll
+        jsr bonus_tick
+        tst death_flag
+        bne game_restart
         jsr move_player
         tst death_flag
         bne game_restart
@@ -80,28 +82,30 @@ level_config_next:
         inx
         inx
         inx
-        inx
-        inx
         decb
         bra level_config_next
 level_config_found:
         stx active_config
         ldaa 0,x
-        staa active_map
+        staa source_map
         ldaa 1,x
-        staa active_map+1
-        ldaa 2,x
-        staa active_rows
-        ldaa 3,x
-        staa active_rows+1
+        staa source_map+1
+        ldx #mutable_map
+        stx active_map
+        ldx #mutable_rows
+        stx active_rows
+        ldx active_config
         ldaa 4,x
         staa active_status
         ldaa 5,x
         staa active_status+1
-        ldaa 8,x
+        ldaa 6,x
         staa rock_limit
-        ldaa 9,x
+        ldaa 7,x
         staa bonus_points
+        jsr copy_level_map
+        jsr reset_bonus
+        jsr find_dispensers
         jsr init_rocks
         ldx #clear_text
         jsr print
@@ -110,16 +114,43 @@ level_config_found:
         jsr draw_player
         jsr show_lives
         jsr show_score
+        jsr show_bonus
         rts
 
 reset_player:
-        ldx active_config
-        ldaa 6,x
+        ldaa start_x
         staa player_x
-        ldaa 7,x
+        ldaa start_y
         staa player_y
         clr direction
         clr jump_step
+        rts
+
+; Copy the selected source board once on entry. A life restart redraws this
+; mutable copy, preserving collected statues and removed floor tiles.
+copy_level_map:
+        ldx source_map
+        stx copy_source
+        ldx #mutable_map
+        stx copy_dest
+        ldaa #20
+        staa rows_left
+copy_level_row:
+        ldaa #79
+        staa cols_left
+copy_level_col:
+        ldx copy_source
+        ldaa 0,x
+        inx
+        stx copy_source
+        ldx copy_dest
+        staa 0,x
+        inx
+        stx copy_dest
+        dec cols_left
+        bne copy_level_col
+        dec rows_left
+        bne copy_level_row
         rts
 
 handle_key:
@@ -311,7 +342,7 @@ move_done:
         ldaa player_y
         cmpa old_y
         bne moved
-        rts
+        jmp trampoline_check
 moved:
         jsr restore_old
         jsr draw_player
@@ -320,6 +351,8 @@ moved:
         ldaa player_y
         staa target_y
         jsr target_tile
+        cmpa #'.'
+        beq trampoline_effect
         cmpa #'$'
         beq level_done
         cmpa #'&'
@@ -354,6 +387,49 @@ fire_reset:
         staa death_flag
         rts
 
+; A trampoline is checked after entering it and on later stationary updates.
+trampoline_check:
+        ldaa player_x
+        staa target_x
+        ldaa player_y
+        staa target_y
+        jsr target_tile
+        cmpa #'.'
+        bne trampoline_done
+trampoline_effect:
+        jsr rng_three
+        tsta
+        beq trampoline_done
+        cmpa #1
+        beq trampoline_reverse
+        ldaa #1
+        staa jump_step
+trampoline_done:
+        rts
+trampoline_reverse:
+        ldaa direction
+        cmpa #1
+        beq trampoline_right
+        cmpa #2
+        beq trampoline_left
+        cmpa #3
+        beq trampoline_down
+        cmpa #4
+        bne trampoline_done
+        ldaa #3
+        bra trampoline_set_direction
+trampoline_down:
+        ldaa #4
+        bra trampoline_set_direction
+trampoline_left:
+        ldaa #1
+        bra trampoline_set_direction
+trampoline_right:
+        ldaa #2
+trampoline_set_direction:
+        staa direction
+        rts
+
 restart_after_death:
         clr death_flag
         jsr animate_death
@@ -365,6 +441,10 @@ restart_after_death:
         jsr show_lives
         jsr show_score
 restart_active:
+        jsr reset_bonus
+        ; The original restart state has already consumed its first update.
+        dec bonus_ticks
+        jsr show_bonus
         jsr init_rocks
         jsr reset_player
         jmp draw_player
@@ -687,9 +767,60 @@ show_lives:
         ldaa lives
         adda #'0'
         jmp outch
+; Count game updates, independent of the selected movement speed.
+; A new board starts at 25; a life restart consumes its first update.
+reset_bonus:
+        ldaa bonus_points
+        staa bonus_remaining
+        ldaa #25
+        staa bonus_ticks
+        rts
+bonus_tick:
+        tst won_level
+        bne bonus_tick_done
+        dec bonus_ticks
+        bne bonus_tick_done
+        ldaa #25
+        staa bonus_ticks
+        dec bonus_remaining
+        jsr show_bonus
+        tst bonus_remaining
+        bne bonus_tick_done
+        ldaa #1
+        staa death_flag
+bonus_tick_done:
+        rts
+show_bonus:
+        ldaa #21
+        staa cursor_row
+        ldaa #44
+        staa cursor_col
+        jsr cursor_to
+        ldx #bonus_text
+        jsr print
+        ldaa bonus_remaining
+        clrb
+bonus_tens:
+        cmpa #10
+        bcs bonus_ones
+        suba #10
+        incb
+        bra bonus_tens
+bonus_ones:
+        staa digit
+        tba
+        adda #'0'
+        jsr outch
+        ldaa digit
+        adda #'0'
+        jsr outch
+        ldaa #'0'
+        jsr outch
+        ldaa #'0'
+        jmp outch
 add_bonus:
         ldaa score+1
-        adda bonus_points
+        adda bonus_remaining
         staa score+1
         ldaa score
         adca #0
@@ -735,28 +866,6 @@ score_digit_print:
         adda #'0'
         jmp outch
 
-; Restore collected statues when a new game starts. Life restarts keep them
-; removed, along with the score already earned.
-restore_statues:
-        ldx #statue_addresses
-        stx restore_cursor
-        ldaa #28
-        staa restore_count
-restore_statue_next:
-        ldx restore_cursor
-        ldaa 0,x
-        staa target_ptr
-        ldaa 1,x
-        staa target_ptr+1
-        inx
-        inx
-        stx restore_cursor
-        ldx target_ptr
-        ldaa #'&'
-        staa 0,x
-        dec restore_count
-        bne restore_statue_next
-        rts
 cursor_to:
         ldaa #27
         jsr outch
@@ -847,6 +956,9 @@ lives_text:
 score_text:
         .ascii "Score: "
         .byte 0
+bonus_text:
+        .ascii "Bonus: "
+        .byte 0
 exit_text:
         .byte 27
         .ascii "[23;1H"
@@ -869,15 +981,20 @@ death_flag:   .byte 0
 lives:        .byte 0
 score:        .word 0
 bonus_points: .byte 0
+bonus_remaining: .byte 0
+bonus_ticks: .byte 0
 score_work:   .word 0
 score_divisor: .word 0
 score_low_tmp: .byte 0
-restore_count: .byte 0
-restore_cursor: .word 0
 target_ptr:   .word 0
 level_number: .byte 0
 selected_level: .byte 1
 rock_limit:   .byte 0
+source_map:   .word 0
+copy_source:  .word 0
+copy_dest:    .word 0
+start_x:      .byte 0
+start_y:      .byte 0
 active_map:   .word 0
 active_rows:  .word 0
 active_status: .word 0
@@ -904,6 +1021,12 @@ rock_ptr:     .word 0
 rock_x:       .byte 0
 rock_y:       .byte 0
 rock_state:   .byte 0
+dispenser_count: .byte 0
+dispenser_x: .byte 0
+dispenser_y: .byte 0
+dispenser_scan: .word 0
+dispenser_write: .word 0
+dispenser_coords: .byte 0,0,0,0,0,0
 rng_old0:     .byte 0
 rng_old1:     .byte 0
 rng_old2:     .byte 0
@@ -913,40 +1036,29 @@ rng2:         .byte 0x33
 rock_slots:   .byte 0,0,0,0,0,0,0,0,0,0,0,0
               .byte 0,0,0,0,0,0,0,0,0,0,0,0
 
-; Map pointer, row pointer table, status text, player X/Y, rock limit, bonus.
+; Map pointer, row pointer table, status text, rock limit, bonus.
 level_configs:
         .word level_map,row_pointers,easy_status_text
-        .byte 6,19,5,35
+        .byte 5,35
         .word long_island_map,long_island_rows,long_status_text
-        .byte 18,19,8,45
+        .byte 8,45
         .word ghost_town_map,ghost_town_rows,ghost_status_text
-        .byte 6,3,5,35
+        .byte 5,35
         .word tunnel_vision_map,tunnel_vision_rows,tunnel_status_text
-        .byte 77,17,5,36
+        .byte 5,36
         .word point_of_no_return_map,point_of_no_return_rows,point_status_text
-        .byte 74,4,7,35
+        .byte 7,35
         .word bug_city_map,bug_city_rows,bug_status_text
-        .byte 34,9,6,37
+        .byte 6,37
         .word gangland_map,gangland_rows,gang_status_text
-        .byte 7,3,6,32
+        .byte 6,32
 
-statue_addresses:
-        .word level_map+(8*79+16)
-        .word long_island_map+(1*79+67),long_island_map+(6*79+25)
-        .word ghost_town_map+(5*79+41),ghost_town_map+(9*79+62)
-        .word ghost_town_map+(11*79+13)
-        .word tunnel_vision_map+(4*79+37),tunnel_vision_map+(4*79+38)
-        .word tunnel_vision_map+(9*79+27),tunnel_vision_map+(12*79+58)
-        .word point_of_no_return_map+(4*79+9),point_of_no_return_map+(11*79+18)
-        .word point_of_no_return_map+(12*79+46),point_of_no_return_map+(15*79+30)
-        .word point_of_no_return_map+(15*79+52)
-        .word bug_city_map+(8*79+45),bug_city_map+(10*79+22)
-        .word bug_city_map+(11*79+22),bug_city_map+(12*79+7)
-        .word bug_city_map+(14*79+51),bug_city_map+(15*79+44)
-        .word gangland_map+(2*79+49),gangland_map+(5*79+60)
-        .word gangland_map+(7*79+23),gangland_map+(7*79+24)
-        .word gangland_map+(7*79+29),gangland_map+(16*79+53)
-        .word gangland_map+(18*79+27)
+mutable_rows:
+        .word mutable_map+0,mutable_map+79,mutable_map+158,mutable_map+237
+        .word mutable_map+316,mutable_map+395,mutable_map+474,mutable_map+553
+        .word mutable_map+632,mutable_map+711,mutable_map+790,mutable_map+869
+        .word mutable_map+948,mutable_map+1027,mutable_map+1106,mutable_map+1185
+        .word mutable_map+1264,mutable_map+1343,mutable_map+1422,mutable_map+1501
 
 row_pointers:
         .word level_map+0,level_map+79,level_map+158,level_map+237
@@ -1004,3 +1116,6 @@ gangland_rows:
         .word gangland_map+1264,gangland_map+1343,gangland_map+1422,gangland_map+1501
 gangland_map:
         .include "gangland.inc"
+
+mutable_map:
+        .space 1580

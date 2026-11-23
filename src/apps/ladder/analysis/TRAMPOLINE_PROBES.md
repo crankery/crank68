@@ -58,7 +58,9 @@ earlier events, so its observed outcome counts need not be balanced.
 The Turbo Pascal rewrite's `'.'` case uses five outcomes: force left, force
 right, jump in place, jump left, or jump right. Those differ from the three
 original outcomes and from its rule that a direction choice can move a
-stopped Lad. The current FLEX port has no trampoline handler; its
-[roadmap](../TODO.md) lists this as unfinished. The original effects and
+stopped Lad. The FLEX port now uses the three original outcomes, including
+repeat choices while Lad stays on the tile. Assembled CPU probes cover all
+three moving outcomes, the stopped case, and Long Island's actual tile.
+The original effects and
 choice ranges are confirmed by code paths, state traces, and controlled
 RNG boundary probes.

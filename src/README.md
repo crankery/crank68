@@ -36,7 +36,7 @@ The converter expands the selected source to 32 sectors per track. This rebuilds
 the packaged `FLEX.DSK` from the source image; keep any SD card with user files
 separate. The build does not flash chips or write a card.
 
-`make run` launches the emulator with the packaged ROM and writable SRAM and
+`make run` launches the emulator with C68 BIOS and writable SRAM and
 SD images. The default SRAM image is `build/session.dsk`; the SD-first layout
 uses `build/session-sram-sd-first.dsk`. The SD image is
 `build/session-sd-<layout>.dsk`. Each session
@@ -44,15 +44,13 @@ image is copied from its factory image only the first time; later runs preserve
 its files. Session preparation refreshes `FLEX2.SYS` in place when its build
 changes and saves a full image backup named `*.pre-flex-*` first. The emulator
 exposes the SD image through the Instore direct-register protocol.
-`make DRIVE_LAYOUT=sd-first run` puts SD at FLEX drive 0. MIKBUG's current `F`
-command still starts from physical SRAM before FLEX selects its configured
-drives. Use `make DRIVE_LAYOUT=sd-first test` to run its driver and FMS tests
-without the SRAM boot smoke test.
-
-`make run-c68bios` tries the separate C68 BIOS ROM. It boots FLEX from SRAM
-automatically and enters its monitor on NMI; see
-[`hw/roms/c68bios/README.md`](hw/roms/c68bios/README.md). The normal `make run`
-continues to use MIKBUG2.
+`make DRIVE_LAYOUT=sd-first run` puts SD at FLEX drive 0. C68 BIOS boots FLEX
+from SRAM automatically and enters its monitor on NMI; see
+[`hw/roms/c68bios/README.md`](hw/roms/c68bios/README.md). Use `make run-mikbug`
+to boot with MIKBUG2 instead; its `F` command starts from physical SRAM before
+FLEX selects its configured drives. `make run-c68bios` remains an alias for
+`make run`. Use `make DRIVE_LAYOUT=sd-first test` to run its driver and FMS
+tests without the SRAM boot smoke test.
 
 For a raw TCP terminal, run `make run TCP_PORT=6800` and connect PuTTY in Raw
 mode to `127.0.0.1:6800`. The emulator waits for the connection before running

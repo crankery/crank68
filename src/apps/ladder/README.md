@@ -34,11 +34,12 @@ long between game updates as before.
 
 This version draws all seven boards and supports walking, climbing, jumping,
 falling, moving Der Rocks, an animated death from rocks and fire, and reaching the
-treasure. The line below the board shows its name, score, and Lad count. Each `&` statue awards the board's
-starting bonus once and then disappears; treasure awards that bonus again.
+treasure. The line below the board shows its name, score, Lad count, and bonus
+time. Bonus time falls every 25 game updates at every play speed; reaching zero
+costs one Lad and restarts the board. Each `&` statue awards the remaining
+bonus once and then disappears; treasure awards the remaining bonus again.
 The treasure payout briefly flashes `Hooka!`, as in the original game.
-The bonus does not yet count down, and rock-jump points and extra-Lad awards
-are not implemented.
+Rock-jump points and extra-Lad awards are not implemented.
 The start screen has the original logo, idle taunts, and five high scores.
 When the last Lad dies after a `P` start, a qualifying score prompts for a name of up to ten
 characters, then saves the score and FLEX date to `LADDER.HIS` on the same

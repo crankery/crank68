@@ -103,7 +103,7 @@ These board limits match the Turbo Pascal `Rocks` fields in
 `Ladder/src/ladicons.pas`. The release schedule still differs: Pascal
 tests each pending rock independently with a 1-in-10 chance on a game
 tick, while the original release guard adds one per update while below
-the cap. FLEX does not yet implement rocks.
+the cap. FLEX releases one rock per update up to the board's cap.
 
 Reproduce a board with `--start-level N`, choosing its first displayed
 level from the table:
@@ -114,6 +114,8 @@ python3 tools/run_ladder_state.py \
   --output /tmp/ladder-rock-limits --speed 1 --start-level 14 \
   --updates 14 --name rock-limit-level14
 ```
+
+## On a ladder
 
 The original map table gives tile code `6` at Ghost Town `(33,10)` and below
 it, and `0` to the right. The Pascal map depicts that column as a ladder.
@@ -489,7 +491,11 @@ falling. That can release several rocks on one tick or none for many ticks.
 The original Easy Street and Ghost Town traces instead show exactly one new
 rock per update until five are active. The original chooses a dispenser at
 release. These are confirmed rule differences for the initial release and
-dispenser assignment. The FLEX port does not yet implement rocks.
+dispenser assignment. The FLEX port now finds `V` tiles in each map and
+chooses a dispenser on release. Its Ghost Town choice uses the existing
+three-way RNG bucket; two-dispenser boards use the high bit of the updated
+low 24-bit state. CPU probes cover Easy Street, Ghost Town, and Point of No
+Return, including dispensers below the top row.
 
 The [trampoline RNG probe](TRAMPOLINE_PROBES.md) confirms the same three-way
 bucket rule for Lad. The

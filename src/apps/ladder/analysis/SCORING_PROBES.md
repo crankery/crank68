@@ -28,7 +28,8 @@ Compiled code at `$5069..$507D` tests the destination tile and adds the
 current bonus word `$0F77` to score `$0F05`. The following code clears the
 tile. The observed position, exact score delta, and unchanged bonus confirm
 that the statue pays the **remaining bonus once**. This agrees with the
-Pascal rewrite's `ScoreStatue` path. FLEX currently has no scoring.
+Pascal rewrite's `ScoreStatue` path. FLEX now awards the remaining bonus for
+statues and treasure; rock-jump points and extra-Lad awards remain open.
 
 The [map comparison](MAP_PARITY.md) shows that Pascal's GangLand layout has
 nine statues absent from the original tile table. A controlled walk through
@@ -55,8 +56,8 @@ Reproduce either with `--start-level 20 --speed 1 --updates 6` and
 1:0F89:0034,1:0F8B:0010,1:0F9D:0001,1:0F9F:0001,2:0F77:0001,2:0FA1:0001,3:0F89:0034,3:0F8B:0010,3:0F9D:0001,3:0F9F:0001`.
 For the intact control, set the two update-1 direction words to `0000`.
 The Pascal `restartLevel` path also reuses `m.Field` without calling
-`LoadMap`, so it preserves collected statues. FLEX has no statue scoring
-yet; its future life restart must retain the mutable field.
+`LoadMap`, so it preserves collected statues. FLEX now scores statues and
+keeps its mutable field on a life restart.
 
 ## Extra Lads at score thresholds
 
@@ -87,11 +88,12 @@ and returns after incrementing Lads once. Pascal's `UpdateScore` also uses
 one `IF` after the event, so it has the same one-Lad-per-award limit. FLEX
 has no corresponding score path yet.
 
-Rock-side points can reach a threshold before the extra Lad is awarded.
+Points awarded during rock movement can reach a threshold before the extra
+Lad is awarded.
 The [rock-cross-100 state trace](state-rock-cross-100.csv.gz) starts the
-controlled jump-over fixture with score 98. The rock-side `$56FC` write
+controlled jump-over fixture with score 98. The rock-movement `$56FC` write
 raises score to 100 between updates 2 and 3, but update 3 still has five
-Lads. The player-side `$56AF` write raises score to 102 between updates 3
+Lads. The player-movement `$56AF` write raises score to 102 between updates 3
 and 4; the `$4ECA` call to the threshold routine then grants the Lad, so
 update 4 has six. The [write log](score-events-rock-cross-100.csv.gz)
 preserves both sites. Pascal's `Collision` calls `UpdateScore(ScoreRock)`
@@ -199,7 +201,7 @@ cells. Its empty-intervening-cell condition agrees with this sweep, but
 its check also requires the rock's own cell to be empty for a two-row
 award, as tested below. It may also double-award a pass, but its check
 placement differs from the original's observed player-side and rock-side
-sites. FLEX has no rocks or rock scoring yet.
+sites. FLEX has moving rocks but no rock scoring yet.
 
 ### A rock on a ladder cell can score
 
@@ -249,8 +251,9 @@ movement, before that rock's next movement. The rock-side comparison at
 to death at `$5216` on exact overlap. These paths explain both lethal
 fixtures and show why the first collision cannot be evaluated only after
 the rock moves. Pascal also moves Lad before its per-rock pre-move and
-post-move `Collision` calls in `Ladder/src/ladmain.pas`; FLEX has no rock
-collision code yet. The jump-phase cases below test exact-cell contact.
+post-move `Collision` calls in `Ladder/src/ladmain.pas`; FLEX checks contact
+both before and after rock movement. The jump-phase cases below test
+exact-cell contact.
 
 Reproduce the departing-rock fixture with `--speed 1 --updates 6
 --first-key 6 --poke-after 1:0E6A:0007,1:0E80:0013,1:0E96:0004
@@ -280,7 +283,9 @@ Change Lad's X poke to `004D` for the control. Pass these options to
 Pascal's `MoveActor` checks `OnEater` before moving the rock. Its
 post-move `Collision` call in `ladmain.pas` would therefore see a rock
 that has just entered the eater; source inspection predicts the same
-lethal contact. FLEX has no rock collision or eater behavior yet.
+lethal contact. The assembled FLEX code was checked for both cases: a
+rock entering an eater occupied by Lad kills him, while an already eaten
+rock is inactive and cannot kill Lad when he enters that cell later.
 
 ## Rock contact during a jump
 
