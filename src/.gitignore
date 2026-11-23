@@ -1,3 +1,4 @@
 /build/
+/node_modules/
 emu_traceback.log
 emu_memorydump.bin

@@ -9,9 +9,20 @@ GAL_SOURCES := $(wildcard hw/pld/*.gal)
 GAL_JEDECS := $(patsubst hw/pld/%.gal,build/pld/%.jed,$(GAL_SOURCES))
 GAL_FUSE_MAPS := $(patsubst hw/pld/%.gal,build/pld/%.fus,$(GAL_SOURCES))
 GAL_PIN_REPORTS := $(patsubst hw/pld/%.gal,build/pld/%.pin,$(GAL_SOURCES))
+WAVEDROM := node_modules/.bin/wavedrom
 
-.PHONY: all system pld fonts test run run-c68bios session program-avr program-avr-dry-run
+.PHONY: all system pld fonts docs test run run-c68bios session program-avr program-avr-dry-run
 all: system
+
+$(WAVEDROM): package-lock.json
+	npm ci --no-audit --no-fund
+
+docs/SPI_Timing.svg: docs/SPI_Timing.json5 tools/svg_background.py $(WAVEDROM)
+	$(WAVEDROM) --input $< --indent 2 > $@.tmp
+	$(PYTHON) tools/svg_background.py $@.tmp
+	mv $@.tmp $@
+
+docs: docs/SPI_Timing.svg
 
 $(GALASM): $(GALASM_SOURCES)
 	$(MAKE) -C tools/GALasm/src galasm

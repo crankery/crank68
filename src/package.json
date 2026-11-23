@@ -1,0 +1,6 @@
+{
+  "private": true,
+  "devDependencies": {
+    "wavedrom": "3.8.0"
+  }
+}
